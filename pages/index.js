@@ -166,6 +166,13 @@ export default function Home() {
     });
   }
   const theme = THEMES[themeMode];
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.background = theme.bg;
+    document.documentElement.style.background = theme.bg;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme.bg);
+  }, [theme]);
 
   const [defaultPayment, setDefaultPayment] = useState("Carte bancaire");
   const [defaultAccount, setDefaultAccount] = useState("");
