@@ -59,6 +59,12 @@ function fmtEUR(n) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
 }
 function parseDate(d) { return new Date(d + "T00:00:00"); }
+function toLocalISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 function fmtDateHeader(d) {
   const date = parseDate(d);
   return `${date.getDate()} ${MONTHS_FR[date.getMonth()].toUpperCase()} ${date.getFullYear()}`;
@@ -77,7 +83,7 @@ function periodLabel(period, type) {
 function getRangeStart(period, latest) {
   const d = new Date(latest);
   if (period === "1 semaine") { d.setDate(d.getDate() - 6); return d; }
-  if (period === "1 mois") { d.setMonth(d.getMonth() - 1); d.setDate(d.getDate() + 1); return d; }
+  if (period === "1 mois") { d.setDate(d.getDate() - 29); return d; }
   if (period === "3 mois") { d.setMonth(d.getMonth() - 3); d.setDate(d.getDate() + 1); return d; }
   if (period === "6 mois") { d.setMonth(d.getMonth() - 6); return d; }
   if (period === "12 mois") { d.setFullYear(d.getFullYear() - 1); return d; }
@@ -102,7 +108,7 @@ function buildChart(transactions, period, latestDate, type) {
   if (gran === "day") {
     const buckets = {};
     const cursor = new Date(start);
-    while (cursor <= latest) { buckets[cursor.toISOString().slice(0, 10)] = 0; cursor.setDate(cursor.getDate() + 1); }
+    while (cursor <= latest) { buckets[toLocalISODate(cursor)] = 0; cursor.setDate(cursor.getDate() + 1); }
     inRange.forEach((t) => { if (buckets[t.date] != null) buckets[t.date] += t.amount; });
     return Object.entries(buckets).map(([key, value]) => ({ name: String(parseDate(key).getDate()), value: Math.round(value * 100) / 100, dateKey: key, granularity: "day" }));
   }
@@ -211,6 +217,12 @@ export default function Home() {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
   const [optionSheet, setOptionSheet] = useState(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const anyOverlayOpen = showFilterSheet || showSettings || showAdd || !!editing || !!optionSheet;
+    document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [showFilterSheet, showSettings, showAdd, editing, optionSheet]);
   const [newCatName, setNewCatName] = useState("");
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -373,7 +385,7 @@ export default function Home() {
   return (
     <ThemeContext.Provider value={theme}>
       <div style={{ background: theme.bg, minHeight: "100vh", color: theme.text, fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", paddingBottom: 100, transition: "background 0.2s ease, color 0.2s ease" }}>
-        <div style={{ maxWidth: 420, margin: "0 auto", padding: "24px 20px 0" }}>
+        <div style={{ maxWidth: 420, margin: "0 auto", padding: "12px 20px 0" }}>
 
           {error && (
             <div style={{ background: "#3a1a1a", color: "#ff453a", borderRadius: 12, padding: "10px 14px", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -384,12 +396,14 @@ export default function Home() {
 
           {view === "dashboard" && (
             <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
-                <div style={{ display: "flex", gap: 10 }}>
-                  <IconButton onClick={() => setView("all")}><Search size={18} /></IconButton>
-                  <IconButton onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
-                  <IconButton onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: 12, paddingBottom: 16, marginTop: -12 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <IconButton onClick={() => setView("all")}><Search size={18} /></IconButton>
+                    <IconButton onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
+                    <IconButton onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
+                  </div>
                 </div>
               </div>
 
@@ -435,14 +449,16 @@ export default function Home() {
 
           {view === "all" && (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <IconButton onClick={() => { setView("dashboard"); setSearchQuery(""); }}><ArrowLeft size={18} /></IconButton>
-                <div style={{ fontSize: 17, fontWeight: 600 }}>Toutes les dépenses</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: theme.card, borderRadius: 12, padding: "10px 14px", marginBottom: 20 }}>
-                <Search size={16} color={theme.muted} />
-                <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre" style={{ flex: 1, background: "transparent", border: "none", color: theme.text, fontSize: 15, outline: "none" }} />
-                {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color={theme.muted} /></button>}
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: 12, paddingBottom: 20, marginTop: -12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <IconButton onClick={() => { setView("dashboard"); setSearchQuery(""); }}><ArrowLeft size={18} /></IconButton>
+                  <div style={{ fontSize: 17, fontWeight: 600 }}>Toutes les dépenses</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: theme.card, borderRadius: 12, padding: "10px 14px" }}>
+                  <Search size={16} color={theme.muted} />
+                  <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre" style={{ flex: 1, background: "transparent", border: "none", color: theme.text, fontSize: 15, outline: "none" }} />
+                  {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color={theme.muted} /></button>}
+                </div>
               </div>
               {renderList(allList, "Aucune transaction ne correspond.")}
             </>
@@ -458,10 +474,10 @@ export default function Home() {
         )}
 
         {showFilterSheet && (
-          <Sheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
+          <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
             <SheetRow label="Période" value={period} onClick={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
             <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categories], value: filterCategory, onSelect: setFilterCategory })} last />
-          </Sheet>
+          </TopSheet>
         )}
 
         {showSettings && (
@@ -514,6 +530,30 @@ function SummaryToggle({ value, onChange }) {
     >
       <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isGain ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
     </button>
+  );
+}
+
+function TopSheet({ title, onClose, children }) {
+  const theme = useTheme();
+  return (
+    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="topsheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 20, maxHeight: "75vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.45)" }}>
+          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: `1px solid ${theme.border}` }}>{title}</div>
+          <div style={{ padding: "6px 20px 20px" }}>{children}</div>
+        </div>
+        <style jsx>{`
+          @keyframes topSheetIn {
+            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          .topsheet-panel {
+            animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+            transform-origin: top right;
+          }
+        `}</style>
+      </div>
+    </div>
   );
 }
 
@@ -605,7 +645,7 @@ function TransactionModal({ tx, categories, accounts, onClose, onSave, onDelete,
   const [compte, setCompte] = useState(tx?.compte || defaultAccount || accounts[0] || "");
   const [type, setType] = useState(tx?.type || "Dépense");
   const [payment, setPayment] = useState(tx?.payment || defaultPayment || "Carte bancaire");
-  const [date, setDate] = useState(tx?.date || new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(tx?.date || toLocalISODate(new Date()));
   const [error, setError] = useState("");
 
   function handleSave() {
@@ -643,7 +683,7 @@ function SettingsModal({ categories, accounts, onClose, onDeleteCategory, onAddC
   const pickerStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.card2, border: "none", borderRadius: 10, padding: "12px 14px", color: theme.text, fontSize: 15, cursor: "pointer", boxSizing: "border-box" };
   const isLight = themeMode === "light";
   return (
-    <Sheet title="Réglages" onClose={onClose}>
+    <TopSheet title="Réglages" onClose={onClose}>
       <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, fontWeight: 600 }}>APPARENCE</div>
       <div style={{ background: theme.card2, borderRadius: 12, marginBottom: 24, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
@@ -694,6 +734,6 @@ function SettingsModal({ categories, accounts, onClose, onDeleteCategory, onAddC
         <input style={inputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
         <button onClick={onAddAccount} style={{ background: theme.accentBg, color: theme.accentText, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 600, cursor: "pointer" }}>Ajouter</button>
       </div>
-    </Sheet>
+    </TopSheet>
   );
 }
