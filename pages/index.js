@@ -385,6 +385,19 @@ export default function Home() {
   return (
     <ThemeContext.Provider value={theme}>
       <div style={{ background: theme.bg, minHeight: "100vh", color: theme.text, fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", paddingBottom: 100, transition: "background 0.2s ease, color 0.2s ease" }}>
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "calc(env(safe-area-inset-top, 0px) + 60px)",
+            background: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 35%, transparent 100%)`,
+            pointerEvents: "none",
+            zIndex: 20,
+          }}
+        />
         <div style={{ maxWidth: 420, margin: "0 auto", padding: "12px 20px 0" }}>
 
           {error && (
@@ -396,7 +409,7 @@ export default function Home() {
 
           {view === "dashboard" && (
             <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: "transparent", paddingTop: 12, paddingBottom: 16, marginTop: -12 }}>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: "transparent", paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
                   <IconGroup>
@@ -449,7 +462,7 @@ export default function Home() {
 
           {view === "all" && (
             <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: 12, paddingBottom: 20, marginTop: -12 }}>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 20, marginTop: -12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <IconButton onClick={() => { setView("dashboard"); setSearchQuery(""); }}><ArrowLeft size={18} /></IconButton>
                   <div style={{ fontSize: 17, fontWeight: 600 }}>Toutes les dépenses</div>
@@ -465,7 +478,7 @@ export default function Home() {
           )}
         </div>
 
-        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: 28, right: 28, width: 56, height: 56, borderRadius: 28, background: theme.accentBg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", cursor: "pointer" }}>
+        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, borderRadius: 28, background: theme.accentBg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", cursor: "pointer" }}>
           <Plus size={26} color={theme.accentText} />
         </button>
 
