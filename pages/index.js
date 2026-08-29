@@ -396,14 +396,14 @@ export default function Home() {
 
           {view === "dashboard" && (
             <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: 12, paddingBottom: 16, marginTop: -12 }}>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: "transparent", paddingTop: 12, paddingBottom: 16, marginTop: -12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <IconButton onClick={() => setView("all")}><Search size={18} /></IconButton>
-                    <IconButton onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
-                    <IconButton onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
-                  </div>
+                  <IconGroup>
+                    <IconButton bare onClick={() => setView("all")}><Search size={18} /></IconButton>
+                    <IconButton bare onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
+                    <IconButton bare onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
+                  </IconGroup>
                 </div>
               </div>
 
@@ -492,20 +492,30 @@ export default function Home() {
   );
 }
 
-function IconButton({ children, onClick }) {
+function IconButton({ children, onClick, bare }) {
   const theme = useTheme();
-  return <button onClick={onClick} style={{ width: 38, height: 38, borderRadius: 19, background: theme.card, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0 }}>{children}</button>;
+  return <button onClick={onClick} style={{ width: 38, height: 38, borderRadius: 19, background: bare ? "transparent" : theme.card, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0 }}>{children}</button>;
+}
+
+function IconGroup({ children }) {
+  const theme = useTheme();
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2, background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 22, padding: 3, boxShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
+      {children}
+    </div>
+  );
 }
 
 function AccountToggle({ value, accounts, onChange }) {
   const theme = useTheme();
+  const pillStyle = { display: "flex", alignItems: "center", gap: 10, background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 22, padding: "6px 16px 6px 6px", boxShadow: "0 2px 10px rgba(0,0,0,0.15)" };
   if (!accounts || accounts.length < 2) {
-    return <div style={{ fontSize: 15, fontWeight: 600 }}>{value || "…"}</div>;
+    return <div style={pillStyle}><span style={{ fontSize: 15, fontWeight: 600, paddingLeft: 8 }}>{value || "…"}</span></div>;
   }
   const [left, right] = accounts;
   const isRight = value === right;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={pillStyle}>
       <button
         onClick={() => onChange(isRight ? left : right)}
         aria-label="Changer de compte"
@@ -598,15 +608,11 @@ function SheetRow({ label, value, onClick, last }) {
 function OptionSheet({ title, options, value, onSelect, onClose }) {
   const theme = useTheme();
   return (
-    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 60 }} onClick={onClose}>
-      <div style={{ position: "relative", width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: theme.card2, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${theme.glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.3)", zIndex: 2 }}>
-          <X size={18} />
-        </button>
-        <div className="sheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", borderTop: `1px solid ${theme.glassBorder}`, borderRadius: "20px 20px 0 0", maxHeight: "70vh", overflowY: "auto", paddingBottom: 24 }}>
-          <div style={{ width: 36, height: 5, borderRadius: 3, background: theme.border2, margin: "10px auto 4px" }} />
-          <div style={{ textAlign: "center", padding: "10px 20px 12px", fontSize: 17, fontWeight: 600 }}>{title}</div>
-          <div style={{ padding: "0 20px" }}>
+    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="topsheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 20, maxHeight: "65vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.45)" }}>
+          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: `1px solid ${theme.border}` }}>{title}</div>
+          <div style={{ padding: "6px 20px 20px" }}>
             {options.map((o, i) => (
               <button key={o} onClick={() => onSelect(o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", background: "transparent", border: "none", borderBottom: i < options.length - 1 ? `1px solid ${theme.border}` : "none", cursor: "pointer", textAlign: "left" }}>
                 <span style={{ fontSize: 15, color: theme.text }}>{o}</span>
@@ -616,12 +622,12 @@ function OptionSheet({ title, options, value, onSelect, onClose }) {
           </div>
         </div>
         <style jsx>{`
-          @keyframes sheetIn {
-            from { opacity: 0; transform: scale(0.85) translateY(12px); }
+          @keyframes topSheetIn {
+            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
           }
-          .sheet-panel {
-            animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+          .topsheet-panel {
+            animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1);
             transform-origin: top right;
           }
         `}</style>
