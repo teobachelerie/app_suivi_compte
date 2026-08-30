@@ -509,8 +509,8 @@ export default function Home() {
           )}
         </div>
 
-        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, borderRadius: 28, background: theme.accentBg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", cursor: "pointer" }}>
-          <Plus size={26} color={theme.accentText} />
+        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, borderRadius: 28, background: theme.mode === "dark" ? "rgba(255,255,255,0.16)" : "rgba(10,10,10,0.10)", backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.35)", cursor: "pointer" }}>
+          <Plus size={26} color={theme.text} />
         </button>
 
         {(showAdd || editing) && (
@@ -538,7 +538,8 @@ export default function Home() {
 
 function IconButton({ children, onClick, bare }) {
   const theme = useTheme();
-  return <button onClick={onClick} style={{ width: 38, height: 38, borderRadius: 19, background: bare ? "transparent" : theme.card, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0 }}>{children}</button>;
+  const glassStyle = { background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, boxShadow: "0 2px 10px rgba(0,0,0,0.15)" };
+  return <button onClick={onClick} style={{ width: 38, height: 38, borderRadius: 19, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0, ...(bare ? {} : glassStyle) }}>{children}</button>;
 }
 
 function IconGroup({ children }) {
@@ -580,7 +581,7 @@ function SummaryToggle({ value, onChange }) {
       onClick={() => onChange(isGain ? "Dépense" : "Gain")}
       aria-label="Basculer entre dépenses et revenus"
       title={isGain ? "Revenus" : "Dépenses"}
-      style={{ width: 52, height: 30, borderRadius: 15, border: "none", cursor: "pointer", background: theme.card2, position: "relative", padding: 0, flexShrink: 0 }}
+      style={{ width: 52, height: 30, borderRadius: 15, border: `1px solid ${theme.glassBorder}`, cursor: "pointer", background: theme.sheetBg, backdropFilter: "blur(16px) saturate(180%)", WebkitBackdropFilter: "blur(16px) saturate(180%)", position: "relative", padding: 0, flexShrink: 0, boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}
     >
       <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isGain ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
     </button>
