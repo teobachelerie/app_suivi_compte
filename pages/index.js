@@ -266,11 +266,13 @@ export default function Home() {
     }
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleVisibility);
+    window.addEventListener("pageshow", handleVisibility);
     if (document.visibilityState === "visible") startPolling();
     return () => {
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleVisibility);
+      window.removeEventListener("pageshow", handleVisibility);
     };
   }, [loadAll]);
 
@@ -441,6 +443,7 @@ export default function Home() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
                   <IconGroup>
+                    <IconButton bare onClick={() => loadAll()}><RefreshCw size={16} /></IconButton>
                     <IconButton bare onClick={() => setView("all")}><Search size={18} /></IconButton>
                     <IconButton bare onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
                     <IconButton bare onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
