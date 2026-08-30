@@ -227,9 +227,10 @@ export default function Home() {
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadAll = useCallback(async (opts) => {
+    const silent = opts && opts.silent;
+    if (!silent) setLoading(true);
+    if (!silent) setError("");
     try {
       const [txs, meta] = await Promise.all([api("/api/transactions"), api("/api/meta")]);
       setTransactions(txs);
@@ -238,13 +239,40 @@ export default function Home() {
       setFilterAccount((prev) => (meta.accounts.includes(prev) ? prev : meta.accounts[0]));
       setDefaultAccount((prev) => (prev && meta.accounts.includes(prev) ? prev : meta.accounts[0]));
     } catch (e) {
-      setError(e.message);
+      if (!silent) setError(e.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    let interval;
+    function startPolling() {
+      stopPolling();
+      interval = setInterval(() => { loadAll({ silent: true }); }, 10000);
+    }
+    function stopPolling() {
+      if (interval) clearInterval(interval);
+    }
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        loadAll({ silent: true });
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    if (document.visibilityState === "visible") startPolling();
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [loadAll]);
 
   const latestDate = useMemo(() => transactions.reduce((max, t) => (t.date > max ? t.date : max), ""), [transactions]);
   const periodFiltered = useMemo(() => transactions.filter((t) => inPeriod(t, period, latestDate)), [transactions, period, latestDate]);
