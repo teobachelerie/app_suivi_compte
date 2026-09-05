@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from "react";
-import { BarChart, Bar, ResponsiveContainer, XAxis } from "recharts";
-import { Search, SlidersHorizontal, Settings, Plus, X, ShoppingBag, UtensilsCrossed, Plane, RefreshCw, Gamepad2, Stethoscope, Fuel, ChevronDown, ChevronRight, Trash2, ArrowLeft, Check, Sun, Moon } from "lucide-react";
+import { BarChart, Bar, ResponsiveContainer, XAxis, ReferenceLine } from "recharts";
+import { Search, SlidersHorizontal, Settings, Plus, X, ShoppingBag, UtensilsCrossed, Plane, RefreshCw, Gamepad2, Stethoscope, Fuel, ChevronDown, ChevronRight, Trash2, ArrowLeft, Check, Sun, Moon, Wallet, PiggyBank } from "lucide-react";
 
 const CATEGORY_ICON = {
   "Nourriture & Boissons": UtensilsCrossed,
@@ -26,7 +26,7 @@ const THEMES = {
     muted: "#8e8e93",
     border: "#2c2c2e",
     border2: "#3a3a3c",
-    sheetBg: "rgba(30,30,32,0.78)",
+    sheetBg: "rgba(20,20,22,0.88)",
     overlay: "rgba(0,0,0,0.5)",
     accentBg: "#ffffff",
     accentText: "#0a0a0a",
@@ -51,6 +51,19 @@ const THEMES = {
 
 const ThemeContext = createContext(THEMES.dark);
 const useTheme = () => useContext(ThemeContext);
+
+function glassStyle(theme, { radius = 20 } = {}) {
+  const highlight = theme.mode === "dark" ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.65)";
+  const innerShadow = theme.mode === "dark" ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.06)";
+  return {
+    background: theme.sheetBg,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${theme.glassBorder}`,
+    borderRadius: radius,
+    boxShadow: `0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 ${highlight}, inset 0 -1px 0 ${innerShadow}`,
+  };
+}
 
 const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const MONTHS_SHORT_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -129,6 +142,41 @@ function tickInterval(length) {
   if (length <= 45) return 1;
   return Math.ceil(length / 20);
 }
+const CORE_ACCOUNTS = ["Compte courant", "Compte pro"];
+function buildFlowChart(transactions, period, latestDate) {
+  if (!latestDate) return [];
+  const latest = parseDate(latestDate);
+  const start = getRangeStart(period, latest);
+  const gran = granularityFor(period);
+  const inRange = transactions.filter((t) => {
+    if (!start) return true;
+    const dt = parseDate(t.date);
+    return dt >= start && dt <= latest;
+  });
+  const buckets = {};
+  const order = [];
+  function ensure(key) { if (!(key in buckets)) { buckets[key] = { income: 0, expense: 0 }; order.push(key); } }
+  function add(key, t) {
+    if (!(key in buckets)) return;
+    if (t.type === "Gain") buckets[key].income += t.amount;
+    else buckets[key].expense += t.amount;
+  }
+  if (gran === "day") {
+    const cursor = new Date(start);
+    while (cursor <= latest) { ensure(toLocalISODate(cursor)); cursor.setDate(cursor.getDate() + 1); }
+    inRange.forEach((t) => add(t.date, t));
+    return order.map((key) => ({ name: String(parseDate(key).getDate()), income: Math.round(buckets[key].income * 100) / 100, expense: -Math.round(buckets[key].expense * 100) / 100 }));
+  }
+  if (gran === "month") {
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const end = new Date(latest.getFullYear(), latest.getMonth(), 1);
+    while (cursor <= end) { ensure(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`); cursor.setMonth(cursor.getMonth() + 1); }
+    inRange.forEach((t) => add(t.date.slice(0, 7), t));
+    return order.map((key) => ({ name: MONTHS_SHORT_FR[parseInt(key.slice(5, 7), 10) - 1], income: Math.round(buckets[key].income * 100) / 100, expense: -Math.round(buckets[key].expense * 100) / 100 }));
+  }
+  inRange.forEach((t) => { ensure(t.date.slice(0, 4)); add(t.date.slice(0, 4), t); });
+  return order.sort().map((y) => ({ name: y, income: Math.round(buckets[y].income * 100) / 100, expense: -Math.round(buckets[y].expense * 100) / 100 }));
+}
 function fmtBucketLabel(dateKey, granularity) {
   if (granularity === "day") {
     const d = parseDate(dateKey);
@@ -205,6 +253,8 @@ export default function Home() {
   const [error, setError] = useState("");
 
   const [view, setView] = useState("dashboard");
+  const [balanceAccount, setBalanceAccount] = useState("");
+  const [savingsDetailAccount, setSavingsDetailAccount] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [period, setPeriod] = useState("1 mois");
   const [summaryType, setSummaryType] = useState("Dépense");
@@ -238,6 +288,8 @@ export default function Home() {
       setAccounts(meta.accounts);
       setFilterAccount((prev) => (meta.accounts.includes(prev) ? prev : meta.accounts[0]));
       setDefaultAccount((prev) => (prev && meta.accounts.includes(prev) ? prev : meta.accounts[0]));
+      const core = meta.accounts.filter((a) => CORE_ACCOUNTS.includes(a));
+      setBalanceAccount((prev) => (core.includes(prev) ? prev : (core[0] || meta.accounts[0])));
     } catch (e) {
       if (!silent) setError(e.message);
     } finally {
@@ -293,6 +345,15 @@ export default function Home() {
   }, 0), [periodFiltered, filterCategory, filterAccount, summaryType]);
 
   const chartData = useMemo(() => buildChart(transactions.filter((t) => (filterCategory === "Toutes" || t.category === filterCategory) && (filterAccount === "Tous" || t.compte === filterAccount)), period, latestDate, summaryType), [transactions, period, latestDate, filterCategory, filterAccount, summaryType]);
+
+  const coreAccounts = useMemo(() => accounts.filter((a) => CORE_ACCOUNTS.includes(a)), [accounts]);
+  const savingsAccounts = useMemo(() => accounts.filter((a) => !CORE_ACCOUNTS.includes(a)), [accounts]);
+  function accountBalance(acc) {
+    return transactions.reduce((s, t) => (t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s), 0);
+  }
+  const balanceTotal = useMemo(() => accountBalance(balanceAccount), [transactions, balanceAccount]);
+  const flowChartData = useMemo(() => buildFlowChart(transactions.filter((t) => t.compte === balanceAccount), period, latestDate), [transactions, balanceAccount, period, latestDate]);
+  const savingsBalance = savingsDetailAccount ? accountBalance(savingsDetailAccount) : 0;
 
   const pressedTransactions = useMemo(() => {
     if (!pressedBucket) return null;
@@ -437,13 +498,29 @@ export default function Home() {
             </div>
           )}
 
-          {view === "dashboard" && (
+          {savingsDetailAccount && (
+            <>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <IconButton onClick={() => setSavingsDetailAccount(null)}><ArrowLeft size={18} /></IconButton>
+                  <div style={{ fontSize: 17, fontWeight: 600 }}>{savingsDetailAccount}</div>
+                </div>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 14, color: theme.muted, marginBottom: 4 }}>Solde actuel</div>
+                <div style={{ fontSize: 34, fontWeight: 700 }}>{fmtEUR(savingsBalance)}</div>
+              </div>
+              {renderList(groupByDate(transactions.filter((t) => t.compte === savingsDetailAccount)), "Aucun mouvement pour ce livret.")}
+            </>
+          )}
+
+          {!savingsDetailAccount && view === "dashboard" && (
             <>
               <div style={{ position: "sticky", top: 0, zIndex: 30, background: "transparent", paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
                   <IconGroup>
-                    <IconButton bare onClick={() => loadAll()}><RefreshCw size={16} /></IconButton>
+                    <IconButton bare onClick={() => setView("balance")}><Wallet size={18} /></IconButton>
                     <IconButton bare onClick={() => setView("all")}><Search size={18} /></IconButton>
                     <IconButton bare onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
                     <IconButton bare onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
@@ -481,6 +558,23 @@ export default function Home() {
                 </div>
               </div>
 
+              {savingsAccounts.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 12, color: theme.muted, fontWeight: 600, letterSpacing: 0.5, marginBottom: 8 }}>LIVRETS</div>
+                  <div style={{ background: theme.card, borderRadius: 16, overflow: "hidden" }}>
+                    {savingsAccounts.map((acc, i) => (
+                      <button key={acc} onClick={() => setSavingsDetailAccount(acc)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "transparent", border: "none", borderBottom: i < savingsAccounts.length - 1 ? `1px solid ${theme.border}` : "none", cursor: "pointer", textAlign: "left" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: theme.card2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <PiggyBank size={17} color={theme.text} />
+                        </div>
+                        <div style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{acc}</div>
+                        <div style={{ fontSize: 15, fontWeight: 600 }}>{fmtEUR(accountBalance(acc))}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginTop: 24 }}>
                 {pressedBucket ? (
                   renderList(groupByDate(pressedTransactions || []), "Aucune transaction ce jour-là.")
@@ -491,7 +585,39 @@ export default function Home() {
             </>
           )}
 
-          {view === "all" && (
+          {!savingsDetailAccount && view === "balance" && (
+            <>
+              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <IconButton onClick={() => setView("dashboard")}><ArrowLeft size={18} /></IconButton>
+                  <div style={{ fontSize: 17, fontWeight: 600 }}>Comptes</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+                <AccountToggle value={balanceAccount} accounts={coreAccounts} onChange={setBalanceAccount} />
+              </div>
+
+              <div style={{ background: theme.card, borderRadius: 20, padding: "20px 20px 8px" }}>
+                <button onClick={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} style={{ background: "transparent", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 4, color: theme.muted, fontSize: 14, marginBottom: 4, cursor: "pointer" }}>
+                  Solde {balanceAccount} <ChevronDown size={13} />
+                </button>
+                <div style={{ fontSize: 34, fontWeight: 700, marginBottom: 12 }}>{fmtEUR(balanceTotal)}</div>
+                <div style={{ height: 160 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={flowChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="name" tick={{ fill: theme.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(flowChartData.length)} />
+                      <ReferenceLine y={0} stroke={theme.border2} />
+                      <Bar dataKey="income" stackId="flow" fill="#32d74b" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                      <Bar dataKey="expense" stackId="flow" fill="#ff453a" radius={[0, 0, 3, 3]} maxBarSize={16} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          )}
+
+          {!savingsDetailAccount && view === "all" && (
             <>
               <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 20, marginTop: -12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -509,7 +635,7 @@ export default function Home() {
           )}
         </div>
 
-        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, borderRadius: 28, background: theme.mode === "dark" ? "rgba(255,255,255,0.16)" : "rgba(10,10,10,0.10)", backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.35)", cursor: "pointer" }}>
+        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...glassStyle(theme, { radius: 28 }) }}>
           <Plus size={26} color={theme.text} />
         </button>
 
@@ -538,14 +664,14 @@ export default function Home() {
 
 function IconButton({ children, onClick, bare }) {
   const theme = useTheme();
-  const glassStyle = { background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, boxShadow: "0 2px 10px rgba(0,0,0,0.15)" };
-  return <button onClick={onClick} style={{ width: 38, height: 38, borderRadius: 19, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0, ...(bare ? {} : glassStyle) }}>{children}</button>;
+  const glass = glassStyle(theme, { radius: 19 });
+  return <button onClick={onClick} style={{ width: 38, height: 38, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0, ...(bare ? { borderRadius: 19 } : glass) }}>{children}</button>;
 }
 
 function IconGroup({ children }) {
   const theme = useTheme();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2, background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 22, padding: 3, boxShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: 3, ...glassStyle(theme, { radius: 22 }) }}>
       {children}
     </div>
   );
@@ -553,9 +679,9 @@ function IconGroup({ children }) {
 
 function AccountToggle({ value, accounts, onChange }) {
   const theme = useTheme();
-  const pillStyle = { display: "flex", alignItems: "center", gap: 10, background: theme.sheetBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 22, padding: "6px 16px 6px 6px", boxShadow: "0 2px 10px rgba(0,0,0,0.15)" };
+  const pillStyle = { display: "flex", alignItems: "center", gap: 10, padding: "6px 16px 6px 6px", ...glassStyle(theme, { radius: 22 }) };
   if (!accounts || accounts.length < 2) {
-    return <div style={pillStyle}><span style={{ fontSize: 15, fontWeight: 600, paddingLeft: 8 }}>{value || "…"}</span></div>;
+    return <div style={pillStyle}><span style={{ fontSize: 15, fontWeight: 600, paddingLeft: 8, whiteSpace: "nowrap" }}>{value || "…"}</span></div>;
   }
   const [left, right] = accounts;
   const isRight = value === right;
@@ -568,7 +694,7 @@ function AccountToggle({ value, accounts, onChange }) {
       >
         <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isRight ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
       </button>
-      <span style={{ fontSize: 15, fontWeight: 600 }}>{isRight ? right : left}</span>
+      <span style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{isRight ? right : left}</span>
     </div>
   );
 }
@@ -581,7 +707,7 @@ function SummaryToggle({ value, onChange }) {
       onClick={() => onChange(isGain ? "Dépense" : "Gain")}
       aria-label="Basculer entre dépenses et revenus"
       title={isGain ? "Revenus" : "Dépenses"}
-      style={{ width: 52, height: 30, borderRadius: 15, border: `1px solid ${theme.glassBorder}`, cursor: "pointer", background: theme.sheetBg, backdropFilter: "blur(16px) saturate(180%)", WebkitBackdropFilter: "blur(16px) saturate(180%)", position: "relative", padding: 0, flexShrink: 0, boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}
+      style={{ width: 52, height: 30, position: "relative", padding: 0, flexShrink: 0, cursor: "pointer", ...glassStyle(theme, { radius: 15 }) }}
     >
       <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isGain ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
     </button>
