@@ -1,3 +1,175 @@
+/* ============ Soft Ledger Design System — tokens ============ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* neutrals */
+  --white: #FFFFFF;
+  --off-white: #F2F2F7;
+  --grey-1: #E8E8ED;
+  --grey-2: #D8D8DE;
+  --grey-3: #C7C7CC;
+  --grey-4: #8E8E93;
+  --grey-5: #48484A;
+  --black: #000000;
+
+  /* semantic financial accents */
+  --red: #FF3B30;
+  --green: #34C759;
+
+  /* surfaces */
+  --surface-base: var(--off-white);
+  --surface-raised: var(--off-white);
+  --surface-highlight: var(--white);
+  --surface-inset: var(--off-white);
+  --surface-scrim: rgba(0, 0, 0, 0.18);
+  --surface-danger: #FFEBEA;
+
+  /* text */
+  --text-primary: var(--black);
+  --text-secondary: var(--grey-5);
+  --text-tertiary: var(--grey-4);
+  --text-inverse: var(--white);
+  --text-expense: var(--red);
+  --text-income: var(--green);
+
+  /* icons */
+  --icon-primary: var(--black);
+  --icon-secondary: var(--grey-4);
+
+  /* lines */
+  --separator: rgba(0, 0, 0, 0.06);
+  --hairline: rgba(0, 0, 0, 0.10);
+
+  /* neumorphic light sources */
+  --light-source: rgba(255, 255, 255, 0.90);
+  --light-source-strong: rgba(255, 255, 255, 1);
+  --dark-source: rgba(0, 0, 0, 0.10);
+  --dark-source-strong: rgba(0, 0, 0, 0.16);
+
+  /* accent fill (flips per theme so black/white stay legible) */
+  --accent-bg: var(--black);
+  --accent-text: var(--white);
+
+  /* typography */
+  --font-core: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --font-numeric: var(--font-display);
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --size-balance: 56px;
+  --size-display: 40px;
+  --size-title-1: 28px;
+  --size-title-2: 22px;
+  --size-title-3: 20px;
+  --size-headline: 17px;
+  --size-body: 17px;
+  --size-callout: 16px;
+  --size-subhead: 15px;
+  --size-footnote: 13px;
+  --size-caption: 12px;
+
+  --leading-tight: 1.06;
+  --leading-snug: 1.22;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.5;
+
+  --tracking-balance: -0.03em;
+  --tracking-display: -0.026em;
+  --tracking-title: -0.02em;
+  --tracking-body: -0.01em;
+  --tracking-caption: 0em;
+
+  --text-balance-font: var(--weight-semibold) var(--size-balance)/var(--leading-tight) var(--font-numeric);
+  --text-display-font: var(--weight-semibold) var(--size-display)/var(--leading-tight) var(--font-display);
+  --text-title-font: var(--weight-semibold) var(--size-title-2)/var(--leading-snug) var(--font-display);
+  --text-headline-font: var(--weight-semibold) var(--size-headline)/var(--leading-normal) var(--font-core);
+  --text-body-font: var(--weight-regular) var(--size-body)/var(--leading-relaxed) var(--font-core);
+  --text-caption-font: var(--weight-medium) var(--size-caption)/var(--leading-normal) var(--font-core);
+
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --gutter-screen: 20px;
+  --gap-list: 12px;
+  --gap-section: 32px;
+  --hit-min: 44px;
+
+  /* radius */
+  --radius-xs: 10px;
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-control: 16px;
+  --radius-lg: 20px;
+  --radius-card: 24px;
+  --radius-xl: 28px;
+  --radius-round: 999px;
+
+  /* elevation */
+  --elev-flat: none;
+  --elev-raised-sm: 3px 3px 8px var(--dark-source), -3px -3px 8px var(--light-source);
+  --elev-raised: 6px 6px 14px var(--dark-source), -5px -5px 12px var(--light-source);
+  --elev-raised-lg: 10px 10px 22px var(--dark-source-strong), -8px -8px 18px var(--light-source-strong);
+  --elev-inset-sm: inset 2px 2px 5px var(--dark-source), inset -2px -2px 5px var(--light-source);
+  --elev-inset: inset 4px 4px 10px var(--dark-source), inset -3px -3px 8px var(--light-source);
+  --elev-press: inset 3px 3px 7px var(--dark-source), inset -2px -2px 6px var(--light-source);
+  --elev-overlay: 0 -2px 24px rgba(0, 0, 0, 0.10), 0 -12px 48px rgba(0, 0, 0, 0.06);
+
+  /* motion */
+  --duration-micro: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+  --ease-standard: cubic-bezier(0.33, 0, 0.15, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-tactile: box-shadow var(--duration-micro) var(--ease-standard), transform var(--duration-micro) var(--ease-standard);
+  --press-scale: 0.985;
+}
+
+/* Dark theme — extrapolated from the (light-only) Soft Ledger tokens above,
+   keeping the same neumorphic construction with inverted light sources. */
+[data-theme="dark"] {
+  --surface-base: #1C1C1E;
+  --surface-raised: #1C1C1E;
+  --surface-highlight: #2C2C2E;
+  --surface-inset: #1C1C1E;
+  --surface-scrim: rgba(0, 0, 0, 0.55);
+  --surface-danger: rgba(255, 69, 58, 0.15);
+
+  --text-primary: var(--white);
+  --text-secondary: #C7C7CC;
+  --text-tertiary: #8E8E93;
+  --text-inverse: #0A0A0A;
+  --text-expense: #FF453A;
+  --text-income: #32D74B;
+
+  --icon-primary: var(--white);
+  --icon-secondary: #8E8E93;
+
+  --separator: rgba(255, 255, 255, 0.08);
+  --hairline: rgba(255, 255, 255, 0.12);
+
+  --light-source: rgba(255, 255, 255, 0.045);
+  --light-source-strong: rgba(255, 255, 255, 0.07);
+  --dark-source: rgba(0, 0, 0, 0.55);
+  --dark-source-strong: rgba(0, 0, 0, 0.7);
+
+  --red: #FF453A;
+  --green: #32D74B;
+
+  --accent-bg: var(--white);
+  --accent-text: #0A0A0A;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -7,7 +179,13 @@ html, body {
 }
 
 body {
-  background: #0a0a0a;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font: var(--text-body-font);
+  letter-spacing: var(--tracking-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--duration-base) var(--ease-standard), color var(--duration-base) var(--ease-standard);
 }
 
 #__next {
@@ -17,3 +195,10 @@ body {
 * {
   box-sizing: border-box;
 }
+
+.ds-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+::-webkit-scrollbar { display: none; }

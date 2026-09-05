@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, ReferenceLine } from "recharts";
-import { Search, SlidersHorizontal, Settings, Plus, X, ShoppingBag, UtensilsCrossed, Plane, RefreshCw, Gamepad2, Stethoscope, Fuel, ChevronDown, ChevronRight, Trash2, ArrowLeft, Check, Sun, Moon, Wallet, PiggyBank } from "lucide-react";
+import {
+  Search, Settings, Plus, X, ShoppingBag, UtensilsCrossed, Plane, RefreshCw, Gamepad2,
+  Stethoscope, Fuel, ChevronDown, ChevronRight, Trash2, ArrowLeft, Check, Sun, Moon,
+  PiggyBank, Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
+} from "lucide-react";
 
 const CATEGORY_ICON = {
   "Nourriture & Boissons": UtensilsCrossed,
@@ -15,55 +19,6 @@ const CATEGORY_ICON = {
 const DEFAULT_PAYMENTS = ["Carte bancaire", "Virement", "Liquide"];
 const PERIODS = ["1 semaine", "1 mois", "3 mois", "6 mois", "12 mois", "Depuis toujours"];
 const DASHBOARD_LIMIT = 5;
-
-const THEMES = {
-  dark: {
-    mode: "dark",
-    bg: "#0a0a0a",
-    card: "#1c1c1e",
-    card2: "#2c2c2e",
-    text: "#ffffff",
-    muted: "#8e8e93",
-    border: "#2c2c2e",
-    border2: "#3a3a3c",
-    sheetBg: "rgba(20,20,22,0.88)",
-    overlay: "rgba(0,0,0,0.5)",
-    accentBg: "#ffffff",
-    accentText: "#0a0a0a",
-    glassBorder: "rgba(255,255,255,0.08)",
-  },
-  light: {
-    mode: "light",
-    bg: "#f2f2f7",
-    card: "#ffffff",
-    card2: "#eceef0",
-    text: "#0a0a0a",
-    muted: "#6d6d72",
-    border: "#e5e5ea",
-    border2: "#dcdce1",
-    sheetBg: "rgba(255,255,255,0.78)",
-    overlay: "rgba(0,0,0,0.25)",
-    accentBg: "#0a0a0a",
-    accentText: "#ffffff",
-    glassBorder: "rgba(0,0,0,0.06)",
-  },
-};
-
-const ThemeContext = createContext(THEMES.dark);
-const useTheme = () => useContext(ThemeContext);
-
-function glassStyle(theme, { radius = 20 } = {}) {
-  const highlight = theme.mode === "dark" ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.65)";
-  const innerShadow = theme.mode === "dark" ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.06)";
-  return {
-    background: theme.sheetBg,
-    backdropFilter: "blur(40px) saturate(180%)",
-    WebkitBackdropFilter: "blur(40px) saturate(180%)",
-    border: `1px solid ${theme.glassBorder}`,
-    borderRadius: radius,
-    boxShadow: `0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 ${highlight}, inset 0 -1px 0 ${innerShadow}`,
-  };
-}
 
 const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const MONTHS_SHORT_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -206,8 +161,414 @@ async function api(url, options) {
   return data;
 }
 
+/* ============ Primitives visuelles (Soft Ledger Design System) ============ */
+
+function Card({ depth = "raised", padding = "md", radius = "var(--radius-card)", children, style, ...rest }) {
+  const pads = { none: 0, sm: "var(--space-4)", md: "var(--space-5)", lg: "var(--space-6)" };
+  const shadow =
+    depth === "flat" ? "var(--elev-flat)" :
+    depth === "inset" ? "var(--elev-inset)" :
+    depth === "raised-lg" ? "var(--elev-raised-lg)" : "var(--elev-raised)";
+  return (
+    <div
+      style={{
+        background: depth === "highlight" ? "var(--surface-highlight)" : "var(--surface-raised)",
+        borderRadius: radius,
+        padding: pads[padding] ?? padding,
+        boxShadow: depth === "highlight" ? "var(--elev-raised)" : shadow,
+        transition: "box-shadow var(--duration-base) var(--ease-standard)",
+        ...style,
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Divider({ inset = 0, style }) {
+  return <div style={{ height: 1, marginLeft: inset, background: "var(--separator)", ...style }} />;
+}
+
+function Amount({ value, direction = "neutral", size = "md", showSign = true, style }) {
+  const SIZES = {
+    balance: { size: "var(--size-balance)", tracking: "var(--tracking-balance)" },
+    xl: { size: "var(--size-display)", tracking: "var(--tracking-display)" },
+    lg: { size: "var(--size-title-2)", tracking: "var(--tracking-title)" },
+    md: { size: "var(--size-headline)", tracking: "var(--tracking-body)" },
+    sm: { size: "var(--size-subhead)", tracking: "var(--tracking-body)" },
+  };
+  const s = SIZES[size] || SIZES.md;
+  const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--text-primary)";
+  const sign = !showSign || direction === "neutral" ? "" : direction === "expense" ? "−" : "+";
+  return (
+    <span className="ds-tabular" style={{ color, fontFamily: "var(--font-numeric)", fontSize: s.size, fontWeight: "var(--weight-semibold)", letterSpacing: s.tracking, lineHeight: "var(--leading-tight)", whiteSpace: "nowrap", ...style }}>
+      {sign}{value}
+    </span>
+  );
+}
+
+function StatTile({ label, value, direction, Icon, onClick, style }) {
+  const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--icon-secondary)";
+  return (
+    <div onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", cursor: onClick ? "pointer" : "default", ...style }}>
+      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        {Icon ? <Icon size={14} color={color} /> : null}
+        <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{label}</span>
+      </span>
+      <Amount value={value} direction={direction} size="lg" showSign={false} />
+    </div>
+  );
+}
+
+function ListRow({ Icon, title, subtitle, trailing, chevron = false, onClick, style }) {
+  const [pressed, setPressed] = useState(false);
+  const interactive = Boolean(onClick);
+  return (
+    <div
+      onClick={onClick}
+      onPointerDown={() => interactive && setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", minHeight: "var(--hit-min)", padding: "var(--space-3) 0", borderRadius: "var(--radius-sm)", opacity: pressed ? 0.55 : 1, cursor: interactive ? "pointer" : "default", transition: "opacity var(--duration-micro) var(--ease-standard)", ...style }}
+    >
+      {Icon ? (
+        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
+          <Icon size={18} color="var(--icon-primary)" />
+        </span>
+      ) : null}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", color: "var(--text-primary)", fontFamily: "var(--font-core)", fontSize: "var(--size-callout)", fontWeight: "var(--weight-medium)", letterSpacing: "var(--tracking-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
+        {subtitle ? <span style={{ display: "block", marginTop: 2, color: "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-footnote)" }}>{subtitle}</span> : null}
+      </span>
+      {trailing}
+      {chevron ? <ChevronRight size={16} color="var(--grey-3)" /> : null}
+    </div>
+  );
+}
+
+function NavBar({ title, subtitle, back = false, onBack, action, large = false, style }) {
+  return (
+    <header style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
+      {back ? (
+        <button onClick={onBack} aria-label="Retour" style={{ width: 36, height: 36, border: "none", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <ArrowLeft size={16} color="var(--icon-primary)" />
+        </button>
+      ) : null}
+      <div style={{ flex: 1, minWidth: 0, textAlign: large || back ? "left" : "center" }}>
+        {subtitle ? <div style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-footnote)", fontWeight: "var(--weight-medium)" }}>{subtitle}</div> : null}
+        <div style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: large ? "var(--size-title-1)" : "var(--size-headline)", fontWeight: "var(--weight-semibold)", letterSpacing: large ? "var(--tracking-display)" : "var(--tracking-body)", lineHeight: "var(--leading-snug)" }}>{title}</div>
+      </div>
+      {action}
+    </header>
+  );
+}
+
+function IconButton({ Icon, onClick, size = 44, label }) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, border: "none", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: pressed ? "var(--elev-press)" : "var(--elev-raised-sm)", transform: pressed ? "scale(var(--press-scale))" : "none", transition: "var(--transition-tactile)", cursor: "pointer", flexShrink: 0 }}
+    >
+      <Icon size={Math.round(size * 0.42)} color="var(--icon-primary)" />
+    </button>
+  );
+}
+
+function TabBar({ items, value, onChange }) {
+  return (
+    <nav style={{ position: "fixed", left: 0, right: 0, bottom: 0, display: "grid", gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`, alignItems: "center", padding: "var(--space-3) var(--space-2) calc(env(safe-area-inset-bottom, 0px) + var(--space-3))", background: "var(--surface-base)", boxShadow: "0 -1px 0 var(--separator)", zIndex: 30 }}>
+      {items.map((it) => {
+        const on = it.value === value;
+        return (
+          <button key={it.value} type="button" onClick={() => onChange(it.value)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "var(--space-2) 0", border: "none", background: "transparent", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
+            <it.Icon size={22} color={on ? "var(--icon-primary)" : "var(--grey-4)"} />
+            <span style={{ color: on ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-caption)", fontWeight: on ? "var(--weight-semibold)" : "var(--weight-regular)" }}>{it.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SegmentedControl({ options, value, onChange, style }) {
+  return (
+    <div role="tablist" style={{ display: "grid", gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`, gap: "var(--space-1)", padding: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", ...style }}>
+      {options.map((opt) => {
+        const on = opt === value;
+        return (
+          <button key={opt} type="button" onClick={() => onChange(opt)} style={{ height: 36, border: "none", borderRadius: "var(--radius-sm)", background: on ? "var(--surface-highlight)" : "transparent", boxShadow: on ? "var(--elev-raised-sm)" : "none", color: on ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: on ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", transition: "var(--transition-tactile)" }}>
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Switch({ checked, onChange }) {
+  return (
+    <span role="switch" aria-checked={checked} onClick={() => onChange(!checked)} style={{ position: "relative", display: "inline-block", width: 51, height: 31, flexShrink: 0, borderRadius: "var(--radius-round)", background: checked ? "var(--accent-bg)" : "var(--surface-inset)", boxShadow: checked ? "var(--elev-raised-sm)" : "var(--elev-inset)", cursor: "pointer", transition: "background var(--duration-base) var(--ease-standard)" }}>
+      <span style={{ position: "absolute", top: 3, left: checked ? 23 : 3, width: 25, height: 25, borderRadius: "var(--radius-round)", background: "var(--surface-highlight)", boxShadow: "1px 1px 3px rgba(0,0,0,0.16)", transition: "left var(--duration-base) var(--ease-standard)" }} />
+    </span>
+  );
+}
+
+function ProgressBar({ value = 0, tone = "neutral", height = 8 }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const fill = tone === "expense" ? "var(--red)" : tone === "income" ? "var(--green)" : "var(--accent-bg)";
+  return (
+    <div style={{ height, borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", overflow: "hidden" }}>
+      <div style={{ width: pct + "%", height: "100%", borderRadius: "var(--radius-round)", background: fill, transition: "width var(--duration-slow) var(--ease-out)" }} />
+    </div>
+  );
+}
+
+function AccountPill({ value, accounts, onChange }) {
+  if (!accounts || accounts.length < 2) {
+    return (
+      <div style={{ display: "flex", height: 52, alignItems: "center", padding: "0 var(--space-5)", borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
+        <span style={{ fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: "var(--weight-semibold)" }}>{value || "…"}</span>
+      </div>
+    );
+  }
+  const index = Math.max(0, accounts.indexOf(value));
+  const pas = 100 / accounts.length;
+  return (
+    <div style={{ position: "relative", display: "flex", height: 52, padding: 4, borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
+      <span style={{ position: "absolute", top: 4, bottom: 4, left: `calc(${pas * index}% + 4px)`, width: `calc(${pas}% - 8px)`, borderRadius: "var(--radius-round)", background: "var(--surface-highlight)", boxShadow: "var(--elev-raised-sm)", transition: "left var(--duration-base) var(--ease-standard)" }} />
+      {accounts.map((a) => (
+        <button key={a} type="button" onClick={() => onChange(a)} style={{ position: "relative", flex: 1, minWidth: 0, border: "none", background: "transparent", color: a === value ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: a === value ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {a.replace("Compte ", "")}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PeriodChips({ value, onChange, onOpenMore }) {
+  const chips = [
+    { value: "1 mois", label: "Ce mois" },
+    { value: "3 mois", label: "3 mois" },
+    { value: "6 mois", label: "6 mois" },
+  ];
+  const isMore = !chips.some((c) => c.value === value);
+  const cran = (on) => ({ height: 36, border: "none", borderRadius: "var(--radius-sm)", background: on ? "var(--surface-highlight)" : "transparent", boxShadow: on ? "var(--elev-raised-sm)" : "none", color: on ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-footnote)", fontWeight: on ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", transition: "var(--transition-tactile)" });
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--space-1)", padding: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
+      {chips.map((c) => (
+        <button key={c.value} type="button" onClick={() => onChange(c.value)} style={cran(value === c.value)}>{c.label}</button>
+      ))}
+      <button type="button" onClick={onOpenMore} style={cran(isMore)}>{isMore ? value : "Mois…"}</button>
+    </div>
+  );
+}
+
+/* ============ Sheets (overlays) ============ */
+
+function TopSheet({ title, onClose, children }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "75vh", overflowY: "auto", boxShadow: "var(--elev-overlay)" }}>
+          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
+          <div style={{ padding: "6px 20px 20px" }}>{children}</div>
+        </div>
+        <style jsx>{`
+          @keyframes topSheetIn { from { opacity: 0; transform: scale(0.92) translateY(-8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+          .topsheet-panel { animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1); transform-origin: top right; }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+function Sheet({ title, onClose, children }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }} onClick={onClose}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: "var(--surface-raised)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-primary)", cursor: "pointer", boxShadow: "var(--elev-raised)", zIndex: 2 }}>
+          <X size={18} />
+        </button>
+        <div className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", paddingBottom: 24, boxShadow: "var(--elev-overlay)" }}>
+          <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "10px auto 4px" }} />
+          <div style={{ textAlign: "center", padding: "10px 20px 16px", fontSize: 17, fontWeight: 600 }}>{title}</div>
+          <div style={{ padding: "0 20px" }}>{children}</div>
+        </div>
+        <style jsx>{`
+          @keyframes sheetIn { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+          .sheet-panel { animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1); transform-origin: top right; }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+function SheetRow({ label, value, onClick, last }) {
+  return (
+    <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", background: "transparent", border: "none", borderBottom: last ? "none" : "1px solid var(--separator)", cursor: "pointer", textAlign: "left" }}>
+      <span style={{ fontSize: 15, color: "var(--text-primary)" }}>{label}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-tertiary)", fontSize: 15 }}>{value} <ChevronRight size={16} /></span>
+    </button>
+  );
+}
+
+function OptionSheet({ title, options, value, onSelect, onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "65vh", overflowY: "auto", boxShadow: "var(--elev-overlay)" }}>
+          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
+          <div style={{ padding: "6px 20px 20px" }}>
+            {options.map((o, i) => (
+              <button key={o} onClick={() => onSelect(o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", background: "transparent", border: "none", borderBottom: i < options.length - 1 ? "1px solid var(--separator)" : "none", cursor: "pointer", textAlign: "left" }}>
+                <span style={{ fontSize: 15, color: "var(--text-primary)" }}>{o}</span>
+                {o === value && <Check size={18} color="var(--green)" />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <style jsx>{`
+          @keyframes topSheetIn { from { opacity: 0; transform: scale(0.92) translateY(-8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+          .topsheet-panel { animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1); transform-origin: top right; }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 6 }}>{label}</div>{children}</div>;
+}
+
+const fieldInputStyle = { width: "100%", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 16px", color: "var(--text-primary)", fontSize: 15, boxSizing: "border-box", fontFamily: "var(--font-core)" };
+const fieldPickerStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 16px", color: "var(--text-primary)", fontSize: 15, cursor: "pointer", boxSizing: "border-box", fontFamily: "var(--font-core)" };
+
+function TransactionModal({ tx, categories, accounts, onClose, onSave, onDelete, openOptions, saving, defaultPayment, defaultAccount }) {
+  const [title, setTitle] = useState(tx?.title || "");
+  const [amount, setAmount] = useState(tx?.amount != null ? String(tx.amount) : "");
+  const [category, setCategory] = useState(tx?.category || categories[0] || "");
+  const [compte, setCompte] = useState(tx?.compte || defaultAccount || accounts[0] || "");
+  const [type, setType] = useState(tx?.type || "Dépense");
+  const [payment, setPayment] = useState(tx?.payment || defaultPayment || "Carte bancaire");
+  const [date, setDate] = useState(tx?.date || toLocalISODate(new Date()));
+  const [error, setError] = useState("");
+
+  function handleSave() {
+    const amt = parseFloat(String(amount).replace(",", "."));
+    if (!title.trim()) { setError("Indique un titre."); return; }
+    if (!amt || amt <= 0) { setError("Indique un montant valide."); return; }
+    onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, type, payment, date });
+  }
+
+  return (
+    <Sheet title={tx ? "Modifier" : "Nouvelle transaction"} onClose={onClose}>
+      <SegmentedControl options={["Dépense", "Gain"]} value={type} onChange={setType} style={{ marginBottom: 16 }} />
+      <Field label="Titre"><input style={fieldInputStyle} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex. J'ai acheté une bougie" /></Field>
+      <Field label="Montant (€)"><input style={fieldInputStyle} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" /></Field>
+      <Field label="Catégorie"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categories, value: category, onSelect: setCategory })}>{category}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      <Field label="Compte"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      <Field label="Moyen de paiement"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Moyen de paiement", options: DEFAULT_PAYMENTS, value: payment, onSelect: setPayment })}>{payment}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      <Field label="Date"><input type="date" style={fieldInputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+      {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        {onDelete && <button onClick={onDelete} disabled={saving} style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={18} color="var(--red)" /></button>}
+        <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.6 : 1, boxShadow: "var(--elev-raised-sm)" }}>{saving ? "Enregistrement…" : "Confirmer"}</button>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ============ Onglet Réglages (mêmes réglages qu'avant, restylés) ============ */
+
+function ReglagesScreen({ categories, accounts, onDeleteCategory, onAddCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions }) {
+  const isLight = themeMode === "light";
+  const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <NavBar large title="Réglages" />
+
+      <div>
+        <span style={label}>APPARENCE</span>
+        <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
+          <Switch checked={isLight} onChange={onToggleTheme} />
+        </Card>
+      </div>
+
+      <div>
+        <span style={label}>VALEURS PAR DÉFAUT DU RACCOURCI</span>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Utilisées à chaque nouvelle dépense, modifiables au cas par cas.</div>
+        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <ListRow title="Moyen de paiement" subtitle={null} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultPayment}<ChevronRight size={16} /></span>} />
+          <Divider inset={0} />
+          <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accounts, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
+        </Card>
+      </div>
+
+      <div>
+        <span style={label}>CATÉGORIES</span>
+        <Card padding="md" style={{ marginBottom: 12 }}>
+          {categories.map((c, i) => (
+            <React.Fragment key={c}>
+              {i > 0 ? <Divider /> : null}
+              <ListRow title={c} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteCategory(c); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+            </React.Fragment>
+          ))}
+        </Card>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input style={fieldInputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
+          <button onClick={onAddCategory} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+        </div>
+      </div>
+
+      <div>
+        <span style={label}>COMPTES</span>
+        <Card padding="md" style={{ marginBottom: 12 }}>
+          {accounts.filter((a) => CORE_ACCOUNTS.includes(a)).map((a, i, arr) => (
+            <React.Fragment key={a}>
+              {i > 0 ? <Divider /> : null}
+              <ListRow title={a} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteAccount(a); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+            </React.Fragment>
+          ))}
+        </Card>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
+          <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+        </div>
+      </div>
+
+      <div>
+        <span style={label}>ÉPARGNE</span>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Livrets et comptes d'épargne, affichés à part sur le tableau de bord.</div>
+        <Card padding="md" style={{ marginBottom: 12 }}>
+          {accounts.filter((a) => !CORE_ACCOUNTS.includes(a)).length === 0 && (
+            <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucun livret pour l'instant.</div>
+          )}
+          {accounts.filter((a) => !CORE_ACCOUNTS.includes(a)).map((a, i, arr) => (
+            <React.Fragment key={a}>
+              {i > 0 ? <Divider /> : null}
+              <ListRow title={a} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteAccount(a); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+            </React.Fragment>
+          ))}
+        </Card>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau livret (ex. Livret A)" />
+          <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
-  const [themeMode, setThemeMode] = useState("dark");
+  const [themeMode, setThemeMode] = useState("light");
   useEffect(() => {
     const saved = typeof window !== "undefined" && window.localStorage.getItem("expenses-theme");
     if (saved === "light" || saved === "dark") setThemeMode(saved);
@@ -219,14 +580,16 @@ export default function Home() {
       return next;
     });
   }
-  const theme = THEMES[themeMode];
+  const BG_COLORS = { light: "#F2F2F7", dark: "#1C1C1E" };
   useEffect(() => {
     if (typeof document === "undefined") return;
-    document.body.style.background = theme.bg;
-    document.documentElement.style.background = theme.bg;
+    document.documentElement.setAttribute("data-theme", themeMode === "dark" ? "dark" : "light");
+    const bg = BG_COLORS[themeMode];
+    document.body.style.background = bg;
+    document.documentElement.style.background = bg;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", theme.bg);
-  }, [theme]);
+    if (meta) meta.setAttribute("content", bg);
+  }, [themeMode]);
 
   const [defaultPayment, setDefaultPayment] = useState("Carte bancaire");
   const [defaultAccount, setDefaultAccount] = useState("");
@@ -252,8 +615,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [activeTab, setActiveTab] = useState("apercu");
   const [view, setView] = useState("dashboard");
-  const [balanceAccount, setBalanceAccount] = useState("");
   const [savingsDetailAccount, setSavingsDetailAccount] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [period, setPeriod] = useState("1 mois");
@@ -261,18 +624,18 @@ export default function Home() {
   const [pressedBucket, setPressedBucket] = useState(null);
   const [filterCategory, setFilterCategory] = useState("Toutes");
   const [filterAccount, setFilterAccount] = useState("Tous");
+  const [activiteFlux, setActiviteFlux] = useState("Tout");
 
   const [showFilterSheet, setShowFilterSheet] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
   const [optionSheet, setOptionSheet] = useState(null);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const anyOverlayOpen = showFilterSheet || showSettings || showAdd || !!editing || !!optionSheet;
+    const anyOverlayOpen = showFilterSheet || showAdd || !!editing || !!optionSheet;
     document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [showFilterSheet, showSettings, showAdd, editing, optionSheet]);
+  }, [showFilterSheet, showAdd, editing, optionSheet]);
   const [newCatName, setNewCatName] = useState("");
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -286,12 +649,10 @@ export default function Home() {
       setTransactions(txs);
       setCategories(meta.categories);
       setAccounts(meta.accounts);
-      setFilterAccount((prev) => (meta.accounts.includes(prev) ? prev : meta.accounts[0]));
-      setDefaultAccount((prev) => (prev && meta.accounts.includes(prev) ? prev : meta.accounts[0]));
       const core = meta.accounts.filter((a) => CORE_ACCOUNTS.includes(a));
-      setBalanceAccount((prev) => (core.includes(prev) ? prev : (core[0] || meta.accounts[0])));
+      setFilterAccount((prev) => (meta.accounts.includes(prev) || prev === "Tous" ? prev : (core[0] || meta.accounts[0] || "Tous")));
     } catch (e) {
-      if (!silent) setError(e.message);
+      setError(e.message);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -300,13 +661,14 @@ export default function Home() {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
-    let interval;
+    let interval = null;
     function startPolling() {
-      stopPolling();
-      interval = setInterval(() => { loadAll({ silent: true }); }, 10000);
+      if (interval) return;
+      interval = setInterval(() => loadAll({ silent: true }), 10000);
     }
     function stopPolling() {
       if (interval) clearInterval(interval);
+      interval = null;
     }
     function handleVisibility() {
       if (document.visibilityState === "visible") {
@@ -351,9 +713,29 @@ export default function Home() {
   function accountBalance(acc) {
     return transactions.reduce((s, t) => (t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s), 0);
   }
-  const balanceTotal = useMemo(() => accountBalance(balanceAccount), [transactions, balanceAccount]);
-  const flowChartData = useMemo(() => buildFlowChart(transactions.filter((t) => t.compte === balanceAccount), period, latestDate), [transactions, balanceAccount, period, latestDate]);
+  const balanceTotal = useMemo(() => accountBalance(filterAccount), [transactions, filterAccount]);
+  const flowChartData = useMemo(() => buildFlowChart(transactions.filter((t) => t.compte === filterAccount), period, latestDate), [transactions, filterAccount, period, latestDate]);
   const savingsBalance = savingsDetailAccount ? accountBalance(savingsDetailAccount) : 0;
+
+  // Revenus / dépenses de la période sélectionnée, pour le compte actif — additif, mêmes données que summaryAmount mais pour les deux sens à la fois (nécessaire pour les deux StatTile + le delta sous le solde)
+  const revenusPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
+  const depensesPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Dépense" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
+  const netPeriode = revenusPeriode - depensesPeriode;
+
+  // Graphique "Dépenses par mois" du tableau de bord — fixé à 6 mois quel que soit le sélecteur de période du haut, comme dans la maquette
+  const depensesParMoisData = useMemo(() => buildChart(transactions.filter((t) => filterAccount === "Tous" || t.compte === filterAccount), "6 mois", latestDate, "Dépense"), [transactions, filterAccount, latestDate]);
+
+  // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles, pas de plafond inventé)
+  const categorySpend = useMemo(() => {
+    const totals = {};
+    periodFiltered.forEach((t) => {
+      if (t.type !== "Dépense") return;
+      if (filterAccount !== "Tous" && t.compte !== filterAccount) return;
+      totals[t.category] = (totals[t.category] || 0) + t.amount;
+    });
+    const max = Math.max(1, ...Object.values(totals));
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, pct: (amount / max) * 100 }));
+  }, [periodFiltered, filterAccount]);
 
   const pressedTransactions = useMemo(() => {
     if (!pressedBucket) return null;
@@ -387,8 +769,13 @@ export default function Home() {
     });
     return map;
   }
-  const dashboardList = useMemo(() => groupByDate([...fullyFiltered].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, DASHBOARD_LIMIT)), [fullyFiltered]);
-  const allList = useMemo(() => groupByDate(fullyFiltered), [fullyFiltered]);
+  const dashboardList = useMemo(() => [...fullyFiltered].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, DASHBOARD_LIMIT), [fullyFiltered]);
+  const activiteFiltered = useMemo(() => fullyFiltered.filter((t) => {
+    if (activiteFlux === "Sorties") return t.type === "Dépense";
+    if (activiteFlux === "Entrées") return t.type === "Gain";
+    return true;
+  }), [fullyFiltered, activiteFlux]);
+  const allList = useMemo(() => groupByDate(activiteFiltered), [activiteFiltered]);
 
   async function saveTransaction(tx) {
     setSaving(true);
@@ -443,104 +830,146 @@ export default function Home() {
   }
 
   function renderList(groups, emptyText) {
-    if (groups.length === 0) return <div style={{ textAlign: "center", color: theme.muted, padding: "40px 0", fontSize: 14 }}>{emptyText}</div>;
+    if (groups.length === 0) return <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "40px 0", fontSize: 14 }}>{emptyText}</div>;
     return groups.map(([date, txs]) => (
       <div key={date} style={{ marginBottom: 20 }}>
-        <div style={{ color: theme.muted, fontSize: 12, fontWeight: 600, letterSpacing: 0.5, marginBottom: 8 }}>{fmtDateHeader(date)}</div>
-        <div style={{ background: theme.card, borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: 8 }}>{fmtDateHeader(date)}</div>
+        <Card padding="md">
           {txs.map((t, i) => {
             const Icon = CATEGORY_ICON[t.category] || ShoppingBag;
             const positive = t.type === "Gain";
             return (
-              <button key={t.id} onClick={() => setEditing(t)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "transparent", border: "none", borderBottom: i < txs.length - 1 ? `1px solid ${theme.border}` : "none", cursor: "pointer", textAlign: "left" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: theme.card2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon size={17} color={theme.text} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: theme.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
-                  <div style={{ fontSize: 13, color: theme.muted }}>{t.category}</div>
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: positive ? "#32d74b" : "#ff453a", flexShrink: 0 }}>{positive ? "+" : "-"}{fmtEUR(t.amount)}</div>
-              </button>
+              <React.Fragment key={t.id}>
+                {i > 0 ? <Divider /> : null}
+                <ListRow Icon={Icon} title={t.title} subtitle={t.category} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+              </React.Fragment>
             );
           })}
-        </div>
+        </Card>
       </div>
     ));
   }
 
-  if (loading) {
-    return <div style={{ background: theme.bg, minHeight: "100vh", color: theme.muted, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
+  function renderFlatList(list, emptyText) {
+    if (list.length === 0) return <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>{emptyText}</div>;
+    return (
+      <Card padding="md">
+        {list.map((t, i) => {
+          const Icon = CATEGORY_ICON[t.category] || ShoppingBag;
+          const positive = t.type === "Gain";
+          return (
+            <React.Fragment key={t.id}>
+              {i > 0 ? <Divider /> : null}
+              <ListRow Icon={Icon} title={t.title} subtitle={t.category} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+            </React.Fragment>
+          );
+        })}
+      </Card>
+    );
   }
 
+  if (loading) {
+    return <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
+  }
+
+  const moisCourantLabel = MONTHS_FR[new Date().getMonth()].charAt(0).toUpperCase() + MONTHS_FR[new Date().getMonth()].slice(1);
+
   return (
-    <ThemeContext.Provider value={theme}>
-      <div style={{ background: theme.bg, minHeight: "100vh", color: theme.text, fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", paddingBottom: 100, transition: "background 0.2s ease, color 0.2s ease" }}>
-        <div
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "calc(env(safe-area-inset-top, 0px) + 60px)",
-            background: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 35%, transparent 100%)`,
-            pointerEvents: "none",
-            zIndex: 20,
-          }}
-        />
-        <div style={{ maxWidth: 420, margin: "0 auto", padding: "12px 20px 0" }}>
+    <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" }}>
+      <div style={{ maxWidth: 420, margin: "0 auto", padding: "calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter-screen) 0" }}>
 
-          {error && (
-            <div style={{ background: "#3a1a1a", color: "#ff453a", borderRadius: 12, padding: "10px 14px", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {error}
-              <button onClick={() => setError("")} style={{ background: "transparent", border: "none", color: "#ff453a", cursor: "pointer" }}><X size={14} /></button>
+        {error && (
+          <div style={{ background: "var(--surface-danger)", color: "var(--red)", borderRadius: "var(--radius-control)", padding: "10px 14px", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {error}
+            <button onClick={() => setError("")} style={{ background: "transparent", border: "none", color: "var(--red)", cursor: "pointer" }}><X size={14} /></button>
+          </div>
+        )}
+
+        {savingsDetailAccount ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+            <NavBar back title={savingsDetailAccount} onBack={() => setSavingsDetailAccount(null)} />
+            <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE ACTUEL</span>
+              <Amount value={fmtEUR(savingsBalance)} size="xl" />
+            </Card>
+            {renderList(groupByDate(transactions.filter((t) => t.compte === savingsDetailAccount)), "Aucun mouvement pour ce livret.")}
+          </div>
+        ) : activeTab === "apercu" ? (
+          view === "dashboard" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+              <NavBar large title="Aperçu" subtitle={moisCourantLabel} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
+
+              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+                <AccountPill value={filterAccount} accounts={coreAccounts} onChange={setFilterAccount} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
+                  <Amount value={fmtEUR(balanceTotal)} size="balance" />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                  {netPeriode >= 0 ? <ArrowDownLeft size={14} color="var(--green)" /> : <ArrowUpRight size={14} color="var(--red)" />}
+                  <span style={{ font: "500 13px var(--font-core)", color: "var(--text-secondary)" }}>
+                    {netPeriode >= 0 ? "+" : "−"}{fmtEUR(Math.abs(netPeriode))} sur {periodLabel(period, "Gain").replace("Reçu ", "")}
+                  </span>
+                </div>
+              </Card>
+
+              <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <StatTile label="REVENUS" value={fmtEUR(revenusPeriode)} direction="income" Icon={ArrowDownLeft} onClick={() => { setSummaryType("Gain"); setView("flow"); }} />
+                <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
+              </div>
+
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>DÉPENSES PAR MOIS</span>
+                <div style={{ height: 132 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={depensesParMoisData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="name" tick={{ fill: "var(--grey-4)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Bar dataKey="value" fill="var(--red)" radius={[4, 4, 4, 4]} maxBarSize={18} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+
+              {savingsAccounts.length > 0 && (
+                <div>
+                  <span style={{ display: "block", color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: "var(--space-3)" }}>ÉPARGNE</span>
+                  <Card padding="md">
+                    {savingsAccounts.map((acc, i) => (
+                      <React.Fragment key={acc}>
+                        {i > 0 ? <Divider /> : null}
+                        <ListRow Icon={PiggyBank} title={acc} onClick={() => setSavingsDetailAccount(acc)} trailing={<Amount value={fmtEUR(accountBalance(acc))} showSign={false} />} chevron />
+                      </React.Fragment>
+                    ))}
+                  </Card>
+                </div>
+              )}
+
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+                  <span style={{ font: "600 20px var(--font-display)", letterSpacing: "var(--tracking-title)" }}>Récent</span>
+                  <span onClick={() => setActiveTab("activite")} style={{ font: "500 15px var(--font-core)", color: "var(--text-tertiary)", cursor: "pointer" }}>Tout</span>
+                </div>
+                {renderFlatList(dashboardList, "Aucune dépense pour ces filtres.")}
+              </div>
             </div>
-          )}
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+              <NavBar back title={summaryType === "Gain" ? "Revenus" : "Dépenses"} onBack={() => setView("dashboard")} />
+              <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
 
-          {savingsDetailAccount && (
-            <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <IconButton onClick={() => setSavingsDetailAccount(null)}><ArrowLeft size={18} /></IconButton>
-                  <div style={{ fontSize: 17, fontWeight: 600 }}>{savingsDetailAccount}</div>
-                </div>
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 14, color: theme.muted, marginBottom: 4 }}>Solde actuel</div>
-                <div style={{ fontSize: 34, fontWeight: 700 }}>{fmtEUR(savingsBalance)}</div>
-              </div>
-              {renderList(groupByDate(transactions.filter((t) => t.compte === savingsDetailAccount)), "Aucun mouvement pour ce livret.")}
-            </>
-          )}
-
-          {!savingsDetailAccount && view === "dashboard" && (
-            <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: "transparent", paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <AccountToggle value={filterAccount} accounts={accounts} onChange={setFilterAccount} />
-                  <IconGroup>
-                    <IconButton bare onClick={() => setView("balance")}><Wallet size={18} /></IconButton>
-                    <IconButton bare onClick={() => setView("all")}><Search size={18} /></IconButton>
-                    <IconButton bare onClick={() => setShowFilterSheet(true)}><SlidersHorizontal size={18} /></IconButton>
-                    <IconButton bare onClick={() => setShowSettings(true)}><Settings size={18} /></IconButton>
-                  </IconGroup>
-                </div>
-              </div>
-
-              <div style={{ background: theme.card, borderRadius: 20, padding: "20px 20px 8px", position: "relative" }}>
-                <div style={{ position: "absolute", top: 20, right: 20 }}>
-                  <SummaryToggle value={summaryType} onChange={setSummaryType} />
+              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", position: "relative" }}>
+                <div style={{ position: "absolute", top: "var(--space-5)", right: "var(--space-5)" }}>
+                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 140 }} />
                 </div>
                 {pressedBucket ? (
-                  <div style={{ fontSize: 14, color: theme.muted, marginBottom: 4 }}>{fmtBucketLabel(pressedBucket.dateKey, pressedBucket.granularity)}</div>
+                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{fmtBucketLabel(pressedBucket.dateKey, pressedBucket.granularity).toUpperCase()}</span>
                 ) : (
-                  <button onClick={() => setShowFilterSheet(true)} style={{ background: "transparent", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 4, color: theme.muted, fontSize: 14, marginBottom: 4, cursor: "pointer" }}>
-                    {periodLabel(period, summaryType)} <ChevronDown size={13} />
-                  </button>
+                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{periodLabel(period, summaryType).toUpperCase()}</span>
                 )}
-                <div style={{ fontSize: 34, fontWeight: 700, marginBottom: 12 }}>{fmtEUR(pressedBucket ? pressedBucket.value : summaryAmount)}</div>
-                <div style={{ height: 110, touchAction: "none" }}>
+                <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : summaryAmount)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
+                <div style={{ height: 110, touchAction: "none", marginTop: 8 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={chartData}
@@ -551,366 +980,104 @@ export default function Home() {
                       onTouchEnd={handleBarRelease}
                       onMouseLeave={handleBarRelease}
                     >
-                      <XAxis dataKey="name" tick={{ fill: theme.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(chartData.length)} />
-                      <Bar dataKey="value" fill={summaryType === "Gain" ? "#32d74b" : theme.text} radius={[4, 4, 4, 4]} maxBarSize={18} />
+                      <XAxis dataKey="name" tick={{ fill: "var(--grey-4)", fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(chartData.length)} />
+                      <Bar dataKey="value" fill={summaryType === "Gain" ? "var(--green)" : "var(--red)"} radius={[4, 4, 4, 4]} maxBarSize={18} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+              </Card>
 
-              {savingsAccounts.length > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ fontSize: 12, color: theme.muted, fontWeight: 600, letterSpacing: 0.5, marginBottom: 8 }}>LIVRETS</div>
-                  <div style={{ background: theme.card, borderRadius: 16, overflow: "hidden" }}>
-                    {savingsAccounts.map((acc, i) => (
-                      <button key={acc} onClick={() => setSavingsDetailAccount(acc)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "transparent", border: "none", borderBottom: i < savingsAccounts.length - 1 ? `1px solid ${theme.border}` : "none", cursor: "pointer", textAlign: "left" }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: theme.card2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <PiggyBank size={17} color={theme.text} />
-                        </div>
-                        <div style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{acc}</div>
-                        <div style={{ fontSize: 15, fontWeight: 600 }}>{fmtEUR(accountBalance(acc))}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {pressedBucket ? renderList(groupByDate(pressedTransactions || []), "Aucune transaction ce jour-là.") : null}
+            </div>
+          )
+        ) : activeTab === "activite" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+            <NavBar large title="Activité" subtitle={`${activiteFiltered.length} opération${activiteFiltered.length > 1 ? "s" : ""}`} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", borderRadius: "var(--radius-control)", padding: "12px 16px" }}>
+              <Search size={16} color="var(--text-tertiary)" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
+              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
+              <button onClick={() => setShowFilterSheet(true)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><ChevronDown size={16} color="var(--text-tertiary)" /></button>
+            </div>
+            <SegmentedControl options={["Tout", "Sorties", "Entrées"]} value={activiteFlux} onChange={setActiviteFlux} />
+            {renderList(allList, "Aucune transaction ne correspond.")}
+          </div>
+        ) : activeTab === "budgets" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+            <NavBar large title="Budgets" subtitle={periodLabel(period, "Dépense")} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
 
-              <div style={{ marginTop: 24 }}>
-                {pressedBucket ? (
-                  renderList(groupByDate(pressedTransactions || []), "Aucune transaction ce jour-là.")
-                ) : (
-                  renderList(dashboardList, "Aucune dépense pour ces filtres.")
-                )}
-              </div>
-            </>
-          )}
+            <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
+              <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
+              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>Répartition réelle par catégorie — pas de plafond configuré</span>
+            </Card>
 
-          {!savingsDetailAccount && view === "balance" && (
-            <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 16, marginTop: -12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <IconButton onClick={() => setView("dashboard")}><ArrowLeft size={18} /></IconButton>
-                  <div style={{ fontSize: 17, fontWeight: 600 }}>Comptes</div>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-                <AccountToggle value={balanceAccount} accounts={coreAccounts} onChange={setBalanceAccount} />
-              </div>
-
-              <div style={{ background: theme.card, borderRadius: 20, padding: "20px 20px 8px" }}>
-                <button onClick={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} style={{ background: "transparent", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 4, color: theme.muted, fontSize: 14, marginBottom: 4, cursor: "pointer" }}>
-                  Solde {balanceAccount} <ChevronDown size={13} />
-                </button>
-                <div style={{ fontSize: 34, fontWeight: 700, marginBottom: 12 }}>{fmtEUR(balanceTotal)}</div>
-                <div style={{ height: 160 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={flowChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{ fill: theme.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(flowChartData.length)} />
-                      <ReferenceLine y={0} stroke={theme.border2} />
-                      <Bar dataKey="income" stackId="flow" fill="#32d74b" radius={[3, 3, 0, 0]} maxBarSize={16} />
-                      <Bar dataKey="expense" stackId="flow" fill="#ff453a" radius={[0, 0, 3, 3]} maxBarSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
-          )}
-
-          {!savingsDetailAccount && view === "all" && (
-            <>
-              <div style={{ position: "sticky", top: 0, zIndex: 30, background: theme.bg, paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: 20, marginTop: -12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <IconButton onClick={() => { setView("dashboard"); setSearchQuery(""); }}><ArrowLeft size={18} /></IconButton>
-                  <div style={{ fontSize: 17, fontWeight: 600 }}>Toutes les dépenses</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, background: theme.card, borderRadius: 12, padding: "10px 14px" }}>
-                  <Search size={16} color={theme.muted} />
-                  <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre" style={{ flex: 1, background: "transparent", border: "none", color: theme.text, fontSize: 15, outline: "none" }} />
-                  {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color={theme.muted} /></button>}
-                </div>
-              </div>
-              {renderList(allList, "Aucune transaction ne correspond.")}
-            </>
-          )}
-        </div>
-
-        <button onClick={() => setShowAdd(true)} style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", right: 28, width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...glassStyle(theme, { radius: 28 }) }}>
-          <Plus size={26} color={theme.text} />
-        </button>
-
-        {(showAdd || editing) && (
-          <TransactionModal tx={editing} categories={categories} accounts={accounts} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
-        )}
-
-        {showFilterSheet && (
-          <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
-            <SheetRow label="Période" value={period} onClick={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
-            <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categories], value: filterCategory, onSelect: setFilterCategory })} last />
-          </TopSheet>
-        )}
-
-        {showSettings && (
-          <SettingsModal categories={categories} accounts={accounts} onClose={() => setShowSettings(false)} onDeleteCategory={deleteCategory} onAddCategory={addCategory} newCatName={newCatName} setNewCatName={setNewCatName} onAddAccount={addAccount} onDeleteAccount={deleteAccount} newAccName={newAccName} setNewAccName={setNewAccName} themeMode={themeMode} onToggleTheme={toggleThemeMode} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onChangeDefaultPayment={updateDefaultPayment} onChangeDefaultAccount={updateDefaultAccount} openOptions={setOptionSheet} />
-        )}
-
-        {optionSheet && (
-          <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {categorySpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
+              {categorySpend.map(({ category, amount, pct }) => {
+                const Icon = CATEGORY_ICON[category] || ShoppingBag;
+                return (
+                  <Card key={category} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
+                        <Icon size={17} color="var(--icon-primary)" />
+                      </span>
+                      <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{category}</span>
+                      <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
+                    </div>
+                    <ProgressBar value={pct} tone="expense" />
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <ReglagesScreen
+            categories={categories} accounts={accounts}
+            onDeleteCategory={deleteCategory} onAddCategory={addCategory}
+            newCatName={newCatName} setNewCatName={setNewCatName}
+            onAddAccount={addAccount} onDeleteAccount={deleteAccount}
+            newAccName={newAccName} setNewAccName={setNewAccName}
+            themeMode={themeMode} onToggleTheme={toggleThemeMode}
+            defaultPayment={defaultPayment} defaultAccount={defaultAccount}
+            onChangeDefaultPayment={updateDefaultPayment} onChangeDefaultAccount={updateDefaultAccount}
+            openOptions={setOptionSheet}
+          />
         )}
       </div>
-    </ThemeContext.Provider>
-  );
-}
 
-function IconButton({ children, onClick, bare }) {
-  const theme = useTheme();
-  const glass = glassStyle(theme, { radius: 19 });
-  return <button onClick={onClick} style={{ width: 38, height: 38, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", flexShrink: 0, ...(bare ? { borderRadius: 19 } : glass) }}>{children}</button>;
-}
-
-function IconGroup({ children }) {
-  const theme = useTheme();
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: 3, ...glassStyle(theme, { radius: 22 }) }}>
-      {children}
-    </div>
-  );
-}
-
-function AccountToggle({ value, accounts, onChange }) {
-  const theme = useTheme();
-  const pillStyle = { display: "flex", alignItems: "center", gap: 10, padding: "6px 16px 6px 6px", ...glassStyle(theme, { radius: 22 }) };
-  if (!accounts || accounts.length < 2) {
-    return <div style={pillStyle}><span style={{ fontSize: 15, fontWeight: 600, paddingLeft: 8, whiteSpace: "nowrap" }}>{value || "…"}</span></div>;
-  }
-  const [left, right] = accounts;
-  const isRight = value === right;
-  return (
-    <div style={pillStyle}>
       <button
-        onClick={() => onChange(isRight ? left : right)}
-        aria-label="Changer de compte"
-        style={{ width: 52, height: 30, borderRadius: 15, border: "none", cursor: "pointer", background: theme.card2, position: "relative", padding: 0, flexShrink: 0, transition: "background 0.2s ease" }}
+        onClick={() => setShowAdd(true)}
+        aria-label="Ajouter une opération"
+        style={{ position: "fixed", right: 20, bottom: "calc(env(safe-area-inset-bottom, 0px) + 92px)", width: 56, height: 56, borderRadius: "var(--radius-round)", border: "none", background: "var(--accent-bg)", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 35 }}
       >
-        <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isRight ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
+        <Plus size={26} color="var(--accent-text)" />
       </button>
-      <span style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{isRight ? right : left}</span>
+
+      <TabBar
+        value={activeTab}
+        onChange={(v) => { setActiveTab(v); setView("dashboard"); setSavingsDetailAccount(null); }}
+        items={[
+          { value: "apercu", label: "Aperçu", Icon: HomeIcon },
+          { value: "activite", label: "Activité", Icon: List },
+          { value: "budgets", label: "Budgets", Icon: PieChartIcon },
+          { value: "reglages", label: "Réglages", Icon: Settings },
+        ]}
+      />
+
+      {(showAdd || editing) && (
+        <TransactionModal tx={editing} categories={categories} accounts={accounts} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
+      )}
+
+      {showFilterSheet && (
+        <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
+          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categories], value: filterCategory, onSelect: setFilterCategory })} last />
+        </TopSheet>
+      )}
+
+      {optionSheet && (
+        <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
+      )}
     </div>
-  );
-}
-
-function SummaryToggle({ value, onChange }) {
-  const theme = useTheme();
-  const isGain = value === "Gain";
-  return (
-    <button
-      onClick={() => onChange(isGain ? "Dépense" : "Gain")}
-      aria-label="Basculer entre dépenses et revenus"
-      title={isGain ? "Revenus" : "Dépenses"}
-      style={{ width: 52, height: 30, position: "relative", padding: 0, flexShrink: 0, cursor: "pointer", ...glassStyle(theme, { radius: 15 }) }}
-    >
-      <div style={{ width: 24, height: 24, borderRadius: 12, background: "#ffffff", position: "absolute", top: 3, left: isGain ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
-    </button>
-  );
-}
-
-function TopSheet({ title, onClose, children }) {
-  const theme = useTheme();
-  return (
-    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
-      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div className="topsheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 20, maxHeight: "75vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.45)" }}>
-          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: `1px solid ${theme.border}` }}>{title}</div>
-          <div style={{ padding: "6px 20px 20px" }}>{children}</div>
-        </div>
-        <style jsx>{`
-          @keyframes topSheetIn {
-            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-          }
-          .topsheet-panel {
-            animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-            transform-origin: top right;
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
-
-function Sheet({ title, onClose, children }) {
-  const theme = useTheme();
-  return (
-    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }} onClick={onClose}>
-      <div style={{ position: "relative", width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: theme.card2, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${theme.glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: theme.text, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.3)", zIndex: 2 }}>
-          <X size={18} />
-        </button>
-        <div className="sheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", borderTop: `1px solid ${theme.glassBorder}`, borderRadius: "20px 20px 0 0", maxHeight: "85vh", overflowY: "auto", paddingBottom: 24 }}>
-          <div style={{ width: 36, height: 5, borderRadius: 3, background: theme.border2, margin: "10px auto 4px" }} />
-          <div style={{ textAlign: "center", padding: "10px 20px 16px", fontSize: 17, fontWeight: 600 }}>{title}</div>
-          <div style={{ padding: "0 20px" }}>{children}</div>
-        </div>
-        <style jsx>{`
-          @keyframes sheetIn {
-            from { opacity: 0; transform: scale(0.85) translateY(12px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-          }
-          .sheet-panel {
-            animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-            transform-origin: top right;
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
-
-function SheetRow({ label, value, onClick, last }) {
-  const theme = useTheme();
-  return (
-    <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", background: "transparent", border: "none", borderBottom: last ? "none" : `1px solid ${theme.border}`, cursor: "pointer", textAlign: "left" }}>
-      <span style={{ fontSize: 15, color: theme.text }}>{label}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: 6, color: theme.muted, fontSize: 15 }}>{value} <ChevronRight size={16} /></span>
-    </button>
-  );
-}
-
-function OptionSheet({ title, options, value, onSelect, onClose }) {
-  const theme = useTheme();
-  return (
-    <div style={{ position: "fixed", inset: 0, background: theme.overlay, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
-      <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div className="topsheet-panel" style={{ background: theme.sheetBg, backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)", border: `1px solid ${theme.glassBorder}`, borderRadius: 20, maxHeight: "65vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.45)" }}>
-          <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: `1px solid ${theme.border}` }}>{title}</div>
-          <div style={{ padding: "6px 20px 20px" }}>
-            {options.map((o, i) => (
-              <button key={o} onClick={() => onSelect(o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", background: "transparent", border: "none", borderBottom: i < options.length - 1 ? `1px solid ${theme.border}` : "none", cursor: "pointer", textAlign: "left" }}>
-                <span style={{ fontSize: 15, color: theme.text }}>{o}</span>
-                {o === value && <Check size={18} color="#32d74b" />}
-              </button>
-            ))}
-          </div>
-        </div>
-        <style jsx>{`
-          @keyframes topSheetIn {
-            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-          }
-          .topsheet-panel {
-            animation: topSheetIn 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-            transform-origin: top right;
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  const theme = useTheme();
-  return <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: theme.muted, marginBottom: 6 }}>{label}</div>{children}</div>;
-}
-
-function TransactionModal({ tx, categories, accounts, onClose, onSave, onDelete, openOptions, saving, defaultPayment, defaultAccount }) {
-  const theme = useTheme();
-  const inputStyle = { width: "100%", background: theme.card2, border: "none", borderRadius: 10, padding: "12px 14px", color: theme.text, fontSize: 15, boxSizing: "border-box" };
-  const pickerStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.card2, border: "none", borderRadius: 10, padding: "12px 14px", color: theme.text, fontSize: 15, cursor: "pointer", boxSizing: "border-box" };
-  const [title, setTitle] = useState(tx?.title || "");
-  const [amount, setAmount] = useState(tx?.amount != null ? String(tx.amount) : "");
-  const [category, setCategory] = useState(tx?.category || categories[0] || "");
-  const [compte, setCompte] = useState(tx?.compte || defaultAccount || accounts[0] || "");
-  const [type, setType] = useState(tx?.type || "Dépense");
-  const [payment, setPayment] = useState(tx?.payment || defaultPayment || "Carte bancaire");
-  const [date, setDate] = useState(tx?.date || toLocalISODate(new Date()));
-  const [error, setError] = useState("");
-
-  function handleSave() {
-    const amt = parseFloat(String(amount).replace(",", "."));
-    if (!title.trim()) { setError("Indique un titre."); return; }
-    if (!amt || amt <= 0) { setError("Indique un montant valide."); return; }
-    onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, type, payment, date });
-  }
-
-  return (
-    <Sheet title={tx ? "Modifier" : "Nouvelle transaction"} onClose={onClose}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {["Dépense", "Gain"].map((t) => (
-          <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: type === t ? (t === "Gain" ? "#32d74b" : "#ff453a") : theme.card2, color: "#fff" }}>{t}</button>
-        ))}
-      </div>
-      <Field label="Titre"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex. J'ai acheté une bougie" /></Field>
-      <Field label="Montant (€)"><input style={inputStyle} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" /></Field>
-      <Field label="Catégorie"><button style={pickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categories, value: category, onSelect: setCategory })}>{category}<ChevronDown size={16} color={theme.muted} /></button></Field>
-      <Field label="Compte"><button style={pickerStyle} onClick={() => openOptions({ title: "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color={theme.muted} /></button></Field>
-      <Field label="Moyen de paiement"><button style={pickerStyle} onClick={() => openOptions({ title: "Moyen de paiement", options: DEFAULT_PAYMENTS, value: payment, onSelect: setPayment })}>{payment}<ChevronDown size={16} color={theme.muted} /></button></Field>
-      <Field label="Date"><input type="date" style={inputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-      {error && <div style={{ color: "#ff453a", fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-        {onDelete && <button onClick={onDelete} disabled={saving} style={{ width: 48, height: 48, borderRadius: 10, background: theme.card2, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={18} color="#ff453a" /></button>}
-        <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: theme.accentBg, color: theme.accentText, border: "none", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "Enregistrement…" : "Confirmer"}</button>
-      </div>
-    </Sheet>
-  );
-}
-
-function SettingsModal({ categories, accounts, onClose, onDeleteCategory, onAddCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions }) {
-  const theme = useTheme();
-  const inputStyle = { width: "100%", background: theme.card2, border: "none", borderRadius: 10, padding: "12px 14px", color: theme.text, fontSize: 15, boxSizing: "border-box" };
-  const pickerStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.card2, border: "none", borderRadius: 10, padding: "12px 14px", color: theme.text, fontSize: 15, cursor: "pointer", boxSizing: "border-box" };
-  const isLight = themeMode === "light";
-  return (
-    <TopSheet title="Réglages" onClose={onClose}>
-      <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, fontWeight: 600 }}>APPARENCE</div>
-      <div style={{ background: theme.card2, borderRadius: 12, marginBottom: 24, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
-        <button onClick={onToggleTheme} aria-label="Basculer le thème" style={{ width: 52, height: 30, borderRadius: 15, border: "none", cursor: "pointer", background: theme.border2, position: "relative", padding: 0, flexShrink: 0 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 12, background: "#fff", position: "absolute", top: 3, left: isLight ? 25 : 3, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
-        </button>
-      </div>
-
-      <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, fontWeight: 600 }}>VALEURS PAR DÉFAUT DU RACCOURCI</div>
-      <div style={{ fontSize: 12, color: theme.muted, marginBottom: 10 }}>Utilisées à chaque nouvelle dépense, modifiables au cas par cas.</div>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 12, color: theme.muted, marginBottom: 6 }}>Moyen de paiement</div>
-        <button style={pickerStyle} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })}>
-          {defaultPayment}<ChevronDown size={16} color={theme.muted} />
-        </button>
-      </div>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, color: theme.muted, marginBottom: 6 }}>Compte</div>
-        <button style={pickerStyle} onClick={() => openOptions({ title: "Compte par défaut", options: accounts, value: defaultAccount, onSelect: onChangeDefaultAccount })}>
-          {defaultAccount}<ChevronDown size={16} color={theme.muted} />
-        </button>
-      </div>
-
-      <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, fontWeight: 600 }}>CATÉGORIES</div>
-      <div style={{ background: theme.card2, borderRadius: 12, marginBottom: 12, overflow: "hidden" }}>
-        {categories.map((c, i) => (
-          <div key={c} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: i < categories.length - 1 ? `1px solid ${theme.border2}` : "none" }}>
-            <span style={{ fontSize: 14 }}>{c}</span>
-            <button onClick={() => onDeleteCategory(c)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="#ff453a" /></button>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <input style={inputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
-        <button onClick={onAddCategory} style={{ background: theme.accentBg, color: theme.accentText, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 600, cursor: "pointer" }}>Ajouter</button>
-      </div>
-
-      <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, fontWeight: 600 }}>COMPTES</div>
-      <div style={{ background: theme.card2, borderRadius: 12, marginBottom: 12, overflow: "hidden" }}>
-        {accounts.map((a, i) => (
-          <div key={a} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: i < accounts.length - 1 ? `1px solid ${theme.border2}` : "none" }}>
-            <span style={{ fontSize: 14 }}>{a}</span>
-            <button onClick={() => onDeleteAccount(a)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="#ff453a" /></button>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input style={inputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
-        <button onClick={onAddAccount} style={{ background: theme.accentBg, color: theme.accentText, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 600, cursor: "pointer" }}>Ajouter</button>
-      </div>
-    </TopSheet>
   );
 }
