@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, ReferenceLine } from "recharts";
 import {
   Search, Settings, Plus, X, ShoppingBag, UtensilsCrossed, Plane, RefreshCw, Gamepad2,
   Stethoscope, Fuel, ChevronDown, ChevronRight, Trash2, ArrowLeft, Check, Sun, Moon,
-  PiggyBank, Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
+  PiggyBank, Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, Pencil,
 } from "lucide-react";
 
 const CATEGORY_ICON = {
@@ -97,7 +97,11 @@ function tickInterval(length) {
   if (length <= 45) return 1;
   return Math.ceil(length / 20);
 }
-const CORE_ACCOUNTS = ["Compte courant", "Compte pro"];
+// Noms historiquement en dur pour distinguer "comptes principaux" et "livrets d'épargne".
+// Utilisée une seule fois, à la première ouverture après cette mise à jour, pour retrouver
+// les identifiants Notion correspondants (voir coreAccountIds) — après quoi la classification
+// suit ces identifiants et reste donc correcte même si l'un de ces comptes est renommé.
+const LEGACY_CORE_NAMES = ["Compte courant", "Compte pro"];
 function buildFlowChart(transactions, period, latestDate) {
   if (!latestDate) return [];
   const latest = parseDate(latestDate);
@@ -247,8 +251,47 @@ function ListRow({ Icon, title, subtitle, trailing, chevron = false, onClick, st
   );
 }
 
-function NavBar({ title, subtitle, back = false, onBack, action, large = false, style }) {
+function EditableRow({ name, onRename, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(name);
+  useEffect(() => { if (!editing) setValue(name); }, [name, editing]);
+
+  function commit() {
+    const v = value.trim();
+    setEditing(false);
+    if (v && v !== name) onRename(v); else setValue(name);
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--space-2) 0" }}>
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setValue(name); setEditing(false); } }}
+          onBlur={commit}
+          style={{ flex: 1, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-sm)", padding: "10px 12px", color: "var(--text-primary)", fontSize: 15, fontFamily: "var(--font-core)" }}
+        />
+        <button onMouseDown={(e) => e.preventDefault()} onClick={commit} style={{ background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}><Check size={18} color="var(--green)" /></button>
+      </div>
+    );
+  }
   return (
+    <ListRow
+      title={name}
+      onClick={() => setEditing(true)}
+      trailing={
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button onClick={(e) => { e.stopPropagation(); setEditing(true); }} style={{ background: "transparent", border: "none", cursor: "pointer" }} aria-label="Renommer"><Pencil size={15} color="var(--text-tertiary)" /></button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{ background: "transparent", border: "none", cursor: "pointer" }} aria-label="Supprimer"><Trash2 size={16} color="var(--red)" /></button>
+        </div>
+      }
+    />
+  );
+}
+
+function NavBar({ title, subtitle, back = false, onBack, action, large = false, style }) {  return (
     <header style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
       {back ? (
         <button onClick={onBack} aria-label="Retour" style={{ width: 36, height: 36, border: "none", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -487,7 +530,7 @@ function TransactionModal({ tx, categories, accounts, onClose, onSave, onDelete,
 
 /* ============ Onglet Réglages (mêmes réglages qu'avant, restylés) ============ */
 
-function ReglagesScreen({ categories, accounts, onDeleteCategory, onAddCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions }) {
+function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions }) {
   const isLight = themeMode === "light";
   const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
   return (
@@ -508,17 +551,18 @@ function ReglagesScreen({ categories, accounts, onDeleteCategory, onAddCategory,
         <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <ListRow title="Moyen de paiement" subtitle={null} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultPayment}<ChevronRight size={16} /></span>} />
           <Divider inset={0} />
-          <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accounts, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
+          <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accountNames, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
         </Card>
       </div>
 
       <div>
         <span style={label}>CATÉGORIES</span>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une catégorie ou l'icône crayon pour la renommer.</div>
         <Card padding="md" style={{ marginBottom: 12 }}>
           {categories.map((c, i) => (
-            <React.Fragment key={c}>
+            <React.Fragment key={c.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow title={c} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteCategory(c); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+              <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} />
             </React.Fragment>
           ))}
         </Card>
@@ -531,10 +575,10 @@ function ReglagesScreen({ categories, accounts, onDeleteCategory, onAddCategory,
       <div>
         <span style={label}>COMPTES</span>
         <Card padding="md" style={{ marginBottom: 12 }}>
-          {accounts.filter((a) => CORE_ACCOUNTS.includes(a)).map((a, i, arr) => (
-            <React.Fragment key={a}>
+          {coreAccounts.map((a, i) => (
+            <React.Fragment key={a.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow title={a} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteAccount(a); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+              <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
             </React.Fragment>
           ))}
         </Card>
@@ -548,13 +592,13 @@ function ReglagesScreen({ categories, accounts, onDeleteCategory, onAddCategory,
         <span style={label}>ÉPARGNE</span>
         <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Livrets et comptes d'épargne, affichés à part sur le tableau de bord.</div>
         <Card padding="md" style={{ marginBottom: 12 }}>
-          {accounts.filter((a) => !CORE_ACCOUNTS.includes(a)).length === 0 && (
+          {savingsAccounts.length === 0 && (
             <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucun livret pour l'instant.</div>
           )}
-          {accounts.filter((a) => !CORE_ACCOUNTS.includes(a)).map((a, i, arr) => (
-            <React.Fragment key={a}>
+          {savingsAccounts.map((a, i) => (
+            <React.Fragment key={a.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow title={a} trailing={<button onClick={(e) => { e.stopPropagation(); onDeleteAccount(a); }} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>} />
+              <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
             </React.Fragment>
           ))}
         </Card>
@@ -610,10 +654,30 @@ export default function Home() {
   }
 
   const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [accounts, setAccounts] = useState([]);
+  const [categories, setCategories] = useState([]); // [{ id, name }]
+  const [accounts, setAccounts] = useState([]); // [{ id, name }]
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Distingue "comptes principaux" (Courant/Pro) et "livrets d'épargne" par identifiant Notion
+  // plutôt que par nom, pour que renommer un compte ne le fasse pas changer de catégorie.
+  const [coreAccountIds, setCoreAccountIds] = useState([]);
+  const coreAccountIdsRef = useRef([]);
+  useEffect(() => { coreAccountIdsRef.current = coreAccountIds; }, [coreAccountIds]);
+  useEffect(() => {
+    if (typeof window === "undefined" || accounts.length === 0) return;
+    let ids = [];
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("expenses-core-account-ids") || "[]");
+      if (Array.isArray(saved)) ids = saved.filter((id) => accounts.some((a) => a.id === id));
+    } catch {}
+    if (ids.length === 0) {
+      ids = accounts.filter((a) => LEGACY_CORE_NAMES.includes(a.name)).map((a) => a.id);
+      if (ids.length === 0) ids = accounts.slice(0, 2).map((a) => a.id); // filet de sécurité si les noms ont déjà divergé
+    }
+    window.localStorage.setItem("expenses-core-account-ids", JSON.stringify(ids));
+    setCoreAccountIds(ids);
+  }, [accounts]);
 
   const [activeTab, setActiveTab] = useState("apercu");
   const [view, setView] = useState("dashboard");
@@ -649,8 +713,9 @@ export default function Home() {
       setTransactions(txs);
       setCategories(meta.categories);
       setAccounts(meta.accounts);
-      const core = meta.accounts.filter((a) => CORE_ACCOUNTS.includes(a));
-      setFilterAccount((prev) => (meta.accounts.includes(prev) || prev === "Tous" ? prev : (core[0] || meta.accounts[0] || "Tous")));
+      const coreIds = coreAccountIdsRef.current;
+      const core = meta.accounts.filter((a) => coreIds.includes(a.id));
+      setFilterAccount((prev) => (meta.accounts.some((a) => a.name === prev) || prev === "Tous" ? prev : (core[0]?.name || meta.accounts[0]?.name || "Tous")));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -708,8 +773,11 @@ export default function Home() {
 
   const chartData = useMemo(() => buildChart(transactions.filter((t) => (filterCategory === "Toutes" || t.category === filterCategory) && (filterAccount === "Tous" || t.compte === filterAccount)), period, latestDate, summaryType), [transactions, period, latestDate, filterCategory, filterAccount, summaryType]);
 
-  const coreAccounts = useMemo(() => accounts.filter((a) => CORE_ACCOUNTS.includes(a)), [accounts]);
-  const savingsAccounts = useMemo(() => accounts.filter((a) => !CORE_ACCOUNTS.includes(a)), [accounts]);
+  const coreAccounts = useMemo(() => accounts.filter((a) => coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
+  const savingsAccounts = useMemo(() => accounts.filter((a) => !coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
+  const coreAccountNames = useMemo(() => coreAccounts.map((a) => a.name), [coreAccounts]);
+  const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
+  const accountNames = useMemo(() => accounts.map((a) => a.name), [accounts]);
   function accountBalance(acc) {
     return transactions.reduce((s, t) => (t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s), 0);
   }
@@ -721,9 +789,6 @@ export default function Home() {
   const revenusPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
   const depensesPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Dépense" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
   const netPeriode = revenusPeriode - depensesPeriode;
-
-  // Graphique "Dépenses par mois" du tableau de bord — fixé à 6 mois quel que soit le sélecteur de période du haut, comme dans la maquette
-  const depensesParMoisData = useMemo(() => buildChart(transactions.filter((t) => filterAccount === "Tous" || t.compte === filterAccount), "6 mois", latestDate, "Dépense"), [transactions, filterAccount, latestDate]);
 
   // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles, pas de plafond inventé)
   const categorySpend = useMemo(() => {
@@ -799,34 +864,55 @@ export default function Home() {
       setEditing(null);
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   }
-  async function saveOptions(property, names) {
-    await api("/api/meta", { method: "PATCH", body: { property, options: names } });
+  async function saveOptions(property, options) {
+    await api("/api/meta", { method: "PATCH", body: { property, options } });
   }
-  async function deleteCategory(cat) {
-    const next = categories.filter((c) => c !== cat);
+  async function deleteCategory(id) {
+    const next = categories.filter((c) => c.id !== id);
+    setCategories(next);
+    try { await saveOptions("Category", next); } catch (e) { setError(e.message); }
+  }
+  async function renameCategory(id, newName) {
+    const next = categories.map((c) => (c.id === id ? { id: c.id, name: newName } : c));
     setCategories(next);
     try { await saveOptions("Category", next); } catch (e) { setError(e.message); }
   }
   async function addCategory() {
     const name = newCatName.trim();
-    if (!name || categories.includes(name)) return;
-    const next = [...categories, name];
+    if (!name || categories.some((c) => c.name === name)) return;
+    const next = [...categories, { name }];
     setCategories(next);
     setNewCatName("");
-    try { await saveOptions("Category", next); } catch (e) { setError(e.message); }
+    try {
+      await saveOptions("Category", next);
+      await loadAll({ silent: true }); // récupère l'id Notion assigné à la nouvelle catégorie
+    } catch (e) { setError(e.message); }
   }
-  async function deleteAccount(name) {
-    const next = accounts.filter((a) => a !== name);
+  async function deleteAccount(id) {
+    const next = accounts.filter((a) => a.id !== id);
     setAccounts(next);
     try { await saveOptions("Compte", next); } catch (e) { setError(e.message); }
+  }
+  async function renameAccount(id, newName) {
+    const old = accounts.find((a) => a.id === id);
+    const next = accounts.map((a) => (a.id === id ? { id: a.id, name: newName } : a));
+    setAccounts(next);
+    try {
+      await saveOptions("Compte", next);
+      // Le compte par défaut du raccourci iOS est mémorisé par nom : on le garde synchronisé.
+      if (old && defaultAccount === old.name) updateDefaultAccount(newName);
+    } catch (e) { setError(e.message); }
   }
   async function addAccount() {
     const name = newAccName.trim();
-    if (!name || accounts.includes(name)) return;
-    const next = [...accounts, name];
+    if (!name || accounts.some((a) => a.name === name)) return;
+    const next = [...accounts, { name }];
     setAccounts(next);
     setNewAccName("");
-    try { await saveOptions("Compte", next); } catch (e) { setError(e.message); }
+    try {
+      await saveOptions("Compte", next);
+      await loadAll({ silent: true }); // récupère l'id Notion assigné au nouveau compte
+    } catch (e) { setError(e.message); }
   }
 
   function renderList(groups, emptyText) {
@@ -900,7 +986,7 @@ export default function Home() {
               <NavBar large title="Aperçu" subtitle={moisCourantLabel} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                <AccountPill value={filterAccount} accounts={coreAccounts} onChange={setFilterAccount} />
+                <AccountPill value={filterAccount} accounts={coreAccountNames} onChange={setFilterAccount} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
                   <Amount value={fmtEUR(balanceTotal)} size="balance" />
@@ -920,26 +1006,14 @@ export default function Home() {
                 <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
 
-              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>DÉPENSES PAR MOIS</span>
-                <div style={{ height: 132 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={depensesParMoisData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{ fill: "var(--grey-4)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Bar dataKey="value" fill="var(--red)" radius={[4, 4, 4, 4]} maxBarSize={18} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
               {savingsAccounts.length > 0 && (
                 <div>
                   <span style={{ display: "block", color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: "var(--space-3)" }}>ÉPARGNE</span>
                   <Card padding="md">
                     {savingsAccounts.map((acc, i) => (
-                      <React.Fragment key={acc}>
+                      <React.Fragment key={acc.id}>
                         {i > 0 ? <Divider /> : null}
-                        <ListRow Icon={PiggyBank} title={acc} onClick={() => setSavingsDetailAccount(acc)} trailing={<Amount value={fmtEUR(accountBalance(acc))} showSign={false} />} chevron />
+                        <ListRow Icon={PiggyBank} title={acc.name} onClick={() => setSavingsDetailAccount(acc.name)} trailing={<Amount value={fmtEUR(accountBalance(acc.name))} showSign={false} />} chevron />
                       </React.Fragment>
                     ))}
                   </Card>
@@ -1033,10 +1107,10 @@ export default function Home() {
           </div>
         ) : (
           <ReglagesScreen
-            categories={categories} accounts={accounts}
-            onDeleteCategory={deleteCategory} onAddCategory={addCategory}
+            categories={categories} coreAccounts={coreAccounts} savingsAccounts={savingsAccounts} accountNames={accountNames}
+            onDeleteCategory={deleteCategory} onAddCategory={addCategory} onRenameCategory={renameCategory}
             newCatName={newCatName} setNewCatName={setNewCatName}
-            onAddAccount={addAccount} onDeleteAccount={deleteAccount}
+            onAddAccount={addAccount} onDeleteAccount={deleteAccount} onRenameAccount={renameAccount}
             newAccName={newAccName} setNewAccName={setNewAccName}
             themeMode={themeMode} onToggleTheme={toggleThemeMode}
             defaultPayment={defaultPayment} defaultAccount={defaultAccount}
@@ -1066,12 +1140,12 @@ export default function Home() {
       />
 
       {(showAdd || editing) && (
-        <TransactionModal tx={editing} categories={categories} accounts={accounts} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
+        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
       )}
 
       {showFilterSheet && (
         <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
-          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categories], value: filterCategory, onSelect: setFilterCategory })} last />
+          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })} last />
         </TopSheet>
       )}
 
