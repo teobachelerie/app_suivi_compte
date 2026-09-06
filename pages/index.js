@@ -373,27 +373,28 @@ function ProgressBar({ value = 0, tone = "neutral", height = 8 }) {
   );
 }
 
-function AccountPill({ value, accounts, onChange }) {
-  if (!accounts || accounts.length < 2) {
+function AccountPill({ value, options, onChange }) {
+  if (!options || options.length < 2) {
     return (
       <div style={{ display: "flex", height: 52, alignItems: "center", padding: "0 var(--space-5)", borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
-        <span style={{ fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: "var(--weight-semibold)" }}>{value || "…"}</span>
+        <span style={{ fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: "var(--weight-semibold)" }}>{options?.[0]?.label || "…"}</span>
       </div>
     );
   }
-  const index = Math.max(0, accounts.indexOf(value));
-  const pas = 100 / accounts.length;
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const pas = 100 / options.length;
   return (
     <div style={{ position: "relative", display: "flex", height: 52, padding: 4, borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
       <span style={{ position: "absolute", top: 4, bottom: 4, left: `calc(${pas * index}% + 4px)`, width: `calc(${pas}% - 8px)`, borderRadius: "var(--radius-round)", background: "var(--surface-highlight)", boxShadow: "var(--elev-raised-sm)", transition: "left var(--duration-base) var(--ease-standard)" }} />
-      {accounts.map((a) => (
-        <button key={a} type="button" onClick={() => onChange(a)} style={{ position: "relative", flex: 1, minWidth: 0, border: "none", background: "transparent", color: a === value ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: a === value ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {a.replace("Compte ", "")}
+      {options.map((o) => (
+        <button key={o.value} type="button" onClick={() => onChange(o.value)} style={{ position: "relative", flex: 1, minWidth: 0, border: "none", background: "transparent", color: o.value === value ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: o.value === value ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {o.label}
         </button>
       ))}
     </div>
   );
 }
+
 
 function PeriodChips({ value, onChange, onOpenMore }) {
   const chips = [
@@ -775,14 +776,13 @@ export default function Home() {
 
   const coreAccounts = useMemo(() => accounts.filter((a) => coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
   const savingsAccounts = useMemo(() => accounts.filter((a) => !coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
-  const coreAccountNames = useMemo(() => coreAccounts.map((a) => a.name), [coreAccounts]);
   const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
   const accountNames = useMemo(() => accounts.map((a) => a.name), [accounts]);
   function accountBalance(acc) {
+    if (acc === "Tous") return transactions.reduce((s, t) => s + (t.type === "Gain" ? t.amount : -t.amount), 0);
     return transactions.reduce((s, t) => (t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s), 0);
   }
   const balanceTotal = useMemo(() => accountBalance(filterAccount), [transactions, filterAccount]);
-  const flowChartData = useMemo(() => buildFlowChart(transactions.filter((t) => t.compte === filterAccount), period, latestDate), [transactions, filterAccount, period, latestDate]);
   const savingsBalance = savingsDetailAccount ? accountBalance(savingsDetailAccount) : 0;
 
   // Revenus / dépenses de la période sélectionnée, pour le compte actif — additif, mêmes données que summaryAmount mais pour les deux sens à la fois (nécessaire pour les deux StatTile + le delta sous le solde)
@@ -986,7 +986,14 @@ export default function Home() {
               <NavBar large title="Aperçu" subtitle={moisCourantLabel} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                <AccountPill value={filterAccount} accounts={coreAccountNames} onChange={setFilterAccount} />
+                <AccountPill
+                  value={filterAccount}
+                  options={[
+                    ...coreAccounts.map((a) => ({ value: a.name, label: a.name.replace("Compte ", "") })),
+                    { value: "Tous", label: "Patrimoine" },
+                  ]}
+                  onChange={setFilterAccount}
+                />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
                   <Amount value={fmtEUR(balanceTotal)} size="balance" />
