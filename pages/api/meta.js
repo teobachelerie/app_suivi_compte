@@ -1,4 +1,4 @@
-import { getSchema, updateSelectOptions } from "../../lib/notion";
+import { getSchema, updateSelectOptions } from "../../lib/supabase";
 
 export default async function handler(req, res) {
   try {
