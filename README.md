@@ -72,20 +72,19 @@ git push -u origin main
 - `supabase/migration-004-onboarding-seed.sql` — trigger Postgres : crée automatiquement "Compte courant" + les 7 catégories de départ à l'inscription
 - `components/Onboarding.jsx` — tutoriel affiché une fois à la première connexion (mémorisé en local, par utilisateur)
 
+## Abonnements récurrents
+
+Une carte en haut de l'onglet Budgets ouvre la gestion des abonnements (Netflix, salle de sport…) : montant, catégorie, compte, moyen de paiement, jour du mois de prélèvement (1 à 28).
+
+Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche planifiée Vercel (`vercel.json` → `crons`) appelle `/api/cron/subscriptions`, qui crée automatiquement une transaction pour chaque abonnement actif dont c'est le jour de prélèvement. Un abonnement désactivé (bascule dans son écran) n'en génère plus, sans supprimer l'historique déjà créé.
+
+**Variable d'environnement supplémentaire à ajouter sur Vercel** : `CRON_SECRET` — une chaîne aléatoire de ton choix (ex. générée avec `openssl rand -hex 32` dans un terminal), qui empêche n'importe qui de déclencher la génération de transactions à la main en devinant l'URL.
+
+⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
+
 ## Raccourcis iOS
 
-L'ancien fonctionnement (POST direct sans authentification) ne marche plus depuis l'ajout des comptes — chaque personne doit générer sa propre clé.
-
-1. Dans l'app → Réglages → "Raccourcis iOS" → donne un nom (ex. "iPhone"), clique "Créer"
-2. Copie la clé affichée **immédiatement** (`eak_...`) — elle ne sera plus jamais visible ensuite. Si tu la perds, révoque-la et recrée-en une autre.
-3. Dans l'app Raccourcis, sur l'action "Obtenir le contenu de l'URL" qui appelle `/api/transactions` :
-   - Méthode : `POST`
-   - En-têtes : ajoute `X-Api-Key` avec la clé copiée (en plus de `Content-Type: application/json` qui devrait déjà y être)
-   - Corps JSON inchangé : `title`, `amount`, `category`, `compte`, `type`, `payment`, `date`
-
-## Raccourcis iOS
-
-Réglages → "Raccourcis iOS" propose désormais deux boutons d'installation directe (liens de partage iCloud, ouvrent l'app Raccourcis en un tap) — plus besoin d'envoyer un lien manuellement à chaque nouvelle personne.
+Réglages → "Raccourcis iOS" propose deux boutons d'installation directe (liens de partage iCloud, ouvrent l'app Raccourcis en un tap) — plus besoin d'envoyer un lien manuellement à chaque nouvelle personne.
 
 1. La personne touche "Installer Ajouter une dépense" / "Ajouter un revenu" dans l'app → Raccourcis s'ouvre → "Ajouter le raccourci"
 2. Elle génère sa clé plus bas dans le même écran, la copie

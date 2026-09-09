@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis } from "recharts";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, PiggyBank,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 
@@ -17,6 +17,7 @@ import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../compone
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { ReglagesScreen } from "../components/ReglagesScreen";
+import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
 import { Onboarding } from "../components/Onboarding";
 
@@ -144,15 +145,20 @@ function ExpensesApp({ session }) {
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [showSubscriptions, setShowSubscriptions] = useState(false);
+  const [savingSub, setSavingSub] = useState(false);
+
   const loadAll = useCallback(async (opts) => {
     const silent = opts && opts.silent;
     if (!silent) setLoading(true);
     if (!silent) setError("");
     try {
-      const [txs, meta] = await Promise.all([api("/api/transactions"), api("/api/meta")]);
+      const [txs, meta, subs] = await Promise.all([api("/api/transactions"), api("/api/meta"), api("/api/subscriptions")]);
       setTransactions(txs);
       setCategories(meta.categories);
       setAccounts(meta.accounts);
+      setSubscriptions(subs);
       const coreIds = coreAccountIdsRef.current;
       const core = meta.accounts.filter((a) => coreIds.includes(a.id));
       setFilterAccount((prev) => (meta.accounts.some((a) => a.name === prev) || prev === "Tous" ? prev : (core[0]?.name || meta.accounts[0]?.name || "Tous")));
@@ -303,6 +309,29 @@ function ExpensesApp({ session }) {
       setEditing(null);
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   }
+
+  async function createSubscription(s) {
+    setSavingSub(true);
+    try {
+      const created = await api("/api/subscriptions", { method: "POST", body: s });
+      setSubscriptions((prev) => [...prev, created].sort((a, b) => a.billingDay - b.billingDay));
+    } catch (e) { setError(e.message); } finally { setSavingSub(false); }
+  }
+  async function updateSubscriptionHandler(id, patch) {
+    setSavingSub(true);
+    try {
+      const updated = await api(`/api/subscriptions/${id}`, { method: "PATCH", body: patch });
+      setSubscriptions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    } catch (e) { setError(e.message); } finally { setSavingSub(false); }
+  }
+  async function deleteSubscriptionHandler(id) {
+    setSavingSub(true);
+    try {
+      await api(`/api/subscriptions/${id}`, { method: "DELETE" });
+      setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+    } catch (e) { setError(e.message); } finally { setSavingSub(false); }
+  }
+
   async function saveOptions(property, options) {
     await api("/api/meta", { method: "PATCH", body: { property, options } });
   }
@@ -523,8 +552,29 @@ function ExpensesApp({ session }) {
             {renderList(allList, "Aucune transaction ne correspond.")}
           </div>
         ) : activeTab === "budgets" ? (
+          showSubscriptions ? (
+            <SubscriptionsScreen
+              subscriptions={subscriptions} categories={categoryNames} accounts={accountNames}
+              defaultPayment={defaultPayment} defaultAccount={defaultAccount}
+              onBack={() => setShowSubscriptions(false)}
+              onCreate={createSubscription} onUpdate={updateSubscriptionHandler} onDelete={deleteSubscriptionHandler}
+              openOptions={setOptionSheet} saving={savingSub}
+            />
+          ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <NavBar large title="Budgets" subtitle={periodLabel(period, "Dépense")} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
+
+            <Card padding="md" onClick={() => setShowSubscriptions(true)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <RefreshCw size={14} color="var(--icon-secondary)" />
+                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", flex: 1 }}>ABONNEMENTS</span>
+                <ChevronRight size={16} color="var(--grey-3)" />
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                <Amount value={fmtEUR(subscriptions.filter((s) => s.active).reduce((s, x) => s + x.amount, 0))} direction="expense" size="lg" showSign={false} />
+                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{subscriptions.filter((s) => s.active).length} actif{subscriptions.filter((s) => s.active).length > 1 ? "s" : ""} / mois</span>
+              </div>
+            </Card>
 
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
@@ -551,6 +601,7 @@ function ExpensesApp({ session }) {
               })}
             </div>
           </div>
+          )
         ) : (
           <ReglagesScreen
             categories={categories} coreAccounts={coreAccounts} savingsAccounts={savingsAccounts} accountNames={accountNames}
