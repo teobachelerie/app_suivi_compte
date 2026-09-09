@@ -83,6 +83,16 @@ L'ancien fonctionnement (POST direct sans authentification) ne marche plus depui
    - En-têtes : ajoute `X-Api-Key` avec la clé copiée (en plus de `Content-Type: application/json` qui devrait déjà y être)
    - Corps JSON inchangé : `title`, `amount`, `category`, `compte`, `type`, `payment`, `date`
 
+## Raccourcis iOS
+
+Réglages → "Raccourcis iOS" propose désormais deux boutons d'installation directe (liens de partage iCloud, ouvrent l'app Raccourcis en un tap) — plus besoin d'envoyer un lien manuellement à chaque nouvelle personne.
+
+1. La personne touche "Installer Ajouter une dépense" / "Ajouter un revenu" dans l'app → Raccourcis s'ouvre → "Ajouter le raccourci"
+2. Elle génère sa clé plus bas dans le même écran, la copie
+3. Elle ouvre le raccourci installé (app Raccourcis), touche le tout premier bloc (un bloc "Texte" contenant un texte factice) et colle sa clé à la place
+
+Si les raccourcis sont un jour modifiés et republiés (nouveau lien iCloud), mets à jour `SHORTCUT_URL_DEPENSE` / `SHORTCUT_URL_REVENU` dans `lib/constants.js` — ce sont de simples liens publics, sans rien de secret dedans (le bloc Texte du raccourci partagé contient un texte factice, jamais une vraie clé).
+
 ## Notes
 
 - Le moyen de paiement (Carte bancaire / Virement / Liquide) est fixe, pas éditable dans les réglages.

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { fieldInputStyle } from "./ui/Sheets";
-import { DEFAULT_PAYMENTS } from "../lib/constants";
+import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU } from "../lib/constants";
 import { api } from "../lib/api";
 
 function ApiKeysSection() {
@@ -49,7 +49,20 @@ function ApiKeysSection() {
   return (
     <div>
       <span style={label_}>RACCOURCIS IOS</span>
-      <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Une clé à coller une fois dans ton Raccourci — pas ton mot de passe, révocable à tout moment.</div>
+      <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
+        1. Installe les deux raccourcis ci-dessous. 2. Crée ta clé plus bas. 3. Ouvre chaque raccourci installé, touche son tout premier bloc et colle ta clé à la place du texte factice.
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: 16 }}>
+        <a href={SHORTCUT_URL_DEPENSE} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", textDecoration: "none", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
+          <Download size={18} color="var(--icon-primary)" />
+          <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Installer "Ajouter une dépense"</span>
+        </a>
+        <a href={SHORTCUT_URL_REVENU} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", textDecoration: "none", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
+          <Download size={18} color="var(--icon-primary)" />
+          <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Installer "Ajouter un revenu"</span>
+        </a>
+      </div>
 
       {justCreated && (
         <Card padding="md" depth="inset" style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
