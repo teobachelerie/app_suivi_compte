@@ -18,6 +18,7 @@ import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { ReglagesScreen } from "../components/ReglagesScreen";
 import { AuthScreen } from "../components/AuthScreen";
+import { Onboarding } from "../components/Onboarding";
 
 export default function Home() {
   const [session, setSession] = useState(undefined); // undefined = vérification en cours, null = déconnecté
@@ -38,6 +39,16 @@ export default function Home() {
 }
 
 function ExpensesApp({ session }) {
+  const onboardingKey = `expenses-onboarding-seen-${session.user.id}`;
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !window.localStorage.getItem(onboardingKey);
+  });
+  function dismissOnboarding() {
+    if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
+    setShowOnboarding(false);
+  }
+
   async function handleSignOut() {
     await supabaseClient.auth.signOut();
   }
@@ -588,6 +599,8 @@ function ExpensesApp({ session }) {
       {optionSheet && (
         <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
       )}
+
+      {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>
   );
 }

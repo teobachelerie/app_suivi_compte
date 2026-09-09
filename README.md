@@ -69,6 +69,8 @@ git push -u origin main
 
 - `pages/api/api-keys/` — création/liste/révocation des clés d'API (Raccourcis iOS)
 - `supabase/migration-003-api-keys.sql` — table des clés d'API, à exécuter en plus du schéma principal
+- `supabase/migration-004-onboarding-seed.sql` — trigger Postgres : crée automatiquement "Compte courant" + les 7 catégories de départ à l'inscription
+- `components/Onboarding.jsx` — tutoriel affiché une fois à la première connexion (mémorisé en local, par utilisateur)
 
 ## Raccourcis iOS
 
@@ -90,3 +92,4 @@ L'ancien fonctionnement (POST direct sans authentification) ne marche plus depui
 - N'importe qui avec le lien de l'app peut créer un compte (pas de liste blanche d'emails). À revoir avant une diffusion plus large que quelques amis.
 - Un nouvel utilisateur démarre avec zéro catégorie et zéro compte : il doit en créer au moins un dans Réglages avant de pouvoir ajouter une transaction. Pas d'écran d'accueil qui l'explique pour l'instant — à prévoir si ça prête à confusion en pratique.
 - Une clé d'API donne accès en lecture/écriture à toutes les transactions de la personne qui l'a créée (pas de droits restreints). Elle n'est stockée qu'en empreinte (hash), jamais en clair, mais si l'appareil sur lequel elle est collée (le Raccourci iOS) est compromis, la clé l'est aussi — d'où la possibilité de la révoquer à tout moment sans toucher au mot de passe du compte.
+- Le tutoriel ne s'affiche qu'une fois par utilisateur, mémorisé dans le navigateur (localStorage) — pas dans Supabase. Il réapparaîtra donc si la personne change de navigateur/appareil ou vide ses données de site. Pas de bouton pour le revoir manuellement pour l'instant.
