@@ -72,6 +72,13 @@ git push -u origin main
 - `supabase/migration-004-onboarding-seed.sql` — trigger Postgres : crée automatiquement "Compte courant" + les 7 catégories de départ à l'inscription
 - `components/Onboarding.jsx` — tutoriel affiché une fois à la première connexion (mémorisé en local, par utilisateur)
 
+## Sécurité
+
+- **Next.js 14.2.35** (corrige une faille critique de la version 14.2.5 — la plupart des CVE concernées touchent l'Image Optimization API, le Middleware et les Server Actions, aucun n'étant utilisé par cette app en Pages Router).
+- Résolution des noms de catégorie/compte (`resolveId`) **insensible à la casse** : un écart de casse (cache local obsolète, renommage) ne fait plus échouer une transaction.
+- Comparaison du `CRON_SECRET` à **temps constant** (protection contre les attaques par mesure de temps).
+- Chaque route `/api/*` vérifie l'authentification en premier ; la sécurité multi-utilisateur repose sur un filtrage explicite par `user_id` dans chaque requête (RLS activé en filet de sécurité, mais la clé service_role l'ignore).
+
 ## Abonnements récurrents
 
 Une carte en haut de l'onglet Budgets ouvre la gestion des abonnements (Netflix, salle de sport…) : montant, catégorie, compte, moyen de paiement, jour du mois de prélèvement (1 à 28).
