@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { api } from "../lib/api";
+import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, MONTHS_FR, LEGACY_CORE_NAMES } from "../lib/constants";
 import { fmtEUR, fmtDateHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod } from "../lib/format";
 
@@ -16,8 +17,30 @@ import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../compone
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { ReglagesScreen } from "../components/ReglagesScreen";
+import { AuthScreen } from "../components/AuthScreen";
 
 export default function Home() {
+  const [session, setSession] = useState(undefined); // undefined = vérification en cours, null = déconnecté
+
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement…</div>;
+  }
+  if (!session) {
+    return <AuthScreen />;
+  }
+  return <ExpensesApp session={session} />;
+}
+
+function ExpensesApp({ session }) {
+  async function handleSignOut() {
+    await supabaseClient.auth.signOut();
+  }
   const [themeMode, setThemeMode] = useState("light");
   useEffect(() => {
     const saved = typeof window !== "undefined" && window.localStorage.getItem("expenses-theme");
@@ -528,6 +551,7 @@ export default function Home() {
             defaultPayment={defaultPayment} defaultAccount={defaultAccount}
             onChangeDefaultPayment={updateDefaultPayment} onChangeDefaultAccount={updateDefaultAccount}
             openOptions={setOptionSheet}
+            userEmail={session.user.email} onSignOut={handleSignOut}
           />
         )}
       </div>

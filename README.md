@@ -1,6 +1,6 @@
 # Expenses App
 
-Suivi de dépenses connecté à une base Supabase (Postgres).
+Suivi de dépenses multi-utilisateur (email + mot de passe), connecté à une base Supabase (Postgres).
 
 ## 1. Créer le projet Supabase (si pas déjà fait)
 
@@ -8,59 +8,70 @@ Suivi de dépenses connecté à une base Supabase (Postgres).
 2. Choisis un nom, un mot de passe de base de données (à conserver de côté), une région proche (ex. `eu-west-3` Paris ou `eu-central-1` Frankfurt)
 3. Une fois le projet créé, va dans "SQL Editor" → "New query"
 4. Colle le contenu du fichier `supabase/schema.sql` de ce dépôt, puis exécute-le ("Run")
-   → ça crée les tables `categories`, `accounts`, `transactions`, et insère les catégories/comptes de départ
+   → ça crée les tables `categories`, `accounts`, `transactions` (vides — chaque nouvel utilisateur part de zéro) et active la sécurité par utilisateur (RLS)
 
-## 2. Récupérer les clés d'API
+### Si tu as un projet Supabase déjà en place (créé avant l'authentification)
+
+Exécute en plus `supabase/migration-002-multi-user.sql` — **en 3 étapes séparées, dans l'ordre indiqué dans le fichier** (étape 1 tout de suite, étape 2 après avoir créé ton propre compte dans l'app, étape 3 à la fin). Ce fichier corrige aussi un point important : l'ancien schéma interdisait à deux utilisateurs d'avoir chacun une catégorie du même nom — sans cette migration, l'inscription d'un deuxième utilisateur échouerait.
+
+## 2. Activer l'authentification par email
+
+Dans le dashboard Supabase → "Authentication" → "Providers" : le fournisseur "Email" est actif par défaut, rien à faire. Un point à décider :
+- Par défaut, Supabase exige une confirmation par email avant la première connexion, via son service d'envoi limité (quelques emails par heure). Pour un petit groupe de test, tu peux désactiver ça : "Authentication" → "Providers" → "Email" → décoche "Confirm email". Sans ça, tes potes risquent de ne jamais recevoir l'email de confirmation.
+
+## 3. Récupérer les clés d'API
 
 Dans le dashboard Supabase → "Project Settings" → "API" :
-- `Project URL` → c'est `SUPABASE_URL`
-- `service_role` (dans "Project API keys", PAS `anon`/`public`) → c'est `SUPABASE_SERVICE_ROLE_KEY`
+- `Project URL` → sert à la fois pour `SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_URL`
+- `service_role` (dans "Project API keys") → c'est `SUPABASE_SERVICE_ROLE_KEY`. Accès complet, sans restriction — utilisée UNIQUEMENT côté serveur (`lib/supabase.js`, appelé depuis `pages/api/*`). Ne doit jamais apparaître dans du code exécuté côté navigateur.
+- `anon` `public` (dans "Project API keys") → c'est `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Celle-ci est faite pour être publique, elle ne donne accès qu'à ce que les policies RLS autorisent explicitement.
 
-La clé `service_role` donne un accès complet à la base, sans restriction. Elle n'est utilisée que côté serveur (dans `lib/supabase.js`, appelé uniquement depuis `pages/api/*`) — elle ne doit jamais apparaître dans du code exécuté côté navigateur.
-
-## 3. Tester en local (optionnel)
+## 4. Tester en local (optionnel)
 
 ```
 npm install
 cp .env.local.example .env.local
 ```
-Remplis `.env.local` avec ton URL et ta clé service_role, puis :
+Remplis `.env.local` avec les 4 valeurs, puis :
 ```
 npm run dev
 ```
 Ouvre http://localhost:3000
 
-## 4. Déployer sur Vercel
+## 5. Déployer sur Vercel
 
 1. Crée un dépôt GitHub et pousse ce dossier dedans :
 ```
 git init
 git add .
-git commit -m "Bascule vers Supabase"
+git commit -m "Multi-utilisateur"
 git branch -M main
 git remote add origin https://github.com/TON_USER/expenses-app.git
 git push -u origin main
 ```
-2. Va sur https://vercel.com → "Add New" → "Project" → importe ton dépôt GitHub
-3. Avant de cliquer "Deploy", ouvre "Environment Variables" et ajoute :
-   - `SUPABASE_URL` = l'URL de ton projet Supabase
-   - `SUPABASE_SERVICE_ROLE_KEY` = ta clé service_role
-4. Clique "Deploy". Vercel te donne une URL du type `expenses-app.vercel.app`
+2. Va sur https://vercel.com → ton projet → Settings → Environments → variables d'environnement
+3. Ajoute les 4 variables : `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Déploie. Vercel te donne une URL du type `expenses-app.vercel.app`
 
 ## Structure du projet
 
-- `pages/index.js` — orchestration (état, appels API), délègue l'affichage aux composants ci-dessous
+- `pages/index.js` — vérifie la session (écran de connexion si absente), puis délègue à `ExpensesApp` : orchestration (état, appels API), délègue l'affichage aux composants ci-dessous
+- `components/AuthScreen.jsx` — écran de connexion / inscription
 - `components/ui/` — briques visuelles réutilisables (cartes, listes, boutons, sélecteurs, panneaux)
 - `components/TransactionModal.jsx`, `components/ReglagesScreen.jsx` — écrans spécifiques
 - `lib/format.js` — fonctions pures de dates/montants/graphiques (aucune dépendance React)
 - `lib/constants.js` — constantes partagées (catégories→icônes, périodes, etc.)
-- `lib/api.js` — petit client fetch pour appeler `pages/api/*`
-- `lib/supabase.js` — accès à la base Supabase, utilisé uniquement par `pages/api/*`
-- `supabase/schema.sql` — schéma SQL à exécuter une fois dans le SQL Editor Supabase
+- `lib/supabaseClient.js` — client Supabase côté navigateur (clé anon), utilisé uniquement pour l'authentification
+- `lib/api.js` — client fetch qui attache automatiquement le jeton de session à chaque appel à `pages/api/*`
+- `lib/supabase.js` — accès à la base Supabase (clé service_role), utilisé uniquement par `pages/api/*` ; chaque fonction exige et filtre par `userId`
+- `supabase/schema.sql` — schéma de référence pour une nouvelle installation
+- `supabase/migration-002-multi-user.sql` — migration pour une base déjà existante (voir ci-dessus)
 
 ## Notes
 
 - Le moyen de paiement (Carte bancaire / Virement / Liquide) est fixe, pas éditable dans les réglages.
 - Renommer une catégorie ou un compte dans les réglages met à jour son nom partout, y compris sur les transactions déjà enregistrées (clé étrangère, pas une copie de texte).
 - Supprimer une catégorie ou un compte dans les réglages ne supprime pas la ligne correspondante ni les transactions qui l'utilisaient déjà — elle est archivée (`archived = true` dans Supabase), donc elle disparaît des choix futurs mais reste affichée normalement sur l'historique.
-- La base reste mono-utilisateur pour l'instant (comme avec Notion) : la colonne `user_id` existe dans le schéma mais n'est pas encore exploitée, pour préparer une authentification future sans avoir à recréer les tables.
+- Chaque utilisateur ne voit que ses propres catégories, comptes et transactions — imposé à la fois par le filtrage explicite dans `lib/supabase.js` et par les policies RLS de Supabase (double sécurité).
+- N'importe qui avec le lien de l'app peut créer un compte (pas de liste blanche d'emails). À revoir avant une diffusion plus large que quelques amis.
+- Un nouvel utilisateur démarre avec zéro catégorie et zéro compte : il doit en créer au moins un dans Réglages avant de pouvoir ajouter une transaction. Pas d'écran d'accueil qui l'explique pour l'instant — à prévoir si ça prête à confusion en pratique.

@@ -1,12 +1,12 @@
 import React from "react";
-import { Sun, Moon, ChevronRight } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { fieldInputStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS } from "../lib/constants";
 
-export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions }) {
+export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions, userEmail, onSignOut }) {
   const isLight = themeMode === "light";
   const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
   return (
@@ -82,6 +82,16 @@ export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, acco
           <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau livret (ex. Livret A)" />
           <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
         </div>
+      </div>
+
+      <div>
+        <span style={label}>COMPTE</span>
+        <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 14, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</span>
+          <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: "var(--red)", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+            <LogOut size={15} /> Déconnexion
+          </button>
+        </Card>
       </div>
     </div>
   );

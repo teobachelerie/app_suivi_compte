@@ -11,31 +11,34 @@
 --   compte disparaît des choix proposés pour une nouvelle transaction, mais les anciennes
 --   transactions continuent d'afficher son nom normalement — exactement le comportement
 --   Notion actuel.
--- - user_id est présent sur les trois tables mais nullable et non exploité pour l'instant
---   (l'app reste mono-utilisateur, comme avec Notion). Le jour où une vraie authentification
---   est ajoutée, il suffira de remplir cette colonne et d'ajouter des policies RLS dessus —
---   pas besoin de recréer les tables.
--- - RLS est activé sur les trois tables SANS policy définie. Concrètement : la clé "service
---   role" (utilisée uniquement côté serveur, jamais exposée au navigateur) continue d'avoir
---   accès à tout, comme aujourd'hui. Mais si un jour une clé "anon" est exposée côté client
---   (ex. une future app mobile qui parle à Supabase directement), rien ne fuit par défaut.
+-- - user_id identifie le propriétaire de chaque ligne (authentification par email + mot de
+--   passe, gérée par Supabase Auth). L'unicité du nom d'une catégorie/d'un compte est PAR
+--   utilisateur (unique(user_id, name)), pas globale — sinon deux utilisateurs ne pourraient
+--   jamais avoir tous les deux une catégorie "Shopping".
+-- - RLS a des policies réelles : un utilisateur authentifié ne peut lire/modifier que ses
+--   propres lignes. C'est une deuxième ligne de défense — la première étant que chaque
+--   fonction de lib/supabase.js filtre déjà explicitement par user_id — utile si un jour un
+--   client (ex. app mobile) parle à Supabase directement avec la clé anon plutôt qu'en passant
+--   par nos routes /api/*.
 
 create extension if not exists "pgcrypto";
 
 create table if not exists categories (
   id uuid primary key default gen_random_uuid(),
-  name text not null unique,
+  name text not null,
   archived boolean not null default false,
-  user_id uuid references auth.users(id),
-  created_at timestamptz not null default now()
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, name)
 );
 
 create table if not exists accounts (
   id uuid primary key default gen_random_uuid(),
-  name text not null unique,
+  name text not null,
   archived boolean not null default false,
-  user_id uuid references auth.users(id),
-  created_at timestamptz not null default now()
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, name)
 );
 
 create table if not exists transactions (
@@ -47,26 +50,25 @@ create table if not exists transactions (
   category_id uuid references categories(id) on delete set null,
   account_id uuid references accounts(id) on delete set null,
   payment_method text not null,
-  user_id uuid references auth.users(id),
+  user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
 create index if not exists transactions_date_idx on transactions (date desc);
 create index if not exists transactions_category_id_idx on transactions (category_id);
 create index if not exists transactions_account_id_idx on transactions (account_id);
+create index if not exists transactions_user_id_idx on transactions (user_id);
 
 alter table categories enable row level security;
 alter table accounts enable row level security;
 alter table transactions enable row level security;
 
--- Données de démarrage : reprend exactement les catégories/comptes/paiements de l'app actuelle.
--- Adapte ou complète cette liste si tu as déjà ajouté d'autres catégories/comptes/livrets
--- dans l'app avant la bascule.
-insert into categories (name) values
-  ('Nourriture & Boissons'), ('Shopping'), ('Voyage'), ('Services'),
-  ('Loisirs'), ('Santé'), ('Transport')
-on conflict (name) do nothing;
+create policy "own categories" on categories for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own accounts" on accounts for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own transactions" on transactions for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-insert into accounts (name) values
-  ('Compte courant'), ('Compte pro')
-on conflict (name) do nothing;
+-- Pas de données de démarrage ici : chaque nouvel utilisateur part avec une liste de
+-- catégories/comptes vide. L'app lui propose d'en créer dans Réglages dès sa première visite.
