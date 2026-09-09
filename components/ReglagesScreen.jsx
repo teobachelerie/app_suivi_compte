@@ -102,7 +102,7 @@ function ApiKeysSection() {
   );
 }
 
-export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions, userEmail, onSignOut }) {
+export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount, openOptions, userEmail, onSignOut }) {
   const isLight = themeMode === "light";
   const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
   return (
@@ -114,6 +114,21 @@ export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, acco
         <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
           <Switch checked={isLight} onChange={onToggleTheme} />
+        </Card>
+      </div>
+
+      <div>
+        <span style={label}>AFFICHAGE</span>
+        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+            <span style={{ fontSize: 15 }}>Filtrer l'activité par compte</span>
+            <Switch checked={showAccountFilter} onChange={onToggleShowAccountFilter} />
+          </div>
+          <Divider inset={0} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+            <span style={{ fontSize: 15 }}>Grouper le budget par compte</span>
+            <Switch checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
+          </div>
         </Card>
       </div>
 

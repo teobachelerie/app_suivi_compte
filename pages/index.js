@@ -7,8 +7,8 @@ import {
 
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
-import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, MONTHS_FR, LEGACY_CORE_NAMES } from "../lib/constants";
-import { fmtEUR, fmtDateHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod } from "../lib/format";
+import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES } from "../lib/constants";
+import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod } from "../lib/format";
 
 import { Card, Divider, Amount, IconButton, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
@@ -78,12 +78,18 @@ function ExpensesApp({ session }) {
 
   const [defaultPayment, setDefaultPayment] = useState("Carte bancaire");
   const [defaultAccount, setDefaultAccount] = useState("");
+  const [showAccountFilter, setShowAccountFilter] = useState(true);
+  const [groupBudgetByAccount, setGroupBudgetByAccount] = useState(true);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const p = window.localStorage.getItem("expenses-default-payment");
     const a = window.localStorage.getItem("expenses-default-account");
+    const saf = window.localStorage.getItem("expenses-show-account-filter");
+    const gba = window.localStorage.getItem("expenses-group-budget-by-account");
     if (p) setDefaultPayment(p);
     if (a) setDefaultAccount(a);
+    if (saf !== null) setShowAccountFilter(saf === "true");
+    if (gba !== null) setGroupBudgetByAccount(gba === "true");
   }, []);
   function updateDefaultPayment(v) {
     setDefaultPayment(v);
@@ -92,6 +98,14 @@ function ExpensesApp({ session }) {
   function updateDefaultAccount(v) {
     setDefaultAccount(v);
     if (typeof window !== "undefined") window.localStorage.setItem("expenses-default-account", v);
+  }
+  function updateShowAccountFilter(v) {
+    setShowAccountFilter(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("expenses-show-account-filter", String(v));
+  }
+  function updateGroupBudgetByAccount(v) {
+    setGroupBudgetByAccount(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("expenses-group-budget-by-account", String(v));
   }
 
   const [transactions, setTransactions] = useState([]);
@@ -246,6 +260,20 @@ function ExpensesApp({ session }) {
     const max = Math.max(1, ...Object.values(totals));
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, pct: (amount / max) * 100 }));
   }, [periodFiltered, filterAccount]);
+
+  // Répartition des dépenses par compte sur la période — pour l'onglet Budgets, activable dans Réglages.
+  const accountSpend = useMemo(() => {
+    const totals = {};
+    periodFiltered.forEach((t) => {
+      if (t.type !== "Dépense") return;
+      if (filterAccount !== "Tous" && t.compte !== filterAccount) return;
+      totals[t.compte] = (totals[t.compte] || 0) + t.amount;
+    });
+    const max = Math.max(1, ...Object.values(totals));
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([compte, amount]) => ({ compte, amount, pct: (amount / max) * 100 }));
+  }, [periodFiltered, filterAccount]);
+
+  const [budgetView, setBudgetView] = useState("categorie"); // "categorie" | "compte" — bascule locale, visible seulement si l'option est activée dans Réglages
 
   const pressedTransactions = useMemo(() => {
     if (!pressedBucket) return null;
@@ -426,7 +454,7 @@ function ExpensesApp({ session }) {
     return <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
   }
 
-  const moisCourantLabel = MONTHS_FR[new Date().getMonth()].charAt(0).toUpperCase() + MONTHS_FR[new Date().getMonth()].slice(1);
+  const todayHeader = fmtTodayHeader();
 
   return (
     <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" }}>
@@ -451,7 +479,7 @@ function ExpensesApp({ session }) {
         ) : activeTab === "apercu" ? (
           view === "dashboard" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-              <NavBar large title="Aperçu" subtitle={moisCourantLabel} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
+              <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                 <AccountPill
@@ -579,26 +607,48 @@ function ExpensesApp({ session }) {
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
               <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
-              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>Répartition réelle par catégorie — pas de plafond configuré</span>
+              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{groupBudgetByAccount && budgetView === "compte" ? "Répartition réelle par compte" : "Répartition réelle par catégorie"} — pas de plafond configuré</span>
             </Card>
 
+            {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}
+
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {categorySpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
-              {categorySpend.map(({ category, amount, pct }) => {
-                const Icon = CATEGORY_ICON[category] || ShoppingBag;
-                return (
-                  <Card key={category} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
-                        <Icon size={17} color="var(--icon-primary)" />
-                      </span>
-                      <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{category}</span>
-                      <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
-                    </div>
-                    <ProgressBar value={pct} tone="expense" />
-                  </Card>
-                );
-              })}
+              {groupBudgetByAccount && budgetView === "compte" ? (
+                <>
+                  {accountSpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
+                  {accountSpend.map(({ compte, amount, pct }) => (
+                    <Card key={compte} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
+                          <PiggyBank size={17} color="var(--icon-primary)" />
+                        </span>
+                        <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{compte}</span>
+                        <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
+                      </div>
+                      <ProgressBar value={pct} tone="expense" />
+                    </Card>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {categorySpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
+                  {categorySpend.map(({ category, amount, pct }) => {
+                    const Icon = CATEGORY_ICON[category] || ShoppingBag;
+                    return (
+                      <Card key={category} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
+                            <Icon size={17} color="var(--icon-primary)" />
+                          </span>
+                          <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{category}</span>
+                          <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
+                        </div>
+                        <ProgressBar value={pct} tone="expense" />
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
             </div>
           </div>
           )
@@ -612,6 +662,8 @@ function ExpensesApp({ session }) {
             themeMode={themeMode} onToggleTheme={toggleThemeMode}
             defaultPayment={defaultPayment} defaultAccount={defaultAccount}
             onChangeDefaultPayment={updateDefaultPayment} onChangeDefaultAccount={updateDefaultAccount}
+            showAccountFilter={showAccountFilter} onToggleShowAccountFilter={updateShowAccountFilter}
+            groupBudgetByAccount={groupBudgetByAccount} onToggleGroupBudgetByAccount={updateGroupBudgetByAccount}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut}
           />
@@ -643,7 +695,8 @@ function ExpensesApp({ session }) {
 
       {showFilterSheet && (
         <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
-          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })} last />
+          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })} last={!showAccountFilter} />
+          {showAccountFilter && <SheetRow label="Compte" value={filterAccount} onClick={() => setOptionSheet({ title: "Compte", options: ["Tous", ...accountNames], value: filterAccount, onSelect: setFilterAccount })} last />}
         </TopSheet>
       )}
 
