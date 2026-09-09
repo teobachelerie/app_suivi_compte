@@ -168,14 +168,16 @@ function ExpensesApp({ session }) {
     if (!silent) setLoading(true);
     if (!silent) setError("");
     try {
-      const [txs, meta, subs] = await Promise.all([api("/api/transactions"), api("/api/meta"), api("/api/subscriptions")]);
+      const [txs, meta] = await Promise.all([api("/api/transactions"), api("/api/meta")]);
       setTransactions(txs);
       setCategories(meta.categories);
       setAccounts(meta.accounts);
-      setSubscriptions(subs);
       const coreIds = coreAccountIdsRef.current;
       const core = meta.accounts.filter((a) => coreIds.includes(a.id));
       setFilterAccount((prev) => (meta.accounts.some((a) => a.name === prev) || prev === "Tous" ? prev : (core[0]?.name || meta.accounts[0]?.name || "Tous")));
+      // Chargés séparément : pas nécessaires pour afficher Aperçu/Activité, ne doivent pas
+      // retarder le premier affichage. Erreur silencieuse si ça échoue (rechargé au prochain poll).
+      api("/api/subscriptions").then(setSubscriptions).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -189,7 +191,11 @@ function ExpensesApp({ session }) {
     let interval = null;
     function startPolling() {
       if (interval) return;
-      interval = setInterval(() => loadAll({ silent: true }), 10000);
+      // 2 min plutôt que 10s : l'app renvoie tout l'historique des transactions à chaque appel
+      // (nécessaire pour calculer les soldes de comptes correctement), donc chaque poll a un coût
+      // en bande passante qui grandit avec le nombre de transactions — voir la discussion sur
+      // l'egress Supabase (5 Go/mois inclus sur le plan gratuit).
+      interval = setInterval(() => loadAll({ silent: true }), 120000);
     }
     function stopPolling() {
       if (interval) clearInterval(interval);
