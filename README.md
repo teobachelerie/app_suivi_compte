@@ -67,6 +67,20 @@ git push -u origin main
 - `supabase/schema.sql` — schéma de référence pour une nouvelle installation
 - `supabase/migration-002-multi-user.sql` — migration pour une base déjà existante (voir ci-dessus)
 
+- `pages/api/api-keys/` — création/liste/révocation des clés d'API (Raccourcis iOS)
+- `supabase/migration-003-api-keys.sql` — table des clés d'API, à exécuter en plus du schéma principal
+
+## Raccourcis iOS
+
+L'ancien fonctionnement (POST direct sans authentification) ne marche plus depuis l'ajout des comptes — chaque personne doit générer sa propre clé.
+
+1. Dans l'app → Réglages → "Raccourcis iOS" → donne un nom (ex. "iPhone"), clique "Créer"
+2. Copie la clé affichée **immédiatement** (`eak_...`) — elle ne sera plus jamais visible ensuite. Si tu la perds, révoque-la et recrée-en une autre.
+3. Dans l'app Raccourcis, sur l'action "Obtenir le contenu de l'URL" qui appelle `/api/transactions` :
+   - Méthode : `POST`
+   - En-têtes : ajoute `X-Api-Key` avec la clé copiée (en plus de `Content-Type: application/json` qui devrait déjà y être)
+   - Corps JSON inchangé : `title`, `amount`, `category`, `compte`, `type`, `payment`, `date`
+
 ## Notes
 
 - Le moyen de paiement (Carte bancaire / Virement / Liquide) est fixe, pas éditable dans les réglages.
@@ -75,3 +89,4 @@ git push -u origin main
 - Chaque utilisateur ne voit que ses propres catégories, comptes et transactions — imposé à la fois par le filtrage explicite dans `lib/supabase.js` et par les policies RLS de Supabase (double sécurité).
 - N'importe qui avec le lien de l'app peut créer un compte (pas de liste blanche d'emails). À revoir avant une diffusion plus large que quelques amis.
 - Un nouvel utilisateur démarre avec zéro catégorie et zéro compte : il doit en créer au moins un dans Réglages avant de pouvoir ajouter une transaction. Pas d'écran d'accueil qui l'explique pour l'instant — à prévoir si ça prête à confusion en pratique.
+- Une clé d'API donne accès en lecture/écriture à toutes les transactions de la personne qui l'a créée (pas de droits restreints). Elle n'est stockée qu'en empreinte (hash), jamais en clair, mais si l'appareil sur lequel elle est collée (le Raccourci iOS) est compromis, la clé l'est aussi — d'où la possibilité de la révoquer à tout moment sans toucher au mot de passe du compte.

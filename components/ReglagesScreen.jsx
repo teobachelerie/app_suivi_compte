@@ -1,10 +1,93 @@
-import React from "react";
-import { Sun, Moon, ChevronRight, LogOut } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { fieldInputStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS } from "../lib/constants";
+import { api } from "../lib/api";
+
+function ApiKeysSection() {
+  const [keys, setKeys] = useState(null); // null = pas encore chargé
+  const [label, setLabel] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [justCreated, setJustCreated] = useState(null); // { label, token } — affiché une seule fois
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api("/api/api-keys").then(setKeys).catch((e) => setError(e.message));
+  }, []);
+
+  async function handleCreate() {
+    setCreating(true);
+    setError("");
+    try {
+      const { token } = await api("/api/api-keys", { method: "POST", body: { label: label.trim() || null } });
+      setJustCreated({ label: label.trim() || "Sans nom", token });
+      setLabel("");
+      const updated = await api("/api/api-keys");
+      setKeys(updated);
+    } catch (e) { setError(e.message); } finally { setCreating(false); }
+  }
+
+  async function handleDelete(id) {
+    try {
+      await api(`/api/api-keys/${id}`, { method: "DELETE" });
+      setKeys((prev) => prev.filter((k) => k.id !== id));
+    } catch (e) { setError(e.message); }
+  }
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(justCreated.token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const label_ = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
+
+  return (
+    <div>
+      <span style={label_}>RACCOURCIS IOS</span>
+      <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Une clé à coller une fois dans ton Raccourci — pas ton mot de passe, révocable à tout moment.</div>
+
+      {justCreated && (
+        <Card padding="md" depth="inset" style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Clé "{justCreated.label}" créée — copie-la maintenant, elle ne sera plus jamais affichée :</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <code style={{ flex: 1, fontSize: 12, background: "var(--surface-raised)", padding: "8px 10px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "nowrap" }}>{justCreated.token}</code>
+            <button onClick={handleCopy} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-sm)", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              {copied ? <Check size={15} /> : <Copy size={15} />}
+            </button>
+          </div>
+        </Card>
+      )}
+
+      <Card padding="md" style={{ marginBottom: 12 }}>
+        {keys === null && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Chargement…</div>}
+        {keys?.length === 0 && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Aucune clé pour l'instant.</div>}
+        {keys?.map((k, i) => (
+          <React.Fragment key={k.id}>
+            {i > 0 ? <Divider /> : null}
+            <ListRow
+              Icon={Key}
+              title={k.label || "Sans nom"}
+              subtitle={k.last_used_at ? `Dernière utilisation : ${new Date(k.last_used_at).toLocaleDateString("fr-FR")}` : "Jamais utilisée"}
+              trailing={<button onClick={() => handleDelete(k.id)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>}
+            />
+          </React.Fragment>
+        ))}
+      </Card>
+
+      {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 8 }}>{error}</div>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <input style={fieldInputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nom (ex. iPhone)" />
+        <button onClick={handleCreate} disabled={creating} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)", opacity: creating ? 0.6 : 1 }}>Créer</button>
+      </div>
+    </div>
+  );
+}
 
 export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, openOptions, userEmail, onSignOut }) {
   const isLight = themeMode === "light";
@@ -83,6 +166,8 @@ export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, acco
           <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
         </div>
       </div>
+
+      <ApiKeysSection />
 
       <div>
         <span style={label}>COMPTE</span>
