@@ -56,7 +56,19 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
   }
 
   return (
-    <Sheet title={tx ? "Modifier" : "Nouvelle transaction"} onClose={onClose}>
+    <Sheet
+      title={tx ? "Modifier" : "Nouvelle transaction"}
+      onClose={onClose}
+      footer={
+        <>
+          {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 10 }}>{error}</div>}
+          <div style={{ display: "flex", gap: 10 }}>
+            {onDelete && <button onClick={onDelete} disabled={saving} style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={18} color="var(--red)" /></button>}
+            <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.6 : 1, boxShadow: "var(--elev-raised-sm)" }}>{saving ? "Enregistrement…" : "Confirmer"}</button>
+          </div>
+        </>
+      }
+    >
       <SegmentedControl options={["Dépense", "Gain"]} value={type} onChange={setType} style={{ marginBottom: 16 }} />
       <Field label="Titre"><input style={fieldInputStyle} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="ex. J'ai acheté une bougie" /></Field>
       <Field label="Montant (€)"><input style={fieldInputStyle} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" /></Field>
@@ -98,16 +110,11 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
         </div>
       )}
 
-      <Field label="Emoji (facultatif)"><input style={fieldInputStyle} value={emoji} onChange={(e) => setEmoji(e.target.value.slice(0, 8))} placeholder="🍕" /></Field>
+      <Field label="Emoji (facultatif)"><input style={fieldInputStyle} value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="🍕" /></Field>
       <Field label="Compte"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
       <Field label="Moyen de paiement"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Moyen de paiement", options: DEFAULT_PAYMENTS, value: payment, onSelect: setPayment })}>{payment}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
       <Field label="Date"><input type="date" style={fieldInputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       <Field label="Tags (séparés par une virgule)"><input style={fieldInputStyle} value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="ex. vacances, cadeau" /></Field>
-      {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-        {onDelete && <button onClick={onDelete} disabled={saving} style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={18} color="var(--red)" /></button>}
-        <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.6 : 1, boxShadow: "var(--elev-raised-sm)" }}>{saving ? "Enregistrement…" : "Confirmer"}</button>
-      </div>
     </Sheet>
   );
 }

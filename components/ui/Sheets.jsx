@@ -17,17 +17,22 @@ export function TopSheet({ title, onClose, children }) {
   );
 }
 
-export function Sheet({ title, onClose, children }) {
+export function Sheet({ title, onClose, footer, children }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: "var(--surface-raised)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-primary)", cursor: "pointer", boxShadow: "var(--elev-raised)", zIndex: 2 }}>
           <X size={18} />
         </button>
-        <div className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", paddingBottom: 24, boxShadow: "var(--elev-overlay)" }}>
+        <div className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", paddingBottom: footer ? 0 : 24, boxShadow: "var(--elev-overlay)" }}>
           <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "10px auto 4px" }} />
           <div style={{ textAlign: "center", padding: "10px 20px 16px", fontSize: 17, fontWeight: 600 }}>{title}</div>
           <div style={{ padding: "0 20px" }}>{children}</div>
+          {footer && (
+            <div style={{ position: "sticky", bottom: 0, background: "var(--surface-base)", padding: "12px 20px calc(16px + env(safe-area-inset-bottom, 0px))", boxShadow: "0 -12px 16px -12px rgba(0,0,0,0.15)" }}>
+              {footer}
+            </div>
+          )}
         </div>
         <style jsx>{`
           @keyframes sheetIn { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
