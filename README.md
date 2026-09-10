@@ -103,6 +103,12 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Emoji par transaction
+
+Chaque dépense/revenu peut avoir un emoji personnalisé (ex. 🍕) qui remplace l'icône de catégorie dans les listes. Champ facultatif dans le formulaire web, et dans le Raccourci iOS entre le choix de la catégorie et celui du compte (voir plus bas). Sans emoji, l'icône de catégorie habituelle s'affiche comme avant.
+
+**Nouvelle migration à exécuter** : `supabase/migration-007-emoji.sql` (colonne `emoji` sur `transactions`).
+
 ## Raccourcis iOS
 
 Réglages → "Raccourcis iOS" propose deux boutons d'installation directe (liens de partage iCloud, ouvrent l'app Raccourcis en un tap) — plus besoin d'envoyer un lien manuellement à chaque nouvelle personne.

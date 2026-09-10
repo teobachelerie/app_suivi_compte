@@ -488,7 +488,7 @@ function ExpensesApp({ session }) {
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+                <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
               </React.Fragment>
             );
           })}
@@ -507,7 +507,7 @@ function ExpensesApp({ session }) {
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+              <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
             </React.Fragment>
           );
         })}

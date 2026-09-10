@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, Check, Pencil, Trash2 } from "lucide-react";
 
-export function ListRow({ Icon, title, subtitle, trailing, chevron = false, onClick, style }) {
+export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = false, onClick, style }) {
   const [pressed, setPressed] = useState(false);
   const interactive = Boolean(onClick);
   return (
@@ -12,7 +12,11 @@ export function ListRow({ Icon, title, subtitle, trailing, chevron = false, onCl
       onPointerLeave={() => setPressed(false)}
       style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", minHeight: "var(--hit-min)", padding: "var(--space-3) 0", borderRadius: "var(--radius-sm)", opacity: pressed ? 0.55 : 1, cursor: interactive ? "pointer" : "default", transition: "opacity var(--duration-micro) var(--ease-standard)", ...style }}
     >
-      {Icon ? (
+      {emoji ? (
+        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", fontSize: 19, lineHeight: 1 }}>
+          {emoji}
+        </span>
+      ) : Icon ? (
         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
           <Icon size={18} color="var(--icon-primary)" />
         </span>
