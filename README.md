@@ -72,6 +72,20 @@ git push -u origin main
 - `supabase/migration-004-onboarding-seed.sql` — trigger Postgres : crée automatiquement "Compte courant" + les 7 catégories de départ à l'inscription
 - `components/Onboarding.jsx` — tutoriel affiché une fois à la première connexion (mémorisé en local, par utilisateur)
 
+## Objectifs, tags, fractionnement, règles de catégorisation, Progression, assistant IA
+
+Gros chantier de fonctionnalités (issu d'une veille concurrentielle — voir le rapport fourni séparément) :
+
+- **Objectifs d'épargne** (onglet Aperçu → carte "Objectifs") : montant cible, date cible, compte lié. L'app calcule le versement mensuel nécessaire, recalculé à chaque ouverture à partir du solde réel du compte — jamais stocké en dur.
+- **Progression** (onglet Aperçu → carte "Progression") : taux d'épargne du mois, tendance sur 12 mois, records personnels (meilleur taux d'épargne, mois le plus économe, plus longue série de trésorerie positive), heatmap des dépenses (26 dernières semaines), répartition des revenus du mois en barre segmentée.
+- **Tags** sur les transactions (en plus des catégories), cherchables depuis la barre de recherche d'Activité.
+- **Fractionnement d'une transaction** en plusieurs catégories (bouton "Fractionner" dans le formulaire). Le montant/compte/date restent le total ; seules les statistiques par catégorie tiennent compte de la répartition.
+- **Règles de catégorisation automatique** (Réglages → nouvelle section) : un mot-clé dans le titre pré-remplit la catégorie dans le formulaire (n'affecte jamais les Raccourcis iOS, qui envoient déjà une catégorie).
+- **Export CSV/JSON** (Réglages → Export) : toutes les transactions, indépendamment de l'app.
+- **Icône d'écran d'accueil** : une vraie icône (`public/apple-touch-icon.png`) remplace la capture d'écran automatique d'iOS quand l'app est ajoutée à l'écran d'accueil.
+
+**Nouvelle migration à exécuter** : `supabase/migration-006-power-features.sql` (tables `goals` et `category_rules`, colonnes `tags`/`splits` sur `transactions`).
+
 ## Sécurité
 
 - **Next.js 14.2.35** (corrige une faille critique de la version 14.2.5 — la plupart des CVE concernées touchent l'Image Optimization API, le Middleware et les Server Actions, aucun n'étant utilisé par cette app en Pages Router).

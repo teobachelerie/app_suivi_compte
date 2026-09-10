@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis } from "recharts";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 
@@ -16,6 +16,8 @@ import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../components/ui/Selectors";
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
+import { GoalsScreen } from "../components/GoalsScreen";
+import { ProgressionScreen } from "../components/ProgressionScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
 import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
@@ -40,6 +42,12 @@ export default function Home() {
 }
 
 function ExpensesApp({ session }) {
+  function txSubtitle(t) {
+    let s = t.splits?.length ? "Fractionné" : t.category;
+    if (t.tags?.length) s += " · " + t.tags.map((tag) => `#${tag}`).join(" ");
+    return s;
+  }
+
   const onboardingKey = `expenses-onboarding-seen-${session.user.id}`;
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -161,6 +169,11 @@ function ExpensesApp({ session }) {
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [showSubscriptions, setShowSubscriptions] = useState(false);
+  const [goals, setGoals] = useState([]);
+  const [categoryRules, setCategoryRules] = useState([]);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showProgression, setShowProgression] = useState(false);
+  const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
 
   const loadAll = useCallback(async (opts) => {
@@ -178,6 +191,8 @@ function ExpensesApp({ session }) {
       // Chargés séparément : pas nécessaires pour afficher Aperçu/Activité, ne doivent pas
       // retarder le premier affichage. Erreur silencieuse si ça échoue (rechargé au prochain poll).
       api("/api/subscriptions").then(setSubscriptions).catch(() => {});
+      api("/api/goals").then(setGoals).catch(() => {});
+      api("/api/category-rules").then(setCategoryRules).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -226,7 +241,12 @@ function ExpensesApp({ session }) {
   const fullyFiltered = useMemo(() => periodFiltered.filter((t) => {
     if (filterCategory !== "Toutes" && t.category !== filterCategory) return false;
     if (filterAccount !== "Tous" && t.compte !== filterAccount) return false;
-    if (searchQuery.trim() && !t.title.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const inTitle = t.title.toLowerCase().includes(q);
+      const inTags = (t.tags || []).some((tag) => tag.toLowerCase().includes(q));
+      if (!inTitle && !inTags) return false;
+    }
     return true;
   }), [periodFiltered, filterCategory, filterAccount, searchQuery]);
 
@@ -261,7 +281,11 @@ function ExpensesApp({ session }) {
     periodFiltered.forEach((t) => {
       if (t.type !== "Dépense") return;
       if (filterAccount !== "Tous" && t.compte !== filterAccount) return;
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
+      if (t.splits?.length) {
+        t.splits.forEach((s) => { totals[s.category] = (totals[s.category] || 0) + s.amount; });
+      } else {
+        totals[t.category] = (totals[t.category] || 0) + t.amount;
+      }
     });
     const max = Math.max(1, ...Object.values(totals));
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, pct: (amount / max) * 100 }));
@@ -366,6 +390,41 @@ function ExpensesApp({ session }) {
     } catch (e) { setError(e.message); } finally { setSavingSub(false); }
   }
 
+  async function createGoalHandler(g) {
+    setSavingGoal(true);
+    try {
+      const created = await api("/api/goals", { method: "POST", body: g });
+      setGoals((prev) => [...prev, created]);
+    } catch (e) { setError(e.message); } finally { setSavingGoal(false); }
+  }
+  async function updateGoalHandler(id, patch) {
+    setSavingGoal(true);
+    try {
+      const updated = await api(`/api/goals/${id}`, { method: "PATCH", body: patch });
+      setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+    } catch (e) { setError(e.message); } finally { setSavingGoal(false); }
+  }
+  async function deleteGoalHandler(id) {
+    setSavingGoal(true);
+    try {
+      await api(`/api/goals/${id}`, { method: "DELETE" });
+      setGoals((prev) => prev.filter((g) => g.id !== id));
+    } catch (e) { setError(e.message); } finally { setSavingGoal(false); }
+  }
+
+  async function createCategoryRuleHandler(r) {
+    try {
+      const created = await api("/api/category-rules", { method: "POST", body: r });
+      setCategoryRules((prev) => [...prev, created]);
+    } catch (e) { setError(e.message); }
+  }
+  async function deleteCategoryRuleHandler(id) {
+    try {
+      await api(`/api/category-rules/${id}`, { method: "DELETE" });
+      setCategoryRules((prev) => prev.filter((r) => r.id !== id));
+    } catch (e) { setError(e.message); }
+  }
+
   async function saveOptions(property, options) {
     await api("/api/meta", { method: "PATCH", body: { property, options } });
   }
@@ -429,7 +488,7 @@ function ExpensesApp({ session }) {
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} title={t.title} subtitle={t.category} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+                <ListRow Icon={Icon} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
               </React.Fragment>
             );
           })}
@@ -448,7 +507,7 @@ function ExpensesApp({ session }) {
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} title={t.title} subtitle={t.category} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+              <ListRow Icon={Icon} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
             </React.Fragment>
           );
         })}
@@ -483,7 +542,17 @@ function ExpensesApp({ session }) {
             {renderList(groupByDate(transactions.filter((t) => t.compte === savingsDetailAccount)), "Aucun mouvement pour ce livret.")}
           </div>
         ) : activeTab === "apercu" ? (
-          view === "dashboard" ? (
+          showGoals ? (
+            <GoalsScreen
+              goals={goals.map((g) => ({ ...g, currentBalance: accountBalance(g.compte) }))}
+              accounts={accountNames}
+              onBack={() => setShowGoals(false)}
+              onCreate={createGoalHandler} onUpdate={updateGoalHandler} onDelete={deleteGoalHandler}
+              openOptions={setOptionSheet} saving={savingGoal}
+            />
+          ) : showProgression ? (
+            <ProgressionScreen transactions={transactions} onBack={() => setShowProgression(false)} />
+          ) : view === "dashboard" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
 
@@ -513,6 +582,19 @@ function ExpensesApp({ session }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
                 <StatTile label="REVENUS" value={fmtEUR(revenusPeriode)} direction="income" Icon={ArrowDownLeft} onClick={() => { setSummaryType("Gain"); setView("flow"); }} />
                 <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <Card padding="md" onClick={() => setShowGoals(true)} style={{ display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
+                  <Target size={16} color="var(--icon-secondary)" />
+                  <span style={{ font: "500 14px var(--font-core)" }}>Objectifs</span>
+                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+                </Card>
+                <Card padding="md" onClick={() => setShowProgression(true)} style={{ display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
+                  <TrendingUp size={16} color="var(--icon-secondary)" />
+                  <span style={{ font: "500 14px var(--font-core)" }}>Progression</span>
+                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Records & tendances</span>
+                </Card>
               </div>
 
               {savingsAccounts.length > 0 && (
@@ -578,7 +660,7 @@ function ExpensesApp({ session }) {
             <NavBar large title="Activité" subtitle={`${activiteFiltered.length} opération${activiteFiltered.length > 1 ? "s" : ""}`} />
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", borderRadius: "var(--radius-control)", padding: "12px 16px" }}>
               <Search size={16} color="var(--text-tertiary)" />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre ou tag" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
               {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
               <button onClick={() => setShowFilterSheet(true)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><ChevronDown size={16} color="var(--text-tertiary)" /></button>
             </div>
@@ -670,6 +752,8 @@ function ExpensesApp({ session }) {
             onChangeDefaultPayment={updateDefaultPayment} onChangeDefaultAccount={updateDefaultAccount}
             showAccountFilter={showAccountFilter} onToggleShowAccountFilter={updateShowAccountFilter}
             groupBudgetByAccount={groupBudgetByAccount} onToggleGroupBudgetByAccount={updateGroupBudgetByAccount}
+            categoryRules={categoryRules} onCreateCategoryRule={createCategoryRuleHandler} onDeleteCategoryRule={deleteCategoryRuleHandler}
+            transactions={transactions}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut}
           />
@@ -696,7 +780,7 @@ function ExpensesApp({ session }) {
       />
 
       {(showAdd || editing) && (
-        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
+        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
       )}
 
       {showFilterSheet && (

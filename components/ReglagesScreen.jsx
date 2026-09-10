@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
-import { fieldInputStyle } from "./ui/Sheets";
+import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU } from "../lib/constants";
 import { api } from "../lib/api";
+import { transactionsToCSV, downloadFile } from "../lib/export";
 
 function ApiKeysSection() {
   const [keys, setKeys] = useState(null); // null = pas encore chargé
@@ -102,9 +103,12 @@ function ApiKeysSection() {
   );
 }
 
-export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount, openOptions, userEmail, onSignOut }) {
+export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount, categoryRules, onCreateCategoryRule, onDeleteCategoryRule, transactions, openOptions, userEmail, onSignOut }) {
   const isLight = themeMode === "light";
   const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
+  const [newRuleKeyword, setNewRuleKeyword] = useState("");
+  const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
+  const categoryNames = categories.map((c) => c.name);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <NavBar large title="Réglages" />
@@ -160,6 +164,33 @@ export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, acco
       </div>
 
       <div>
+        <span style={label}>RÈGLES DE CATÉGORISATION AUTOMATIQUE</span>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Si le titre d'une dépense contient ce mot, la catégorie se pré-remplit toute seule.</div>
+        <Card padding="md" style={{ marginBottom: 12 }}>
+          {(categoryRules || []).length === 0 && <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucune règle pour l'instant.</div>}
+          {(categoryRules || []).map((r, i) => (
+            <React.Fragment key={r.id}>
+              {i > 0 ? <Divider /> : null}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+                <span style={{ fontSize: 14 }}>"{r.keyword}" → {r.category}</span>
+                <button onClick={() => onDeleteCategoryRule(r.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Trash2 size={15} color="var(--red)" /></button>
+              </div>
+            </React.Fragment>
+          ))}
+        </Card>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input style={{ ...fieldInputStyle, flex: 1 }} value={newRuleKeyword} onChange={(e) => setNewRuleKeyword(e.target.value)} placeholder="Mot-clé (ex. Netflix)" />
+          <button style={fieldPickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categoryNames, value: newRuleCategory, onSelect: setNewRuleCategory })}>{newRuleCategory}</button>
+          <button
+            onClick={() => { if (newRuleKeyword.trim()) { onCreateCategoryRule({ keyword: newRuleKeyword.trim(), category: newRuleCategory }); setNewRuleKeyword(""); } }}
+            style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}
+          >
+            Ajouter
+          </button>
+        </div>
+      </div>
+
+      <div>
         <span style={label}>COMPTES</span>
         <Card padding="md" style={{ marginBottom: 12 }}>
           {coreAccounts.map((a, i) => (
@@ -196,6 +227,26 @@ export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, acco
       </div>
 
       <ApiKeysSection />
+
+      <div>
+        <span style={label}>EXPORT</span>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Toutes tes transactions, à garder de ton côté — indépendamment de l'app.</div>
+        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <ListRow
+            Icon={FileDown}
+            title="Exporter en CSV"
+            onClick={() => downloadFile(transactionsToCSV(transactions), `transactions-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv")}
+            trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+          />
+          <Divider />
+          <ListRow
+            Icon={FileDown}
+            title="Exporter en JSON"
+            onClick={() => downloadFile(JSON.stringify(transactions, null, 2), `transactions-${new Date().toISOString().slice(0, 10)}.json`, "application/json")}
+            trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+          />
+        </Card>
+      </div>
 
       <div>
         <span style={label}>COMPTE</span>
