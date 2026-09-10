@@ -31,7 +31,7 @@ export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = fals
   );
 }
 
-export function EditableRow({ name, onRename, onDelete }) {
+export function EditableRow({ name, onRename, onDelete, color, onColorChange }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   useEffect(() => { if (!editing) setValue(name); }, [name, editing]);
@@ -63,6 +63,16 @@ export function EditableRow({ name, onRename, onDelete }) {
       onClick={() => setEditing(true)}
       trailing={
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {onColorChange && (
+            <input
+              type="color"
+              value={color}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => onColorChange(e.target.value)}
+              aria-label="Couleur"
+              style={{ width: 22, height: 22, padding: 0, border: "none", borderRadius: "50%", overflow: "hidden", background: "none", cursor: "pointer", flexShrink: 0 }}
+            />
+          )}
           <button onClick={(e) => { e.stopPropagation(); setEditing(true); }} style={{ background: "transparent", border: "none", cursor: "pointer" }} aria-label="Renommer"><Pencil size={15} color="var(--text-tertiary)" /></button>
           <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{ background: "transparent", border: "none", cursor: "pointer" }} aria-label="Supprimer"><Trash2 size={16} color="var(--red)" /></button>
         </div>

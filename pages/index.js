@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { BarChart, Bar, ResponsiveContainer, XAxis } from "recharts";
+import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
   Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
@@ -8,7 +8,7 @@ import {
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES } from "../lib/constants";
-import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod } from "../lib/format";
+import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor } from "../lib/format";
 
 import { Card, Divider, Amount, IconButton, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
@@ -304,6 +304,10 @@ function ExpensesApp({ session }) {
   }, [periodFiltered, filterAccount]);
 
   const [budgetView, setBudgetView] = useState("categorie"); // "categorie" | "compte" — bascule locale, visible seulement si l'option est activée dans Réglages
+  const budgetByAccount = groupBudgetByAccount && budgetView === "compte";
+  const activeSpend = budgetByAccount ? accountSpend : categorySpend;
+  const spendLabel = (d) => (budgetByAccount ? d.compte : d.category);
+  const spendColor = (d) => (budgetByAccount ? paletteColor(d.compte) : categoryColor(categories, d.category));
 
   const pressedTransactions = useMemo(() => {
     if (!pressedBucket) return null;
@@ -434,9 +438,13 @@ function ExpensesApp({ session }) {
     try { await saveOptions("Category", next); } catch (e) { setError(e.message); }
   }
   async function renameCategory(id, newName) {
-    const next = categories.map((c) => (c.id === id ? { id: c.id, name: newName } : c));
+    const next = categories.map((c) => (c.id === id ? { id: c.id, name: newName, color: c.color } : c));
     setCategories(next);
     try { await saveOptions("Category", next); } catch (e) { setError(e.message); }
+  }
+  async function updateCategoryColorHandler(id, color) {
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)));
+    try { await api(`/api/categories/${id}`, { method: "PATCH", body: { color } }); } catch (e) { setError(e.message); }
   }
   async function addCategory() {
     const name = newCatName.trim();
@@ -695,49 +703,43 @@ function ExpensesApp({ session }) {
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
               <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
-              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{groupBudgetByAccount && budgetView === "compte" ? "Répartition réelle par compte" : "Répartition réelle par catégorie"} — pas de plafond configuré</span>
+              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"} — pas de plafond configuré</span>
             </Card>
 
             {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {groupBudgetByAccount && budgetView === "compte" ? (
-                <>
-                  {accountSpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
-                  {accountSpend.map(({ compte, amount, pct }) => (
-                    <Card key={compte} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
-                          <PiggyBank size={17} color="var(--icon-primary)" />
-                        </span>
-                        <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{compte}</span>
-                        <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
+            {activeSpend.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>
+            ) : (
+              <>
+                <Card padding="md" style={{ height: 240 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={activeSpend} dataKey="amount" nameKey={budgetByAccount ? "compte" : "category"} cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={2} stroke="none">
+                        {activeSpend.map((d, i) => (
+                          <Cell key={i} fill={spendColor(d)} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => fmtEUR(v)} contentStyle={{ borderRadius: 8, border: "none", fontSize: 12 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {activeSpend.map((d, i) => (
+                    <React.Fragment key={spendLabel(d)}>
+                      {i > 0 ? <Divider /> : null}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
+                        <span style={{ width: 11, height: 11, borderRadius: "50%", background: spendColor(d), flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: 14 }}>{spendLabel(d)}</span>
+                        <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{d.pct.toFixed(0)} %</span>
+                        <Amount value={fmtEUR(d.amount)} size="sm" direction="expense" showSign={false} />
                       </div>
-                      <ProgressBar value={pct} tone="expense" />
-                    </Card>
+                    </React.Fragment>
                   ))}
-                </>
-              ) : (
-                <>
-                  {categorySpend.length === 0 && <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>}
-                  {categorySpend.map(({ category, amount, pct }) => {
-                    const Icon = CATEGORY_ICON[category] || ShoppingBag;
-                    return (
-                      <Card key={category} padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-sm)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
-                            <Icon size={17} color="var(--icon-primary)" />
-                          </span>
-                          <span style={{ flex: 1, font: "500 16px var(--font-core)" }}>{category}</span>
-                          <Amount value={fmtEUR(amount)} size="sm" direction="expense" showSign={false} />
-                        </div>
-                        <ProgressBar value={pct} tone="expense" />
-                      </Card>
-                    );
-                  })}
-                </>
-              )}
-            </div>
+                </Card>
+              </>
+            )}
           </div>
           )
         ) : (
@@ -753,6 +755,7 @@ function ExpensesApp({ session }) {
             showAccountFilter={showAccountFilter} onToggleShowAccountFilter={updateShowAccountFilter}
             groupBudgetByAccount={groupBudgetByAccount} onToggleGroupBudgetByAccount={updateGroupBudgetByAccount}
             categoryRules={categoryRules} onCreateCategoryRule={createCategoryRuleHandler} onDeleteCategoryRule={deleteCategoryRuleHandler}
+            onChangeCategoryColor={updateCategoryColorHandler}
             transactions={transactions}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut}

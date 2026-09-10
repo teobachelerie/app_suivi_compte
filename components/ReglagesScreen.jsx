@@ -7,6 +7,7 @@ import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU } from "../lib/constants";
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
+import { categoryColor } from "../lib/format";
 
 const sectionLabelStyle = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
 
@@ -124,6 +125,7 @@ export function ReglagesScreen(props) {
     defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount,
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
+    onChangeCategoryColor,
     transactions, openOptions, userEmail, onSignOut,
   } = props;
 
@@ -208,7 +210,7 @@ export function ReglagesScreen(props) {
                 {categories.map((c, i) => (
                   <React.Fragment key={c.id}>
                     {i > 0 ? <Divider /> : null}
-                    <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} />
+                    <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} color={categoryColor(categories, c.name)} onColorChange={(v) => onChangeCategoryColor(c.id, v)} />
                   </React.Fragment>
                 ))}
               </Card>

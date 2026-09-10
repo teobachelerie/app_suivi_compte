@@ -103,6 +103,12 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Camembert et couleurs de catégorie
+
+L'onglet Budgets affiche désormais un camembert (catégories ou comptes, selon le sélecteur) au lieu d'une liste de cartes, avec une légende colorée en dessous (nom, pourcentage, montant). Chaque catégorie peut avoir une couleur personnalisée, assignée depuis Réglages → Catégories (pastille de couleur cliquable à côté de chaque nom, sélecteur natif iOS). Sans couleur choisie, chaque catégorie reçoit automatiquement une couleur stable de la palette par défaut (toujours la même pour un nom donné). Les comptes suivent la même logique de couleur automatique, sans personnalisation manuelle.
+
+**Nouvelle migration à exécuter** : `supabase/migration-008-category-colors.sql` (colonne `color` sur `categories`).
+
 ## Emoji par transaction
 
 Chaque dépense/revenu peut avoir un emoji personnalisé (ex. 🍕) qui remplace l'icône de catégorie dans les listes. Champ facultatif dans le formulaire web, et dans le Raccourci iOS entre le choix de la catégorie et celui du compte (voir plus bas). Sans emoji, l'icône de catégorie habituelle s'affiche comme avant.
