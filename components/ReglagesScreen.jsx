@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
@@ -7,6 +7,8 @@ import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU } from "../lib/constants";
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
+
+const sectionLabelStyle = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
 
 function ApiKeysSection() {
   const [keys, setKeys] = useState(null); // null = pas encore chargé
@@ -45,11 +47,9 @@ function ApiKeysSection() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const label_ = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
-
   return (
     <div>
-      <span style={label_}>RACCOURCIS IOS</span>
+      <span style={sectionLabelStyle}>RACCOURCIS IOS</span>
       <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
         1. Installe les deux raccourcis ci-dessous. 2. Crée ta clé plus bas. 3. Ouvre chaque raccourci installé, touche son tout premier bloc et colle ta clé à la place du texte factice.
       </div>
@@ -103,160 +103,217 @@ function ApiKeysSection() {
   );
 }
 
-export function ReglagesScreen({ categories, coreAccounts, savingsAccounts, accountNames, onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName, onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName, themeMode, onToggleTheme, defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount, showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount, categoryRules, onCreateCategoryRule, onDeleteCategoryRule, transactions, openOptions, userEmail, onSignOut }) {
+function MenuRow({ Icon, title, subtitle, onClick }) {
+  return (
+    <ListRow
+      Icon={Icon}
+      title={title}
+      subtitle={subtitle}
+      onClick={onClick}
+      trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+    />
+  );
+}
+
+export function ReglagesScreen(props) {
+  const {
+    categories, coreAccounts, savingsAccounts, accountNames,
+    onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName,
+    onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName,
+    themeMode, onToggleTheme,
+    defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount,
+    showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
+    categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
+    transactions, openOptions, userEmail, onSignOut,
+  } = props;
+
+  const [section, setSection] = useState(null); // null = menu principal
   const isLight = themeMode === "light";
-  const label = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
   const [newRuleKeyword, setNewRuleKeyword] = useState("");
   const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
   const categoryNames = categories.map((c) => c.name);
+
+  if (section) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+        <NavBar back title={section} onBack={() => setSection(null)} />
+
+        {section === "Apparence" && (
+          <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
+            <Switch checked={isLight} onChange={onToggleTheme} />
+          </Card>
+        )}
+
+        {section === "Affichage" && (
+          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+              <span style={{ fontSize: 15 }}>Filtrer l'activité par compte</span>
+              <Switch checked={showAccountFilter} onChange={onToggleShowAccountFilter} />
+            </div>
+            <Divider inset={0} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+              <span style={{ fontSize: 15 }}>Grouper le budget par compte</span>
+              <Switch checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
+            </div>
+          </Card>
+        )}
+
+        {section === "Comptes" && (
+          <>
+            <div>
+              <span style={sectionLabelStyle}>COMPTES PRINCIPAUX</span>
+              <Card padding="md" style={{ marginBottom: 12 }}>
+                {coreAccounts.map((a, i) => (
+                  <React.Fragment key={a.id}>
+                    {i > 0 ? <Divider /> : null}
+                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
+                  </React.Fragment>
+                ))}
+              </Card>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
+                <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+              </div>
+            </div>
+
+            <div>
+              <span style={sectionLabelStyle}>ÉPARGNE</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Livrets et comptes d'épargne, affichés à part sur le tableau de bord.</div>
+              <Card padding="md" style={{ marginBottom: 12 }}>
+                {savingsAccounts.length === 0 && (
+                  <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucun livret pour l'instant.</div>
+                )}
+                {savingsAccounts.map((a, i) => (
+                  <React.Fragment key={a.id}>
+                    {i > 0 ? <Divider /> : null}
+                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
+                  </React.Fragment>
+                ))}
+              </Card>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau livret (ex. Livret A)" />
+                <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {section === "Catégories" && (
+          <>
+            <div>
+              <span style={sectionLabelStyle}>CATÉGORIES</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une catégorie ou l'icône crayon pour la renommer.</div>
+              <Card padding="md" style={{ marginBottom: 12 }}>
+                {categories.map((c, i) => (
+                  <React.Fragment key={c.id}>
+                    {i > 0 ? <Divider /> : null}
+                    <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} />
+                  </React.Fragment>
+                ))}
+              </Card>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input style={fieldInputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
+                <button onClick={onAddCategory} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
+              </div>
+            </div>
+
+            <div>
+              <span style={sectionLabelStyle}>RÈGLES DE CATÉGORISATION AUTOMATIQUE</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Si le titre d'une dépense contient ce mot, la catégorie se pré-remplit toute seule.</div>
+              <Card padding="md" style={{ marginBottom: 12 }}>
+                {(categoryRules || []).length === 0 && <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucune règle pour l'instant.</div>}
+                {(categoryRules || []).map((r, i) => (
+                  <React.Fragment key={r.id}>
+                    {i > 0 ? <Divider /> : null}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+                      <span style={{ fontSize: 14 }}>"{r.keyword}" → {r.category}</span>
+                      <button onClick={() => onDeleteCategoryRule(r.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Trash2 size={15} color="var(--red)" /></button>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </Card>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input style={{ ...fieldInputStyle, flex: 1 }} value={newRuleKeyword} onChange={(e) => setNewRuleKeyword(e.target.value)} placeholder="Mot-clé (ex. Netflix)" />
+                <button style={fieldPickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categoryNames, value: newRuleCategory, onSelect: setNewRuleCategory })}>{newRuleCategory}</button>
+                <button
+                  onClick={() => { if (newRuleKeyword.trim()) { onCreateCategoryRule({ keyword: newRuleKeyword.trim(), category: newRuleCategory }); setNewRuleKeyword(""); } }}
+                  style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}
+                >
+                  Ajouter
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {section === "Raccourci iOS" && (
+          <>
+            <div>
+              <span style={sectionLabelStyle}>VALEURS PAR DÉFAUT</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Utilisées à chaque nouvelle dépense, modifiables au cas par cas.</div>
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <ListRow title="Moyen de paiement" subtitle={null} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultPayment}<ChevronRight size={16} /></span>} />
+                <Divider inset={0} />
+                <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accountNames, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
+              </Card>
+            </div>
+            <ApiKeysSection />
+          </>
+        )}
+
+        {section === "Export" && (
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Toutes tes transactions, à garder de ton côté — indépendamment de l'app.</div>
+            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              <ListRow
+                Icon={FileDown}
+                title="Exporter en CSV"
+                onClick={() => downloadFile(transactionsToCSV(transactions), `transactions-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv")}
+                trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+              />
+              <Divider />
+              <ListRow
+                Icon={FileDown}
+                title="Exporter en JSON"
+                onClick={() => downloadFile(JSON.stringify(transactions, null, 2), `transactions-${new Date().toISOString().slice(0, 10)}.json`, "application/json")}
+                trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+              />
+            </Card>
+          </div>
+        )}
+
+        {section === "Compte" && (
+          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>{userEmail}</span>
+            <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "12px 0", cursor: "pointer" }}>
+              <LogOut size={16} /> Déconnexion
+            </button>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <NavBar large title="Réglages" />
-
-      <div>
-        <span style={label}>APPARENCE</span>
-        <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
-          <Switch checked={isLight} onChange={onToggleTheme} />
-        </Card>
-      </div>
-
-      <div>
-        <span style={label}>AFFICHAGE</span>
-        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-            <span style={{ fontSize: 15 }}>Filtrer l'activité par compte</span>
-            <Switch checked={showAccountFilter} onChange={onToggleShowAccountFilter} />
-          </div>
-          <Divider inset={0} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-            <span style={{ fontSize: 15 }}>Grouper le budget par compte</span>
-            <Switch checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
-          </div>
-        </Card>
-      </div>
-
-      <div>
-        <span style={label}>VALEURS PAR DÉFAUT DU RACCOURCI</span>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Utilisées à chaque nouvelle dépense, modifiables au cas par cas.</div>
-        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <ListRow title="Moyen de paiement" subtitle={null} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultPayment}<ChevronRight size={16} /></span>} />
-          <Divider inset={0} />
-          <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accountNames, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
-        </Card>
-      </div>
-
-      <div>
-        <span style={label}>CATÉGORIES</span>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une catégorie ou l'icône crayon pour la renommer.</div>
-        <Card padding="md" style={{ marginBottom: 12 }}>
-          {categories.map((c, i) => (
-            <React.Fragment key={c.id}>
-              {i > 0 ? <Divider /> : null}
-              <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} />
-            </React.Fragment>
-          ))}
-        </Card>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={fieldInputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
-          <button onClick={onAddCategory} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-        </div>
-      </div>
-
-      <div>
-        <span style={label}>RÈGLES DE CATÉGORISATION AUTOMATIQUE</span>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Si le titre d'une dépense contient ce mot, la catégorie se pré-remplit toute seule.</div>
-        <Card padding="md" style={{ marginBottom: 12 }}>
-          {(categoryRules || []).length === 0 && <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucune règle pour l'instant.</div>}
-          {(categoryRules || []).map((r, i) => (
-            <React.Fragment key={r.id}>
-              {i > 0 ? <Divider /> : null}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-                <span style={{ fontSize: 14 }}>"{r.keyword}" → {r.category}</span>
-                <button onClick={() => onDeleteCategoryRule(r.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Trash2 size={15} color="var(--red)" /></button>
-              </div>
-            </React.Fragment>
-          ))}
-        </Card>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={{ ...fieldInputStyle, flex: 1 }} value={newRuleKeyword} onChange={(e) => setNewRuleKeyword(e.target.value)} placeholder="Mot-clé (ex. Netflix)" />
-          <button style={fieldPickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categoryNames, value: newRuleCategory, onSelect: setNewRuleCategory })}>{newRuleCategory}</button>
-          <button
-            onClick={() => { if (newRuleKeyword.trim()) { onCreateCategoryRule({ keyword: newRuleKeyword.trim(), category: newRuleCategory }); setNewRuleKeyword(""); } }}
-            style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}
-          >
-            Ajouter
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <span style={label}>COMPTES</span>
-        <Card padding="md" style={{ marginBottom: 12 }}>
-          {coreAccounts.map((a, i) => (
-            <React.Fragment key={a.id}>
-              {i > 0 ? <Divider /> : null}
-              <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
-            </React.Fragment>
-          ))}
-        </Card>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
-          <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-        </div>
-      </div>
-
-      <div>
-        <span style={label}>ÉPARGNE</span>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Livrets et comptes d'épargne, affichés à part sur le tableau de bord.</div>
-        <Card padding="md" style={{ marginBottom: 12 }}>
-          {savingsAccounts.length === 0 && (
-            <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucun livret pour l'instant.</div>
-          )}
-          {savingsAccounts.map((a, i) => (
-            <React.Fragment key={a.id}>
-              {i > 0 ? <Divider /> : null}
-              <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
-            </React.Fragment>
-          ))}
-        </Card>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau livret (ex. Livret A)" />
-          <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-        </div>
-      </div>
-
-      <ApiKeysSection />
-
-      <div>
-        <span style={label}>EXPORT</span>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Toutes tes transactions, à garder de ton côté — indépendamment de l'app.</div>
-        <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <ListRow
-            Icon={FileDown}
-            title="Exporter en CSV"
-            onClick={() => downloadFile(transactionsToCSV(transactions), `transactions-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv")}
-            trailing={<ChevronRight size={16} color="var(--grey-3)" />}
-          />
-          <Divider />
-          <ListRow
-            Icon={FileDown}
-            title="Exporter en JSON"
-            onClick={() => downloadFile(JSON.stringify(transactions, null, 2), `transactions-${new Date().toISOString().slice(0, 10)}.json`, "application/json")}
-            trailing={<ChevronRight size={16} color="var(--grey-3)" />}
-          />
-        </Card>
-      </div>
-
-      <div>
-        <span style={label}>COMPTE</span>
-        <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 14, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</span>
-          <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: "var(--red)", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-            <LogOut size={15} /> Déconnexion
-          </button>
-        </Card>
-      </div>
+      <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <MenuRow Icon={Sun} title="Apparence" onClick={() => setSection("Apparence")} />
+        <Divider inset={0} />
+        <MenuRow Icon={SlidersHorizontal} title="Affichage" onClick={() => setSection("Affichage")} />
+        <Divider inset={0} />
+        <MenuRow Icon={Wallet} title="Comptes" onClick={() => setSection("Comptes")} />
+        <Divider inset={0} />
+        <MenuRow Icon={Tag} title="Catégories" onClick={() => setSection("Catégories")} />
+        <Divider inset={0} />
+        <MenuRow Icon={Zap} title="Raccourci iOS" onClick={() => setSection("Raccourci iOS")} />
+        <Divider inset={0} />
+        <MenuRow Icon={FileDown} title="Export" onClick={() => setSection("Export")} />
+      </Card>
+      <Card padding="md">
+        <MenuRow Icon={User} title="Compte" subtitle={userEmail} onClick={() => setSection("Compte")} />
+      </Card>
     </div>
   );
 }
