@@ -1,10 +1,43 @@
+import { useEffect, useRef } from "react";
 import { X, ChevronRight, Check } from "lucide-react";
 
+// Empêche le rebond élastique iOS À LA SOURCE, en JavaScript — le CSS seul
+// (overscroll-behavior) n'est pas fiable à 100% dans les apps ajoutées à l'écran
+// d'accueil. Bloque le geste tactile uniquement quand on est déjà en haut/bas du
+// panneau ET qu'on continue de tirer dans cette direction (le défilement normal
+// à l'intérieur du panneau n'est jamais affecté).
+function useNoBounce(ref) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let startY = 0;
+    function onTouchStart(e) { startY = e.touches[0].pageY; }
+    function onTouchMove(e) {
+      const y = e.touches[0].pageY;
+      const atTop = el.scrollTop <= 0;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      if ((atTop && y > startY) || (atBottom && y < startY)) {
+        e.preventDefault();
+      }
+    }
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [ref]);
+}
+
 export function TopSheet({ title, onClose, children }) {
+  const outerRef = useRef(null);
+  const panelRef = useRef(null);
+  useNoBounce(outerRef);
+  useNoBounce(panelRef);
   return (
-    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
+    <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "75vh", overflowY: "auto", overscrollBehavior: "contain", boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "75vh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
           <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
           <div style={{ padding: "6px 20px 20px" }}>{children}</div>
         </div>
@@ -18,13 +51,15 @@ export function TopSheet({ title, onClose, children }) {
 }
 
 export function Sheet({ title, onClose, footer, children }) {
+  const panelRef = useRef(null);
+  useNoBounce(panelRef);
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: "var(--surface-raised)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-primary)", cursor: "pointer", boxShadow: "var(--elev-raised)", zIndex: 2 }}>
           <X size={18} />
         </button>
-        <div className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", overscrollBehavior: "contain", paddingBottom: footer ? 0 : 24, boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", overscrollBehavior: "none", paddingBottom: footer ? 0 : 24, boxShadow: "var(--elev-overlay)" }}>
           <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "10px auto 4px" }} />
           <div style={{ textAlign: "center", padding: "10px 20px 16px", fontSize: 17, fontWeight: 600 }}>{title}</div>
           <div style={{ padding: "0 20px" }}>{children}</div>
@@ -53,10 +88,14 @@ export function SheetRow({ label, value, onClick, last }) {
 }
 
 export function OptionSheet({ title, options, value, onSelect, onClose }) {
+  const outerRef = useRef(null);
+  const panelRef = useRef(null);
+  useNoBounce(outerRef);
+  useNoBounce(panelRef);
   return (
-    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
+    <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "65vh", overflowY: "auto", overscrollBehavior: "contain", boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "65vh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
           <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
           <div style={{ padding: "6px 20px 20px" }}>
             {options.map((o, i) => (
