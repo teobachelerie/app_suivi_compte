@@ -34,7 +34,7 @@ export function AuthScreen() {
   }
 
   return (
-    <div style={{ background: "var(--surface-base)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--gutter-screen)", fontFamily: "var(--font-core)" }}>
+    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--gutter-screen)", fontFamily: "var(--font-core)" }}>
       <div style={{ width: "100%", maxWidth: 380 }}>
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
           <div style={{ font: "600 28px var(--font-display)", color: "var(--text-primary)" }}>Cap Finances</div>

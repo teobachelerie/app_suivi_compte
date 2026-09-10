@@ -37,7 +37,7 @@ export function TopSheet({ title, onClose, children }) {
   return (
     <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "75vh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "75dvh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
           <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
           <div style={{ padding: "6px 20px 20px" }}>{children}</div>
         </div>
@@ -59,16 +59,19 @@ export function Sheet({ title, onClose, footer, children }) {
         <button onClick={onClose} style={{ position: "absolute", top: -18, left: 16, width: 36, height: 36, borderRadius: 18, background: "var(--surface-raised)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-primary)", cursor: "pointer", boxShadow: "var(--elev-raised)", zIndex: 2 }}>
           <X size={18} />
         </button>
-        <div ref={panelRef} className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85vh", overflowY: "auto", overscrollBehavior: "none", paddingBottom: footer ? 0 : 24, boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="sheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", maxHeight: "85dvh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
           <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "10px auto 4px" }} />
           <div style={{ textAlign: "center", padding: "10px 20px 16px", fontSize: 17, fontWeight: 600 }}>{title}</div>
-          <div style={{ padding: "0 20px" }}>{children}</div>
-          {footer && (
-            <div style={{ position: "sticky", bottom: 0, background: "var(--surface-base)", padding: "12px 20px calc(16px + env(safe-area-inset-bottom, 0px))", boxShadow: "0 -12px 16px -12px rgba(0,0,0,0.15)" }}>
-              {footer}
-            </div>
-          )}
+          {/* padding-bottom réservé pour ne jamais laisser un champ caché derrière le bouton fixe ci-dessous */}
+          <div style={{ padding: footer ? "0 20px 110px" : "0 20px 24px" }}>{children}</div>
         </div>
+        {footer && (
+          // Fixe par rapport à l'écran, PAS par rapport au défilement du formulaire — ne bouge
+          // jamais, y compris quand le clavier iOS s'ouvre/se ferme entre deux champs.
+          <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, maxWidth: 420, margin: "0 auto", background: "var(--surface-base)", padding: "12px 20px calc(16px + env(safe-area-inset-bottom, 0px))", boxShadow: "0 -12px 16px -12px rgba(0,0,0,0.15)", zIndex: 3 }}>
+            {footer}
+          </div>
+        )}
         <style jsx>{`
           @keyframes sheetIn { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
           .sheet-panel { animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1); transform-origin: top right; }
@@ -95,7 +98,7 @@ export function OptionSheet({ title, options, value, onSelect, onClose }) {
   return (
     <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
       <div style={{ position: "relative", width: "100%", maxWidth: 420, padding: "0 20px" }} onClick={(e) => e.stopPropagation()}>
-        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "65vh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
+        <div ref={panelRef} className="topsheet-panel" style={{ background: "var(--surface-base)", borderRadius: "var(--radius-lg)", maxHeight: "65dvh", overflowY: "auto", overscrollBehavior: "none", boxShadow: "var(--elev-overlay)" }}>
           <div style={{ textAlign: "center", padding: "16px 20px 12px", fontSize: 17, fontWeight: 600, borderBottom: "1px solid var(--separator)" }}>{title}</div>
           <div style={{ padding: "6px 20px 20px" }}>
             {options.map((o, i) => (

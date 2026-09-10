@@ -33,7 +33,7 @@ export default function Home() {
   }, []);
 
   if (session === undefined) {
-    return <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement…</div>;
+    return <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement…</div>;
   }
   if (!session) {
     return <AuthScreen />;
@@ -516,13 +516,13 @@ function ExpensesApp({ session }) {
   }
 
   if (loading) {
-    return <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
+    return <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
   }
 
   const todayHeader = fmtTodayHeader();
 
   return (
-    <div style={{ background: "var(--surface-base)", minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" }}>
+    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" }}>
       <div style={{ maxWidth: 420, margin: "0 auto", padding: "calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter-screen) 0" }}>
 
         {error && (
