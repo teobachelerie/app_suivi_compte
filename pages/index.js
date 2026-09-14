@@ -10,7 +10,7 @@ import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES } from "../lib/constants";
 import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor } from "../lib/format";
 
-import { Card, Divider, Amount, IconButton, ProgressBar } from "../components/ui/Primitives";
+import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
 import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../components/ui/Selectors";
@@ -562,7 +562,7 @@ function ExpensesApp({ session }) {
             <ProgressionScreen transactions={transactions} onBack={() => setShowProgression(false)} />
           ) : view === "dashboard" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-              <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
+              <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                 <AccountPill
@@ -686,7 +686,7 @@ function ExpensesApp({ session }) {
             />
           ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-            <NavBar large title="Budgets" subtitle={periodLabel(period, "Dépense")} action={<IconButton Icon={Settings} size={36} label="Réglages" onClick={() => setActiveTab("reglages")} />} />
+            <NavBar large title="Budgets" subtitle={periodLabel(period, "Dépense")} />
 
             <Card padding="md" onClick={() => setShowSubscriptions(true)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
@@ -763,14 +763,6 @@ function ExpensesApp({ session }) {
         )}
       </div>
 
-      <button
-        onClick={() => setShowAdd(true)}
-        aria-label="Ajouter une opération"
-        style={{ position: "fixed", right: 20, bottom: "calc(env(safe-area-inset-bottom, 0px) + 92px)", width: 56, height: 56, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 35 }}
-      >
-        <Plus size={26} color="#0A0A0A" />
-      </button>
-
       <TabBar
         value={activeTab}
         onChange={(v) => { setActiveTab(v); setView("dashboard"); setSavingsDetailAccount(null); }}
@@ -780,6 +772,15 @@ function ExpensesApp({ session }) {
           { value: "budgets", label: "Budgets", Icon: PieChartIcon },
           { value: "reglages", label: "Réglages", Icon: Settings },
         ]}
+        trailing={
+          <button
+            onClick={() => setShowAdd(true)}
+            aria-label="Ajouter une opération"
+            style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+          >
+            <Plus size={24} color="#0A0A0A" />
+          </button>
+        }
       />
 
       {(showAdd || editing) && (

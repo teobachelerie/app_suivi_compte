@@ -17,10 +17,10 @@ export function NavBar({ title, subtitle, back = false, onBack, action, large = 
   );
 }
 
-export function TabBar({ items, value, onChange }) {
+export function TabBar({ items, value, onChange, trailing }) {
   return (
-    <nav style={{ position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "center", padding: "0 var(--space-4) calc(env(safe-area-inset-bottom, 0px) + 20px)", zIndex: 30, pointerEvents: "none" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--accent-bg)", borderRadius: "var(--radius-round)", padding: 6, boxShadow: "var(--elev-raised-lg)", pointerEvents: "auto" }}>
+    <nav style={{ position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, padding: "0 var(--space-4) calc(env(safe-area-inset-bottom, 0px) + 10px)", zIndex: 30, pointerEvents: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--surface-inset)", borderRadius: "var(--radius-round)", padding: 7, boxShadow: "var(--elev-inset)", pointerEvents: "auto" }}>
         {items.map((it) => {
           const on = it.value === value;
           return (
@@ -29,19 +29,20 @@ export function TabBar({ items, value, onChange }) {
               type="button"
               onClick={() => onChange(it.value)}
               style={{
-                display: "flex", alignItems: "center", gap: on ? 8 : 0,
-                padding: on ? "11px 18px 11px 14px" : "11px 14px",
+                display: "flex", alignItems: "center", gap: on ? 9 : 0,
+                padding: on ? "13px 20px 13px 16px" : "13px 16px",
                 borderRadius: "var(--radius-round)",
                 border: "none",
-                background: on ? "var(--surface-base)" : "transparent",
+                background: on ? "var(--surface-highlight)" : "transparent",
+                boxShadow: on ? "var(--elev-raised-sm)" : "none",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
-                transition: "background var(--duration-base) var(--ease-standard), padding var(--duration-base) var(--ease-standard)",
+                transition: "background var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), padding var(--duration-base) var(--ease-standard)",
                 overflow: "hidden",
                 whiteSpace: "nowrap",
               }}
             >
-              <it.Icon size={20} color={on ? "var(--text-primary)" : "var(--accent-text)"} style={{ opacity: on ? 1 : 0.65, flexShrink: 0 }} />
+              <it.Icon size={22} color={on ? "var(--text-primary)" : "var(--text-tertiary)"} style={{ flexShrink: 0 }} />
               <span
                 style={{
                   display: "inline-block",
@@ -51,7 +52,7 @@ export function TabBar({ items, value, onChange }) {
                   transition: "max-width var(--duration-base) var(--ease-standard), opacity var(--duration-micro) var(--ease-standard)",
                   color: "var(--text-primary)",
                   fontFamily: "var(--font-core)",
-                  fontSize: "var(--size-footnote)",
+                  fontSize: "var(--size-subhead)",
                   fontWeight: "var(--weight-semibold)",
                 }}
               >
@@ -61,6 +62,7 @@ export function TabBar({ items, value, onChange }) {
           );
         })}
       </div>
+      {trailing && <div style={{ pointerEvents: "auto" }}>{trailing}</div>}
     </nav>
   );
 }
