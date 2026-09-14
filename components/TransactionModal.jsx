@@ -11,6 +11,7 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
   const [category, setCategory] = useState(tx?.category || categories[0] || "");
   const [categoryTouched, setCategoryTouched] = useState(!!tx); // en édition, ne pas re-suggérer par-dessus le choix déjà fait
   const [compte, setCompte] = useState(tx?.compte || defaultAccount || accounts[0] || "");
+  const [compteDestination, setCompteDestination] = useState(tx?.compteDestination || accounts.find((a) => a !== (tx?.compte || defaultAccount)) || accounts[0] || "");
   const [type, setType] = useState(tx?.type || "Dépense");
   const [payment, setPayment] = useState(tx?.payment || defaultPayment || "Carte bancaire");
   const [date, setDate] = useState(tx?.date || toLocalISODate(new Date()));
@@ -19,6 +20,8 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
   const [splitMode, setSplitMode] = useState(!!tx?.splits?.length);
   const [splits, setSplits] = useState(tx?.splits?.length ? tx.splits : [{ category: category, amount: "" }]);
   const [error, setError] = useState("");
+
+  const isVirement = type === "Virement";
 
   function handleTitleChange(v) {
     setTitle(v);
@@ -40,18 +43,26 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
 
   function handleSave() {
     const amt = parseFloat(String(amount).replace(",", "."));
-    if (!title.trim()) { setError("Indique un titre."); return; }
     if (!amt || amt <= 0) { setError("Indique un montant valide."); return; }
     const tags = tagsText.split(",").map((s) => s.trim()).filter(Boolean);
+
+    if (isVirement) {
+      if (compte === compteDestination) { setError("Les comptes source et cible doivent être différents."); return; }
+      const finalTitle = title.trim() || `${compte} → ${compteDestination}`;
+      onSave({ id: tx?.id, title: finalTitle, amount: amt, category: "Virement automatique", compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: emoji.trim() || null });
+      return;
+    }
+
+    if (!title.trim()) { setError("Indique un titre."); return; }
 
     if (splitMode) {
       const cleanSplits = splits.map((s) => ({ category: s.category, amount: parseFloat(String(s.amount).replace(",", ".")) || 0 })).filter((s) => s.amount > 0);
       if (cleanSplits.length < 2) { setError("Ajoute au moins deux parts pour fractionner."); return; }
       if (Math.abs(cleanSplits.reduce((s, x) => s + x.amount, 0) - amt) > 0.01) { setError("La somme des parts doit être égale au montant total."); return; }
       const mainCategory = cleanSplits.reduce((a, b) => (b.amount > a.amount ? b : a)).category;
-      onSave({ id: tx?.id, title: title.trim(), amount: amt, category: mainCategory, compte, type, payment, date, tags, splits: cleanSplits, emoji: emoji.trim() || null });
+      onSave({ id: tx?.id, title: title.trim(), amount: amt, category: mainCategory, compte, compteDestination: null, type, payment, date, tags, splits: cleanSplits, emoji: emoji.trim() || null });
     } else {
-      onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, type, payment, date, tags, splits: null, emoji: emoji.trim() || null });
+      onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, compteDestination: null, type, payment, date, tags, splits: null, emoji: emoji.trim() || null });
     }
   }
 
@@ -69,11 +80,13 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
         </>
       }
     >
-      <SegmentedControl options={["Dépense", "Gain"]} value={type} onChange={setType} style={{ marginBottom: 16 }} />
-      <Field label="Titre"><input style={fieldInputStyle} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="ex. J'ai acheté une bougie" /></Field>
+      <SegmentedControl options={["Dépense", "Gain", "Virement"]} value={type} onChange={setType} style={{ marginBottom: 16 }} />
+      <Field label={isVirement ? "Titre (facultatif)" : "Titre"}>
+        <input style={fieldInputStyle} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder={isVirement ? `ex. ${compte} → ${compteDestination}` : "ex. J'ai acheté une bougie"} />
+      </Field>
       <Field label="Montant (€)"><input style={fieldInputStyle} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" /></Field>
 
-      {!splitMode && (
+      {!isVirement && !splitMode && (
         <Field label="Catégorie">
           <button style={fieldPickerStyle} onClick={() => { setCategoryTouched(true); openOptions({ title: "Catégorie", options: categories, value: category, onSelect: setCategory }); }}>
             {category}<ChevronDown size={16} color="var(--text-tertiary)" />
@@ -111,8 +124,13 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
       )}
 
       <Field label="Emoji (facultatif)"><input style={fieldInputStyle} value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="🍕" /></Field>
-      <Field label="Compte"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
-      <Field label="Moyen de paiement"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Moyen de paiement", options: DEFAULT_PAYMENTS, value: payment, onSelect: setPayment })}>{payment}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      <Field label={isVirement ? "Compte source" : "Compte"}><button style={fieldPickerStyle} onClick={() => openOptions({ title: isVirement ? "Compte source" : "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      {isVirement && (
+        <Field label="Compte cible"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte cible", options: accounts, value: compteDestination, onSelect: setCompteDestination })}>{compteDestination}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      )}
+      {!isVirement && (
+        <Field label="Moyen de paiement"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Moyen de paiement", options: DEFAULT_PAYMENTS, value: payment, onSelect: setPayment })}>{payment}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+      )}
       <Field label="Date"><input type="date" style={fieldInputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       <Field label="Tags (séparés par une virgule)"><input style={fieldInputStyle} value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="ex. vacances, cadeau" /></Field>
     </Sheet>

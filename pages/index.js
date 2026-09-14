@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target, TrendingUp,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 
@@ -17,7 +17,6 @@ import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../compone
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { GoalsScreen } from "../components/GoalsScreen";
-import { ProgressionScreen } from "../components/ProgressionScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
 import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
@@ -43,6 +42,7 @@ export default function Home() {
 
 function ExpensesApp({ session }) {
   function txSubtitle(t) {
+    if (t.type === "Virement") return `${t.compte} → ${t.compteDestination}`;
     let s = t.splits?.length ? "Fractionné" : t.category;
     if (t.tags?.length) s += " · " + t.tags.map((tag) => `#${tag}`).join(" ");
     return s;
@@ -172,7 +172,6 @@ function ExpensesApp({ session }) {
   const [goals, setGoals] = useState([]);
   const [categoryRules, setCategoryRules] = useState([]);
   const [showGoals, setShowGoals] = useState(false);
-  const [showProgression, setShowProgression] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
 
@@ -264,8 +263,17 @@ function ExpensesApp({ session }) {
   const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
   const accountNames = useMemo(() => accounts.map((a) => a.name), [accounts]);
   function accountBalance(acc) {
-    if (acc === "Tous") return transactions.reduce((s, t) => s + (t.type === "Gain" ? t.amount : -t.amount), 0);
-    return transactions.reduce((s, t) => (t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s), 0);
+    // Un virement interne ne change jamais le patrimoine total (l'argent reste "chez moi") — on
+    // l'ignore simplement pour "Tous", ce qui revient exactement à compter -montant puis +montant.
+    if (acc === "Tous") return transactions.reduce((s, t) => (t.type === "Virement" ? s : s + (t.type === "Gain" ? t.amount : -t.amount)), 0);
+    return transactions.reduce((s, t) => {
+      if (t.type === "Virement") {
+        if (t.compte === acc) return s - t.amount;
+        if (t.compteDestination === acc) return s + t.amount;
+        return s;
+      }
+      return t.compte === acc ? s + (t.type === "Gain" ? t.amount : -t.amount) : s;
+    }, 0);
   }
   const balanceTotal = useMemo(() => accountBalance(filterAccount), [transactions, filterAccount]);
   const savingsBalance = savingsDetailAccount ? accountBalance(savingsDetailAccount) : 0;
@@ -491,12 +499,12 @@ function ExpensesApp({ session }) {
         <div style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: 8 }}>{fmtDateHeader(date)}</div>
         <Card padding="md">
           {txs.map((t, i) => {
-            const Icon = CATEGORY_ICON[t.category] || ShoppingBag;
-            const positive = t.type === "Gain";
+            const Icon = t.type === "Virement" ? RefreshCw : CATEGORY_ICON[t.category] || ShoppingBag;
+            const direction = t.type === "Virement" ? "neutral" : t.type === "Gain" ? "income" : "expense";
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+                <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
               </React.Fragment>
             );
           })}
@@ -510,12 +518,12 @@ function ExpensesApp({ session }) {
     return (
       <Card padding="md">
         {list.map((t, i) => {
-          const Icon = CATEGORY_ICON[t.category] || ShoppingBag;
-          const positive = t.type === "Gain";
+          const Icon = t.type === "Virement" ? RefreshCw : CATEGORY_ICON[t.category] || ShoppingBag;
+          const direction = t.type === "Virement" ? "neutral" : t.type === "Gain" ? "income" : "expense";
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={positive ? "income" : "expense"} />} />
+              <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
             </React.Fragment>
           );
         })}
@@ -558,8 +566,6 @@ function ExpensesApp({ session }) {
               onCreate={createGoalHandler} onUpdate={updateGoalHandler} onDelete={deleteGoalHandler}
               openOptions={setOptionSheet} saving={savingGoal}
             />
-          ) : showProgression ? (
-            <ProgressionScreen transactions={transactions} onBack={() => setShowProgression(false)} />
           ) : view === "dashboard" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
@@ -592,18 +598,11 @@ function ExpensesApp({ session }) {
                 <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-                <Card padding="md" onClick={() => setShowGoals(true)} style={{ display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
-                  <Target size={16} color="var(--icon-secondary)" />
-                  <span style={{ font: "500 14px var(--font-core)" }}>Objectifs</span>
-                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
-                </Card>
-                <Card padding="md" onClick={() => setShowProgression(true)} style={{ display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
-                  <TrendingUp size={16} color="var(--icon-secondary)" />
-                  <span style={{ font: "500 14px var(--font-core)" }}>Progression</span>
-                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Records & tendances</span>
-                </Card>
-              </div>
+              <Card padding="md" onClick={() => setShowGoals(true)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                <Target size={18} color="var(--icon-secondary)" />
+                <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Objectifs</span>
+                <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+              </Card>
 
               {savingsAccounts.length > 0 && (
                 <div>
@@ -767,7 +766,7 @@ function ExpensesApp({ session }) {
         value={activeTab}
         onChange={(v) => { setActiveTab(v); setView("dashboard"); setSavingsDetailAccount(null); }}
         items={[
-          { value: "apercu", label: "Aperçu", Icon: HomeIcon },
+          { value: "apercu", label: "Accueil", Icon: HomeIcon },
           { value: "activite", label: "Activité", Icon: List },
           { value: "budgets", label: "Budgets", Icon: PieChartIcon },
           { value: "reglages", label: "Réglages", Icon: Settings },

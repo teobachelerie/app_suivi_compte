@@ -103,6 +103,18 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Virement entre comptes
+
+Un troisième type de transaction, "Virement" (en plus de Dépense/Gain), pour déplacer de l'argent entre deux de tes comptes (ex. Compte courant → Livret A) sans que ça compte comme dépense ou revenu — le patrimoine total n'en est jamais affecté, seuls les soldes des deux comptes concernés bougent. Catégorie "Virement automatique" auto-créée au premier virement (visible et modifiable comme une catégorie normale ensuite). Titre facultatif : par défaut "Compte source → Compte cible" si laissé vide.
+
+**Nouvelle migration à exécuter** : `supabase/migration-009-virement-interne.sql` (colonne `to_account_id`, mise à jour de la contrainte sur `type`).
+
+**À faire une fois en ligne** : supprime toi-même, comme prévu, les anciennes dépenses/revenus "Virement" que tu avais créés manuellement pour compenser ce manque — elles ne sont plus nécessaires.
+
+## Accueil (anciennement Aperçu)
+
+L'onglet a été renommé "Accueil". Le bloc "Progression" (records, tendances) a été retiré — jugé pas assez clair/utile — et le bloc "Objectifs" prend maintenant toute la largeur à sa place.
+
 ## Camembert et couleurs de catégorie
 
 L'onglet Budgets affiche désormais un camembert (catégories ou comptes, selon le sélecteur) au lieu d'une liste de cartes, avec une légende colorée en dessous (nom, pourcentage, montant). Chaque catégorie peut avoir une couleur personnalisée, assignée depuis Réglages → Catégories (pastille de couleur cliquable à côté de chaque nom, sélecteur natif iOS). Sans couleur choisie, chaque catégorie reçoit automatiquement une couleur stable de la palette par défaut (toujours la même pour un nom donné). Les comptes suivent la même logique de couleur automatique, sans personnalisation manuelle.
