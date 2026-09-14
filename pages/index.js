@@ -766,9 +766,9 @@ function ExpensesApp({ session }) {
       <button
         onClick={() => setShowAdd(true)}
         aria-label="Ajouter une opération"
-        style={{ position: "fixed", right: 20, bottom: "calc(env(safe-area-inset-bottom, 0px) + 92px)", width: 56, height: 56, borderRadius: "var(--radius-round)", border: "none", background: "var(--accent-bg)", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 35 }}
+        style={{ position: "fixed", right: 20, bottom: "calc(env(safe-area-inset-bottom, 0px) + 92px)", width: 56, height: 56, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 35 }}
       >
-        <Plus size={26} color="var(--accent-text)" />
+        <Plus size={26} color="#0A0A0A" />
       </button>
 
       <TabBar
