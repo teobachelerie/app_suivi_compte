@@ -32,7 +32,6 @@ function useNoBounce(ref) {
 export function TopSheet({ title, onClose, children }) {
   const outerRef = useRef(null);
   const panelRef = useRef(null);
-  useNoBounce(outerRef);
   useNoBounce(panelRef);
   return (
     <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50, paddingTop: 84, overflowY: "auto" }} onClick={onClose}>
@@ -93,7 +92,6 @@ export function SheetRow({ label, value, onClick, last }) {
 export function OptionSheet({ title, options, value, onSelect, onClose }) {
   const outerRef = useRef(null);
   const panelRef = useRef(null);
-  useNoBounce(outerRef);
   useNoBounce(panelRef);
   return (
     <div ref={outerRef} style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 60, paddingTop: 116, overflowY: "auto" }} onClick={onClose}>
