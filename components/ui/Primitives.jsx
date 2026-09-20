@@ -64,7 +64,7 @@ export function IconButton({ Icon, onClick, size = 44, label }) {
 
 export function Switch({ checked, onChange }) {
   return (
-    <span role="switch" aria-checked={checked} onClick={() => onChange(!checked)} style={{ position: "relative", display: "inline-block", width: 51, height: 31, flexShrink: 0, borderRadius: "var(--radius-round)", background: checked ? "var(--accent-bg)" : "var(--surface-inset)", boxShadow: checked ? "var(--elev-raised-sm)" : "var(--elev-inset)", cursor: "pointer", transition: "background var(--duration-base) var(--ease-standard)" }}>
+    <span role="switch" aria-checked={checked} onClick={(e) => { e.stopPropagation(); onChange(!checked); }} style={{ position: "relative", display: "inline-block", width: 51, height: 31, flexShrink: 0, borderRadius: "var(--radius-round)", background: checked ? "var(--accent-bg)" : "var(--surface-inset)", boxShadow: checked ? "var(--elev-raised-sm)" : "var(--elev-inset)", cursor: "pointer", transition: "background var(--duration-base) var(--ease-standard)" }}>
       <span style={{ position: "absolute", top: 3, left: checked ? 23 : 3, width: 25, height: 25, borderRadius: "var(--radius-round)", background: "var(--surface-highlight)", boxShadow: "1px 1px 3px rgba(0,0,0,0.16)", transition: "left var(--duration-base) var(--ease-standard)" }} />
     </span>
   );

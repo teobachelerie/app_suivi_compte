@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 
@@ -17,6 +17,7 @@ import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../compone
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { GoalsScreen } from "../components/GoalsScreen";
+import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
 import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
@@ -173,6 +174,7 @@ function ExpensesApp({ session }) {
   const [categoryRules, setCategoryRules] = useState([]);
   const [plan, setPlan] = useState(null); // { tier, limits, stripeStatus, currentPeriodEnd } — null tant que pas chargé
   const [showGoals, setShowGoals] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
 
@@ -568,6 +570,8 @@ function ExpensesApp({ session }) {
               onCreate={createGoalHandler} onUpdate={updateGoalHandler} onDelete={deleteGoalHandler}
               openOptions={setOptionSheet} saving={savingGoal}
             />
+          ) : showSimulator ? (
+            <PeaSimulatorScreen onBack={() => setShowSimulator(false)} />
           ) : view === "dashboard" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
@@ -604,6 +608,12 @@ function ExpensesApp({ session }) {
                 <Target size={18} color="var(--icon-secondary)" />
                 <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Objectifs</span>
                 <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+              </Card>
+
+              <Card padding="md" onClick={() => setShowSimulator(true)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                <TrendingUp size={18} color="var(--icon-secondary)" />
+                <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Simulateur PEA</span>
+                <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Projection à long terme</span>
               </Card>
 
               {savingsAccounts.length > 0 && (

@@ -1,16 +1,9 @@
 import { timingSafeEqual } from "crypto";
 import { generateDueSubscriptionTransactions } from "../../../lib/supabase";
+import { todayInParis } from "../../../lib/format";
 
 // "Aujourd'hui" au sens du calendrier français, indépendamment du fuseau horaire du serveur
 // (les fonctions Vercel tournent en UTC).
-function todayInParis() {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-  const y = parts.find((p) => p.type === "year").value;
-  const m = parts.find((p) => p.type === "month").value;
-  const d = parts.find((p) => p.type === "day").value;
-  return new Date(`${y}-${m}-${d}T00:00:00`);
-}
-
 // Comparaison à temps constant : une comparaison de chaînes classique (!==) s'arrête au premier
 // caractère différent, ce qui peut en théorie renseigner un attaquant sur la longueur du temps
 // de réponse selon le nombre de caractères corrects déjà devinés.

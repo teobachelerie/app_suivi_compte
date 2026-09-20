@@ -103,6 +103,12 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Correctifs abonnements + Simulateur PEA
+
+- **Interrupteur actif/inactif d'un abonnement** : ne déclenche plus l'ouverture de la fiche par erreur.
+- **Génération immédiate à la création** : si tu crées un abonnement avec un jour de prélèvement déjà passé ce mois-ci (ou tombant aujourd'hui), la dépense correspondante est créée tout de suite, sans attendre le mois prochain — avant, il fallait attendre la tâche planifiée du lendemain, qui ne matchait alors plus le bon jour.
+- **Simulateur PEA** (Accueil → carte "Simulateur PEA") : apport initial, versement mensuel, rente mensuelle retirée (facultative), rendement annuel (8 % par défaut), inflation (3 % par défaut), durée en années — tout modifiable. Graphique en aires empilées (versements en noir, intérêts en vert), valeur finale, % de plus-value, valeur ajustée de l'inflation. Purement client, aucune donnée sauvegardée, aucune migration nécessaire.
+
 ## Paliers d'abonnement — étape 3 : abonnement auto-suivi, état visible, choix à l'onboarding
 
 Trois ajouts sur le système de paliers :
