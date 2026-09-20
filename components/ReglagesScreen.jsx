@@ -141,6 +141,23 @@ export function ReglagesScreen(props) {
     return transactions.filter((t) => new Date(t.date) >= cutoff);
   })();
 
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState("");
+  async function startCheckout(tier) {
+    setBillingLoading(true); setBillingError("");
+    try {
+      const { url } = await api("/api/billing/checkout", { method: "POST", body: { tier } });
+      window.location.href = url;
+    } catch (e) { setBillingError(e.message); setBillingLoading(false); }
+  }
+  async function openPortal() {
+    setBillingLoading(true); setBillingError("");
+    try {
+      const { url } = await api("/api/billing/portal", { method: "POST" });
+      window.location.href = url;
+    } catch (e) { setBillingError(e.message); setBillingLoading(false); }
+  }
+
   if (section) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -296,14 +313,30 @@ export function ReglagesScreen(props) {
         )}
 
         {section === "Abonnement" && (
-          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>PALIER ACTUEL</span>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{plan?.limits.label || "…"}</div>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
-              La gestion des paiements (passer à un palier supérieur, annuler) arrive prochainement dans cet écran.
-            </div>
+            {billingError && <div style={{ color: "var(--red)", fontSize: 13 }}>{billingError}</div>}
+            {plan?.tier !== "confirme" && plan?.tier !== "investisseur" && (
+              <button onClick={() => startCheckout("confirme")} disabled={billingLoading} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
+                Passer à Confirmé — 4,99 €/mois
+              </button>
+            )}
+            {plan?.tier !== "investisseur" && (
+              <button onClick={() => startCheckout("investisseur")} disabled={billingLoading} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
+                Passer à Investisseur — 8,99 €/mois
+              </button>
+            )}
+            {(plan?.tier === "confirme" || plan?.tier === "investisseur") && plan?.stripeStatus && (
+              <button onClick={openPortal} disabled={billingLoading} style={{ background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", color: "var(--text-primary)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
+                Gérer mon abonnement
+              </button>
+            )}
+            {(plan?.tier === "confirme" || plan?.tier === "investisseur") && !plan?.stripeStatus && (
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Palier accordé manuellement — rien à gérer ici.</div>
+            )}
           </Card>
         )}
 

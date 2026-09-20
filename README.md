@@ -103,6 +103,28 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Paliers d'abonnement — étape 2 : paiement Stripe (mode test)
+
+Le vrai checkout, en mode test Stripe (aucun argent réel, cartes de test uniquement). Trois nouvelles routes : `/api/billing/checkout` (démarre un paiement), `/api/billing/webhook` (Stripe informe l'app qu'un paiement a réussi/été annulé), `/api/billing/portal` (le client gère/annule lui-même son abonnement).
+
+**Quatre nouvelles variables d'environnement Vercel**, à ajouter dans cet ordre précis — le webhook a besoin d'une chose que seul un premier déploiement peut donner :
+
+1. `STRIPE_SECRET_KEY` = ta clé secrète de test (`sk_test_...`)
+2. `STRIPE_PRICE_CONFIRME` = `price_1UHdO0GhfzTnnxCCosB1NIs6`
+3. `STRIPE_PRICE_INVESTISSEUR` = `price_1UHdOcGhfzTnnxCCECK451YA`
+4. `STRIPE_WEBHOOK_SECRET` — **pas encore disponible à ce stade**, voir étape suivante.
+
+**Étapes, dans l'ordre** :
+1. Ajoute les 3 premières variables ci-dessus sur Vercel.
+2. Déploie ce code (dossier remplacé, push, Redeploy + vérification du commit comme d'habitude).
+3. Une fois en ligne, va sur Stripe (toujours en mode test) → Développeurs → Webhooks → "Ajouter un endpoint". URL : `https://app-suivi-compte-eight.vercel.app/api/billing/webhook`. Événements à écouter : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
+4. Stripe affiche alors un "Secret de signature" (`whsec_...`) — copie-le, ajoute-le comme 4ème variable `STRIPE_WEBHOOK_SECRET` sur Vercel.
+5. Redeploy une deuxième fois (obligatoire pour que cette dernière variable soit prise en compte).
+
+**Test de bout en bout, avec une fausse carte Stripe** : Réglages → Abonnement → "Passer à Confirmé" → sur la page Stripe qui s'ouvre, utilise le numéro de carte de test `4242 4242 4242 4242`, une date future quelconque, un CVC quelconque (ex. 123) → valide. Tu dois revenir sur l'app et voir ton palier passé à "Confirmé" dans Réglages. Vérifie aussi côté Supabase (table `user_plans`) que la ligne s'est bien mise à jour.
+
+**Rappel de sécurité** : ceci reste entièrement en mode test — sans risque, aucun vrai paiement possible tant que les clés commencent par `sk_test_`/`price_` de test.
+
 ## Paliers d'abonnement (Amateur / Confirmé / Investisseur) — étape 1 : base technique
 
 Première étape d'un chantier plus large (voir plus bas pour l'étape 2, le paiement Stripe). Pour l'instant : une table `user_plans` stocke le palier de chaque utilisateur, avec des limites appliquées sur les comptes, les objectifs, les couleurs de catégorie, les règles de catégorisation automatique, et l'export.
