@@ -4,7 +4,7 @@ import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
-import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU } from "../lib/constants";
+import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESETS } from "../lib/constants";
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
 import { categoryColor } from "../lib/format";
@@ -120,7 +120,7 @@ export function ReglagesScreen(props) {
   const {
     categories, coreAccounts, savingsAccounts, accountNames,
     onDeleteCategory, onAddCategory, onRenameCategory, newCatName, setNewCatName,
-    onAddAccount, onDeleteAccount, onRenameAccount, newAccName, setNewAccName,
+    onAddAccount, onDeleteAccount, onRenameAccount, onChangeAccountBank, newAccName, setNewAccName,
     themeMode, onToggleTheme,
     defaultPayment, defaultAccount, onChangeDefaultPayment, onChangeDefaultAccount,
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
@@ -134,6 +134,28 @@ export function ReglagesScreen(props) {
   const [newRuleKeyword, setNewRuleKeyword] = useState("");
   const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
   const categoryNames = categories.map((c) => c.name);
+
+  function BankPicker({ account }) {
+    const preset = BANK_PRESETS.find((b) => b.id === account.bank_id);
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          openOptions({
+            title: "Banque",
+            options: ["Aucune (par défaut)", ...BANK_PRESETS.map((b) => b.name)],
+            value: preset?.name || "Aucune (par défaut)",
+            onSelect: (name) => {
+              const chosen = BANK_PRESETS.find((b) => b.name === name);
+              onChangeAccountBank(account.id, chosen?.id || null);
+            },
+          });
+        }}
+        aria-label="Banque"
+        style={{ width: 22, height: 22, borderRadius: "50%", border: "none", cursor: "pointer", background: preset?.primary || "var(--surface-inset)", boxShadow: preset ? "var(--elev-raised-sm)" : "var(--elev-inset-sm)", flexShrink: 0 }}
+      />
+    );
+  }
   const exportableTransactions = (() => {
     if (!plan?.limits.exportMonths) return transactions;
     const cutoff = new Date();
@@ -192,7 +214,7 @@ export function ReglagesScreen(props) {
                 {coreAccounts.map((a, i) => (
                   <React.Fragment key={a.id}>
                     {i > 0 ? <Divider /> : null}
-                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
+                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} extra={<BankPicker account={a} />} />
                   </React.Fragment>
                 ))}
               </Card>
@@ -212,7 +234,7 @@ export function ReglagesScreen(props) {
                 {savingsAccounts.map((a, i) => (
                   <React.Fragment key={a.id}>
                     {i > 0 ? <Divider /> : null}
-                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} />
+                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} extra={<BankPicker account={a} />} />
                   </React.Fragment>
                 ))}
               </Card>

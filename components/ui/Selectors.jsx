@@ -28,7 +28,7 @@ export function SegmentedControl({ options, value, onChange, style }) {
   );
 }
 
-export function AccountPill({ value, options, onChange }) {
+export function AccountPill({ value, options, onChange, activeColor }) {
   if (!options || options.length < 2) {
     return (
       <div style={{ display: "flex", height: 52, alignItems: "center", padding: "0 var(--space-5)", borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
@@ -40,9 +40,9 @@ export function AccountPill({ value, options, onChange }) {
   const pas = 100 / options.length;
   return (
     <div style={{ position: "relative", display: "flex", height: 52, padding: 4, borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset)" }}>
-      <span style={{ position: "absolute", top: 4, bottom: 4, left: `calc(${pas * index}% + 4px)`, width: `calc(${pas}% - 8px)`, borderRadius: "var(--radius-round)", background: "var(--surface-highlight)", boxShadow: "var(--elev-raised-sm)", transition: "left var(--duration-base) var(--ease-standard)" }} />
+      <span style={{ position: "absolute", top: 4, bottom: 4, left: `calc(${pas * index}% + 4px)`, width: `calc(${pas}% - 8px)`, borderRadius: "var(--radius-round)", background: activeColor || "var(--surface-highlight)", boxShadow: "var(--elev-raised-sm)", transition: "left var(--duration-base) var(--ease-standard), background var(--duration-base) var(--ease-standard)" }} />
       {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onChange(o.value)} style={{ position: "relative", flex: 1, minWidth: 0, border: "none", background: "transparent", color: o.value === value ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: o.value === value ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <button key={o.value} type="button" onClick={() => onChange(o.value)} style={{ position: "relative", flex: 1, minWidth: 0, border: "none", background: "transparent", color: o.value === value ? (activeColor ? "#FFFFFF" : "var(--text-primary)") : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: o.value === value ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {o.label}
         </button>
       ))}

@@ -31,7 +31,7 @@ export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = fals
   );
 }
 
-export function EditableRow({ name, onRename, onDelete, color, onColorChange }) {
+export function EditableRow({ name, onRename, onDelete, color, onColorChange, extra }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   useEffect(() => { if (!editing) setValue(name); }, [name, editing]);
@@ -63,6 +63,7 @@ export function EditableRow({ name, onRename, onDelete, color, onColorChange }) 
       onClick={() => setEditing(true)}
       trailing={
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {extra}
           {onColorChange && (
             <input
               type="color"

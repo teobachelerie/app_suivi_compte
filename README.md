@@ -103,6 +103,14 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Thème visuel par banque (couleurs uniquement, pas de logos)
+
+Réglages → Comptes → petite pastille colorée à côté de chaque compte (avant le crayon) → choisis une banque parmi 10 préréglages français (Société Générale, Trade Republic, Boursorama, BNP Paribas, Crédit Agricole, La Banque Postale, LCL, Caisse d'Épargne, Revolut, N26). Une fois assignée, sa couleur teinte le sélecteur de compte en haut d'Accueil (segment actif) et une fine bande en haut de la carte de solde, quand ce compte est sélectionné.
+
+**Volontairement limité aux couleurs, pas de logos** — voir la discussion sur les risques de marque : un logo de banque dans une app tierce non affiliée est un vrai risque juridique, une couleur d'accent approximative ne l'est pas. Les couleurs viennent de ma connaissance générale des identités de marque (pas vérifiées en direct) — à ajuster toi-même si une teinte te semble à côté de la plaque.
+
+**Nouvelle migration à exécuter** : `supabase/migration-012-account-bank-theme.sql` (colonne `bank_id` sur `accounts`).
+
 ## Correctifs abonnements + Simulateur PEA
 
 - **Interrupteur actif/inactif d'un abonnement** : ne déclenche plus l'ouverture de la fiche par erreur.

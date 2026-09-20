@@ -7,7 +7,7 @@ import {
 
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
-import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES } from "../lib/constants";
+import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES, BANK_PRESETS } from "../lib/constants";
 import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor } from "../lib/format";
 
 import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
@@ -264,6 +264,11 @@ function ExpensesApp({ session }) {
 
   const coreAccounts = useMemo(() => accounts.filter((a) => coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
   const savingsAccounts = useMemo(() => accounts.filter((a) => !coreAccountIds.includes(a.id)), [accounts, coreAccountIds]);
+  const activeBankColor = useMemo(() => {
+    if (filterAccount === "Tous") return null; // Patrimoine cumule plusieurs comptes — pas de banque unique à représenter
+    const acc = accounts.find((a) => a.name === filterAccount);
+    return BANK_PRESETS.find((b) => b.id === acc?.bank_id)?.primary || null;
+  }, [accounts, filterAccount]);
   const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
   const accountNames = useMemo(() => accounts.map((a) => a.name), [accounts]);
   function accountBalance(acc) {
@@ -476,13 +481,17 @@ function ExpensesApp({ session }) {
   }
   async function renameAccount(id, newName) {
     const old = accounts.find((a) => a.id === id);
-    const next = accounts.map((a) => (a.id === id ? { id: a.id, name: newName } : a));
+    const next = accounts.map((a) => (a.id === id ? { id: a.id, name: newName, bank_id: a.bank_id } : a));
     setAccounts(next);
     try {
       await saveOptions("Compte", next);
       // Le compte par défaut du raccourci iOS est mémorisé par nom : on le garde synchronisé.
       if (old && defaultAccount === old.name) updateDefaultAccount(newName);
     } catch (e) { setError(e.message); }
+  }
+  async function updateAccountBankHandler(id, bankId) {
+    setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, bank_id: bankId } : a)));
+    try { await api(`/api/accounts/${id}`, { method: "PATCH", body: { bankId } }); } catch (e) { setError(e.message); }
   }
   async function addAccount() {
     const name = newAccName.trim();
@@ -576,7 +585,7 @@ function ExpensesApp({ session }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
 
-              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", borderTop: activeBankColor ? `3px solid ${activeBankColor}` : "none" }}>
                 <AccountPill
                   value={filterAccount}
                   options={[
@@ -584,6 +593,7 @@ function ExpensesApp({ session }) {
                     { value: "Tous", label: "Patrimoine" },
                   ]}
                   onChange={setFilterAccount}
+                  activeColor={activeBankColor}
                 />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
@@ -758,7 +768,7 @@ function ExpensesApp({ session }) {
             categories={categories} coreAccounts={coreAccounts} savingsAccounts={savingsAccounts} accountNames={accountNames}
             onDeleteCategory={deleteCategory} onAddCategory={addCategory} onRenameCategory={renameCategory}
             newCatName={newCatName} setNewCatName={setNewCatName}
-            onAddAccount={addAccount} onDeleteAccount={deleteAccount} onRenameAccount={renameAccount}
+            onAddAccount={addAccount} onDeleteAccount={deleteAccount} onRenameAccount={renameAccount} onChangeAccountBank={updateAccountBankHandler}
             newAccName={newAccName} setNewAccName={setNewAccName}
             themeMode={themeMode} onToggleTheme={toggleThemeMode}
             defaultPayment={defaultPayment} defaultAccount={defaultAccount}
