@@ -103,6 +103,16 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Paliers d'abonnement — étape 3 : abonnement auto-suivi, état visible, choix à l'onboarding
+
+Trois ajouts sur le système de paliers :
+
+1. **L'abonnement à Cap Finances lui-même apparaît automatiquement comme une dépense récurrente** dans le suivi des abonnements de l'app (même écran que Netflix etc.), sur le compte le plus ancien de l'utilisateur — le compte "par défaut" n'existant que côté navigateur (localStorage), invisible depuis le serveur, ce compte le plus ancien est le meilleur repère disponible (c'est "Compte courant" pour la quasi-totalité des utilisateurs). Mis à jour automatiquement si le palier change, désactivé (pas supprimé) à l'annulation.
+2. **Réglages → Abonnement affiche maintenant la date de renouvellement**, ou la date d'annulation effective si tu as déjà annulé (Stripe garde l'accès actif jusqu'à la fin de la période déjà payée — les deux cas sont maintenant distingués correctement).
+3. **L'onboarding (tutoriel de démarrage) se termine par un choix de palier**, avec redirection vers le paiement Stripe si Confirmé/Investisseur est choisi.
+
+**Nouvelle migration à exécuter** : `supabase/migration-011-cancel-at-period-end.sql`.
+
 ## Paliers d'abonnement — étape 2 : paiement Stripe (mode test)
 
 Le vrai checkout, en mode test Stripe (aucun argent réel, cartes de test uniquement). Trois nouvelles routes : `/api/billing/checkout` (démarre un paiement), `/api/billing/webhook` (Stripe informe l'app qu'un paiement a réussi/été annulé), `/api/billing/portal` (le client gère/annule lui-même son abonnement).

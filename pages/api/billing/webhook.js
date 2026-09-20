@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { setUserPlanFromCheckout, updatePlanByStripeCustomer } from "../../../lib/supabase";
+import { setUserPlanFromCheckout, updatePlanByStripeCustomer, upsertAppSubscription, deactivateAppSubscription, getUserIdByStripeCustomer } from "../../../lib/supabase";
 
 // Le webhook a besoin du corps BRUT de la requête pour vérifier la signature Stripe — on désactive
 // donc le parsing JSON automatique de Next.js pour cette route précise.
@@ -48,21 +48,28 @@ export default async function handler(req, res) {
             userId, tier, session.customer, subscription.id, subscription.status,
             subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null
           );
+          await upsertAppSubscription(userId, tier);
         }
         break;
       }
       case "customer.subscription.updated": {
         const sub = event.data.object;
         const tier = TIER_BY_PRICE[sub.items?.data?.[0]?.price?.id] || undefined;
-        const patch = { stripe_subscription_status: sub.status, current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null };
+        const patch = { stripe_subscription_status: sub.status, cancel_at_period_end: sub.cancel_at_period_end, current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null };
         if (tier) patch.tier = tier; // changement de palier (upgrade/downgrade côté client via le portail Stripe)
         await updatePlanByStripeCustomer(sub.customer, patch);
+        if (tier) {
+          const userId = await getUserIdByStripeCustomer(sub.customer);
+          if (userId) await upsertAppSubscription(userId, tier);
+        }
         break;
       }
       case "customer.subscription.deleted": {
         const sub = event.data.object;
         // Abonnement annulé/expiré : retour au palier gratuit, jamais de suppression de données.
-        await updatePlanByStripeCustomer(sub.customer, { tier: "amateur", stripe_subscription_status: "canceled", current_period_end: null });
+        await updatePlanByStripeCustomer(sub.customer, { tier: "amateur", stripe_subscription_status: "canceled", cancel_at_period_end: false, current_period_end: null });
+        const userId = await getUserIdByStripeCustomer(sub.customer);
+        if (userId) await deactivateAppSubscription(userId);
         break;
       }
       default:

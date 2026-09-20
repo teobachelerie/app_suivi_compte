@@ -317,6 +317,13 @@ export function ReglagesScreen(props) {
             <div>
               <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>PALIER ACTUEL</span>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{plan?.limits.label || "…"}</div>
+              {plan?.currentPeriodEnd && (
+                <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 4 }}>
+                  {plan.cancelAtPeriodEnd
+                    ? `Annulation effective le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`
+                    : `Renouvellement le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`}
+                </div>
+              )}
             </div>
             {billingError && <div style={{ color: "var(--red)", fontSize: 13 }}>{billingError}</div>}
             {plan?.tier !== "confirme" && plan?.tier !== "investisseur" && (
