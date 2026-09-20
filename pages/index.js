@@ -171,6 +171,7 @@ function ExpensesApp({ session }) {
   const [showSubscriptions, setShowSubscriptions] = useState(false);
   const [goals, setGoals] = useState([]);
   const [categoryRules, setCategoryRules] = useState([]);
+  const [plan, setPlan] = useState(null); // { tier, limits, stripeStatus, currentPeriodEnd } — null tant que pas chargé
   const [showGoals, setShowGoals] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
@@ -192,6 +193,7 @@ function ExpensesApp({ session }) {
       api("/api/subscriptions").then(setSubscriptions).catch(() => {});
       api("/api/goals").then(setGoals).catch(() => {});
       api("/api/category-rules").then(setCategoryRules).catch(() => {});
+      api("/api/billing/plan").then(setPlan).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -755,7 +757,7 @@ function ExpensesApp({ session }) {
             groupBudgetByAccount={groupBudgetByAccount} onToggleGroupBudgetByAccount={updateGroupBudgetByAccount}
             categoryRules={categoryRules} onCreateCategoryRule={createCategoryRuleHandler} onDeleteCategoryRule={deleteCategoryRuleHandler}
             onChangeCategoryColor={updateCategoryColorHandler}
-            transactions={transactions}
+            transactions={transactions} plan={plan}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut}
           />

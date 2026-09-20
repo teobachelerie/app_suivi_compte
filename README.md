@@ -103,6 +103,31 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Paliers d'abonnement (Amateur / Confirmé / Investisseur) — étape 1 : base technique
+
+Première étape d'un chantier plus large (voir plus bas pour l'étape 2, le paiement Stripe). Pour l'instant : une table `user_plans` stocke le palier de chaque utilisateur, avec des limites appliquées sur les comptes, les objectifs, les couleurs de catégorie, les règles de catégorisation automatique, et l'export.
+
+**Garantie de non-régression, à vérifier après déploiement** : la migration place automatiquement **tous les comptes déjà existants** (le tien, ceux de tes amis) sur le palier `investisseur` (aucune limite) — personne n'est censé perdre le moindre accès. Seuls les comptes créés après cette migration démarrent sur `amateur`.
+
+**⚠️ Ordre de déploiement obligatoire, dans cet ordre précis et pas dans un autre** :
+1. Exécute `supabase/migration-010-billing-tiers.sql` dans Supabase **en premier**, avant de déployer le nouveau code.
+2. Vérifie dans Supabase (Table Editor → `user_plans`) que ton compte et ceux de tes amis ont bien `tier = 'investisseur'`.
+3. Seulement après cette vérification : remplace le dossier local, push, Redeploy + vérification du commit comme d'habitude.
+
+Si le nouveau code est déployé **avant** la migration, chaque tentative d'ajouter un compte ou un objectif échouera (la table `user_plans` n'existera pas encore) — d'où l'ordre strict ci-dessus.
+
+Limites actuelles par palier (modifiables dans `TIER_LIMITS`, `lib/supabase.js`) :
+
+| | Amateur | Confirmé | Investisseur |
+|---|---|---|---|
+| Comptes | 1 | 5 | Illimités |
+| Objectifs | 1 | 3 | Illimités |
+| Export | 3 derniers mois | Illimité | Illimité |
+| Couleurs de catégorie | ❌ | ✅ | ✅ |
+| Règles de catégorisation auto | ❌ | ✅ | ✅ |
+
+**Pas encore construit (étape 2, à venir)** : le paiement réel via Stripe (checkout, changement de palier, annulation). Réglages → Abonnement affiche pour l'instant le palier actuel en lecture seule.
+
 ## Virement entre comptes
 
 Un troisième type de transaction, "Virement" (en plus de Dépense/Gain), pour déplacer de l'argent entre deux de tes comptes (ex. Compte courant → Livret A) sans que ça compte comme dépense ou revenu — le patrimoine total n'en est jamais affecté, seuls les soldes des deux comptes concernés bougent. Catégorie "Virement automatique" auto-créée au premier virement (visible et modifiable comme une catégorie normale ensuite). Titre facultatif : par défaut "Compte source → Compte cible" si laissé vide.

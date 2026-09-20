@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
@@ -126,7 +126,7 @@ export function ReglagesScreen(props) {
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
-    transactions, openOptions, userEmail, onSignOut,
+    transactions, plan, openOptions, userEmail, onSignOut,
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
@@ -134,6 +134,12 @@ export function ReglagesScreen(props) {
   const [newRuleKeyword, setNewRuleKeyword] = useState("");
   const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
   const categoryNames = categories.map((c) => c.name);
+  const exportableTransactions = (() => {
+    if (!plan?.limits.exportMonths) return transactions;
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - plan.limits.exportMonths);
+    return transactions.filter((t) => new Date(t.date) >= cutoff);
+  })();
 
   if (section) {
     return (
@@ -266,23 +272,39 @@ export function ReglagesScreen(props) {
 
         {section === "Export" && (
           <div>
-            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Toutes tes transactions, à garder de ton côté — indépendamment de l'app.</div>
+            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
+              {plan?.limits.exportMonths
+                ? `Palier ${plan.limits.label} : export limité aux ${plan.limits.exportMonths} derniers mois. Passe à un palier supérieur pour l'historique complet.`
+                : "Toutes tes transactions, à garder de ton côté — indépendamment de l'app."}
+            </div>
             <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               <ListRow
                 Icon={FileDown}
                 title="Exporter en CSV"
-                onClick={() => downloadFile(transactionsToCSV(transactions), `transactions-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv")}
+                onClick={() => downloadFile(transactionsToCSV(exportableTransactions), `transactions-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv")}
                 trailing={<ChevronRight size={16} color="var(--grey-3)" />}
               />
               <Divider />
               <ListRow
                 Icon={FileDown}
                 title="Exporter en JSON"
-                onClick={() => downloadFile(JSON.stringify(transactions, null, 2), `transactions-${new Date().toISOString().slice(0, 10)}.json`, "application/json")}
+                onClick={() => downloadFile(JSON.stringify(exportableTransactions, null, 2), `transactions-${new Date().toISOString().slice(0, 10)}.json`, "application/json")}
                 trailing={<ChevronRight size={16} color="var(--grey-3)" />}
               />
             </Card>
           </div>
+        )}
+
+        {section === "Abonnement" && (
+          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>PALIER ACTUEL</span>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{plan?.limits.label || "…"}</div>
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+              La gestion des paiements (passer à un palier supérieur, annuler) arrive prochainement dans cet écran.
+            </div>
+          </Card>
         )}
 
         {section === "Compte" && (
@@ -312,6 +334,8 @@ export function ReglagesScreen(props) {
         <MenuRow Icon={Zap} title="Raccourci iOS" onClick={() => setSection("Raccourci iOS")} />
         <Divider inset={0} />
         <MenuRow Icon={FileDown} title="Export" onClick={() => setSection("Export")} />
+        <Divider inset={0} />
+        <MenuRow Icon={Award} title="Abonnement" subtitle={plan?.limits.label} onClick={() => setSection("Abonnement")} />
       </Card>
       <Card padding="md">
         <MenuRow Icon={User} title="Compte" subtitle={userEmail} onClick={() => setSection("Compte")} />
