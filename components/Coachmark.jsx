@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 function CoachmarkCard({ title, text, stepLabel, isLast, onNext, onSkip }) {
   return (
-    <div style={{ background: "var(--surface-raised)", boxShadow: "var(--elev-raised-lg)", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 10, maxWidth: 420, margin: "0 auto" }}>
+    <div style={{ background: "var(--surface-raised)", boxShadow: "var(--elev-overlay), 0 4px 24px rgba(0,0,0,0.35)", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 10, maxWidth: 420, margin: "0 auto" }}>
       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "var(--text-tertiary)", textTransform: "uppercase" }}>{stepLabel}</span>
       <span style={{ font: "600 17px var(--font-display)", color: "var(--text-primary)" }}>{title}</span>
       <span style={{ font: "400 14px/1.5 var(--font-core)", color: "var(--text-secondary)" }}>{text}</span>

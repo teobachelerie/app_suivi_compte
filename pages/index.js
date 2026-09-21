@@ -70,7 +70,7 @@ function ExpensesApp({ session }) {
     return (el) => { tourRefsStore.current[key] = el; };
   }
   const TOUR_STEPS = [
-    { ref: "addButton", tab: "apercu", title: "Ajouter une opération", text: "Ce bouton ouvre le formulaire d'ajout — dépense, revenu, ou virement entre tes comptes — où que tu sois dans l'app." },
+    { ref: "addButton", tab: "apercu", title: "Ajouter une opération", text: "Ce bouton ouvre le formulaire d'ajout. Une dépense, un revenu ou un virement entre tes comptes, où que tu sois dans l'app." },
     { ref: "tab-reglages", tab: "apercu", title: "Réglages", text: "Tout se configure ici : Raccourci iOS, comptes, catégories, export, abonnement." },
     { ref: "menu-Raccourci iOS", tab: "reglages", title: "Le Raccourci iOS", text: "Génère ta clé pour enregistrer une dépense sans même ouvrir l'app." },
     { ref: "menu-Comptes", tab: "reglages", title: "Comptes et épargne", text: "Ajoute tes comptes principaux et tes livrets ici." },
@@ -760,7 +760,7 @@ function ExpensesApp({ session }) {
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
               <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
-              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"} — pas de plafond configuré</span>
+              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"}, sans plafond configuré</span>
             </Card>
 
             {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}

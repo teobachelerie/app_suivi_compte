@@ -68,7 +68,7 @@ function ApiKeysSection() {
 
       {justCreated && (
         <Card padding="md" depth="inset" style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Clé "{justCreated.label}" créée — copie-la maintenant, elle ne sera plus jamais affichée :</span>
+          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Clé "{justCreated.label}" créée : copie-la maintenant, elle ne sera plus jamais affichée.</span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <code style={{ flex: 1, fontSize: 12, background: "var(--surface-raised)", padding: "8px 10px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "nowrap" }}>{justCreated.token}</code>
             <button onClick={handleCopy} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-sm)", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -322,7 +322,7 @@ export function ReglagesScreen(props) {
             <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
               {plan?.limits.exportMonths
                 ? `Palier ${plan.limits.label} : export limité aux ${plan.limits.exportMonths} derniers mois. Passe à un palier supérieur pour l'historique complet.`
-                : "Toutes tes transactions, à garder de ton côté — indépendamment de l'app."}
+                : "Toutes tes transactions, à garder de ton côté, indépendamment de l'app."}
             </div>
             <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               <ListRow
@@ -363,7 +363,7 @@ export function ReglagesScreen(props) {
                 </button>
               )}
               {(plan?.tier === "confirme" || plan?.tier === "investisseur") && !plan?.stripeStatus && (
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Palier accordé manuellement — rien à gérer ici.</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Palier accordé manuellement, rien à gérer ici.</div>
               )}
             </Card>
 

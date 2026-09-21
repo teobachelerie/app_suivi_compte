@@ -72,6 +72,7 @@ export function Onboarding({ onDone }) {
     setChoosing(true); setTierError("");
     try {
       const { url } = await api("/api/billing/checkout", { method: "POST", body: { tier } });
+      onDone(); // La visite est déjà terminée à ce stade — le paiement Stripe n'est qu'une étape suivante, pas une raison de la refaire au retour.
       window.location.href = url;
     } catch (e) { setTierError(e.message); setChoosing(false); }
   }
@@ -109,7 +110,7 @@ export function Onboarding({ onDone }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-5)" }}>
           <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
             <span style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>{TIER_LIMITS[recommended].label} te correspond</span>
-            <div style={{ font: "400 14px var(--font-core)", color: "var(--text-secondary)", marginTop: 6 }}>D'après tes réponses — modifiable à tout moment dans Réglages → Abonnement.</div>
+            <div style={{ font: "400 14px var(--font-core)", color: "var(--text-secondary)", marginTop: 6 }}>D'après tes réponses. Tu pourras changer ça à tout moment dans Réglages → Abonnement.</div>
           </div>
           {tierError && <div style={{ color: "var(--red)", fontSize: 13, textAlign: "center" }}>{tierError}</div>}
           {["amateur", "confirme", "investisseur"].map((tierKey) => {
