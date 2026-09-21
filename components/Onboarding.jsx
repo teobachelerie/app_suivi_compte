@@ -1,59 +1,71 @@
 import { useState } from "react";
-import { Plus, Zap, CreditCard, PiggyBank, Tag, PieChart, Layers } from "lucide-react";
-import { Card } from "./ui/Primitives";
+import { TIER_LIMITS } from "../lib/constants";
 import { api } from "../lib/api";
 
-const SLIDES = [
+const QUESTIONS = [
   {
-    Icon: Plus,
-    title: "Ajouter une transaction",
-    text: "Le bouton noir en bas à droite, sur n'importe quel écran, ouvre le formulaire d'ajout — dépense ou revenu, en quelques secondes.",
+    text: "Combien de comptes bancaires veux-tu suivre ?",
+    options: [
+      { label: "Un seul", points: 0 },
+      { label: "2 à 4 (courant, pro, livrets…)", points: 1 },
+      { label: "5 ou plus", points: 2 },
+    ],
   },
   {
-    Icon: Zap,
-    title: "Le Raccourci iOS",
-    text: "Une clé se génère dans Réglages → Raccourcis iOS, pour enregistrer une dépense encore plus vite, sans même ouvrir l'app.",
+    text: "Combien d'objectifs d'épargne actifs en même temps ?",
+    options: [
+      { label: "Un seul", points: 0 },
+      { label: "2 ou 3", points: 1 },
+      { label: "4 ou plus", points: 2 },
+    ],
   },
   {
-    Icon: CreditCard,
-    title: "Créer un nouveau compte",
-    text: "Dans Réglages → Comptes, ajoute autant de comptes principaux que tu veux (courant, pro…). Ils apparaissent dans le sélecteur en haut de l'Aperçu.",
+    text: "À quelle fréquence exportes-tu tes données (CSV/Excel) ?",
+    options: [
+      { label: "Jamais", points: 0 },
+      { label: "De temps en temps", points: 1 },
+      { label: "Régulièrement", points: 2 },
+    ],
   },
   {
-    Icon: PiggyBank,
-    title: "Créer un nouveau livret",
-    text: "Dans Réglages → Épargne, ajoute tes livrets. Ils s'affichent à part sur le tableau de bord, avec leur propre solde et historique.",
+    text: "Personnaliser finement tes catégories (couleurs, règles automatiques), c'est important pour toi ?",
+    options: [
+      { label: "Pas vraiment", points: 0 },
+      { label: "Utile", points: 1 },
+      { label: "Indispensable", points: 2 },
+    ],
   },
   {
-    Icon: Tag,
-    title: "Créer une catégorie",
-    text: "Dans Réglages → Catégories, personnalise la liste. Touche une catégorie existante pour la renommer, partout où elle est déjà utilisée.",
-  },
-  {
-    Icon: PieChart,
-    title: "Voir les Budgets",
-    text: "L'onglet Budgets montre la répartition réelle de tes dépenses par catégorie sur la période — pas de plafond à configurer, juste la photo de ce qui part où.",
-  },
-  {
-    Icon: Layers,
-    title: "La vue Patrimoine",
-    text: "Dans le sélecteur de compte, l'option \"Patrimoine\" cumule le solde de tous tes comptes et livrets en une seule vue d'ensemble.",
+    text: "Comptes-tu partager le suivi avec des proches (colocation, famille) ?",
+    options: [
+      { label: "Non", points: 0 },
+      { label: "Peut-être", points: 1 },
+      { label: "Oui", points: 2 },
+    ],
   },
 ];
 
-const TIERS = [
-  { tier: "amateur", label: "Amateur", price: "Gratuit", pitch: "1 compte, 1 objectif — de quoi commencer tout de suite." },
-  { tier: "confirme", label: "Confirmé", price: "4,99 €/mois", pitch: "5 comptes, 3 objectifs, couleurs, catégorisation automatique." },
-  { tier: "investisseur", label: "Investisseur", price: "8,99 €/mois", pitch: "Tout illimité, plus le suivi collaboratif entre amis." },
-];
+function recommendTier(score) {
+  if (score <= 3) return "amateur";
+  if (score <= 7) return "confirme";
+  return "investisseur";
+}
 
 export function Onboarding({ onDone }) {
-  const [index, setIndex] = useState(0);
+  const [step, setStep] = useState(0); // 0..4 = questions, 5 = résultat + choix
+  const [answers, setAnswers] = useState([]);
   const [choosing, setChoosing] = useState(false);
   const [tierError, setTierError] = useState("");
-  const isTierStep = index === SLIDES.length;
-  const isLast = index === SLIDES.length - 1;
-  const slide = SLIDES[index];
+
+  const isResult = step === QUESTIONS.length;
+  const score = answers.reduce((s, a) => s + a, 0);
+  const recommended = recommendTier(score);
+
+  function answer(points) {
+    const next = [...answers, points];
+    setAnswers(next);
+    setStep((s) => s + 1);
+  }
 
   async function chooseTier(tier) {
     if (tier === "amateur") { onDone(); return; }
@@ -66,66 +78,63 @@ export function Onboarding({ onDone }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--surface-base)", zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "var(--font-core)" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", padding: "calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--gutter-screen) 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--gutter-screen) 0" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {!isResult && QUESTIONS.map((_, i) => (
+            <span key={i} style={{ width: i === step ? 20 : 7, height: 7, borderRadius: "var(--radius-round)", background: i <= step ? "var(--accent-bg)" : "var(--grey-2)" }} />
+          ))}
+        </div>
         <button onClick={onDone} style={{ background: "transparent", border: "none", color: "var(--text-tertiary)", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>Passer</button>
       </div>
 
-      {isTierStep ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-5)" }}>
-          <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
-            <span style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>Choisis ton palier</span>
-            <div style={{ font: "400 14px var(--font-core)", color: "var(--text-secondary)", marginTop: 6 }}>Modifiable à tout moment dans Réglages → Abonnement.</div>
+      {!isResult ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-6)" }}>
+          <div>
+            <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", display: "block", marginBottom: 8 }}>QUESTION {step + 1} SUR {QUESTIONS.length}</span>
+            <span style={{ font: "600 22px/1.35 var(--font-display)", color: "var(--text-primary)" }}>{QUESTIONS[step].text}</span>
           </div>
-          {tierError && <div style={{ color: "var(--red)", fontSize: 13, textAlign: "center" }}>{tierError}</div>}
-          {TIERS.map((t) => (
-            <button
-              key={t.tier}
-              onClick={() => chooseTier(t.tier)}
-              disabled={choosing}
-              style={{ textAlign: "left", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", cursor: "pointer", opacity: choosing ? 0.6 : 1, display: "flex", flexDirection: "column", gap: 4 }}
-            >
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                <span style={{ font: "600 17px var(--font-core)", color: "var(--text-primary)" }}>{t.label}</span>
-                <span style={{ font: "600 15px var(--font-core)", color: "var(--text-secondary)" }}>{t.price}</span>
-              </div>
-              <span style={{ font: "400 13px/1.4 var(--font-core)", color: "var(--text-tertiary)" }}>{t.pitch}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 var(--gutter-screen)", textAlign: "center", gap: "var(--space-6)" }}>
-          <Card depth="raised-lg" style={{ width: 96, height: 96, borderRadius: "var(--radius-round)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <slide.Icon size={40} color="var(--icon-primary)" />
-          </Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxWidth: 340 }}>
-            <span style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>{slide.title}</span>
-            <span style={{ font: "400 15px/1.5 var(--font-core)", color: "var(--text-secondary)" }}>{slide.text}</span>
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", padding: "0 var(--gutter-screen) calc(env(safe-area-inset-bottom, 0px) + var(--space-6))" }}>
-        {!isTierStep && (
-          <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-            {SLIDES.map((_, i) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {QUESTIONS[step].options.map((o) => (
               <button
-                key={i}
-                onClick={() => setIndex(i)}
-                aria-label={`Page ${i + 1}`}
-                style={{ width: i === index ? 20 : 7, height: 7, borderRadius: "var(--radius-round)", border: "none", background: i === index ? "var(--accent-bg)" : "var(--grey-2)", cursor: "pointer", transition: "var(--transition-tactile)" }}
-              />
+                key={o.label}
+                onClick={() => answer(o.points)}
+                style={{ textAlign: "left", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", cursor: "pointer", font: "500 16px var(--font-core)", color: "var(--text-primary)" }}
+              >
+                {o.label}
+              </button>
             ))}
           </div>
-        )}
-        {!isTierStep && (
-          <button
-            onClick={() => setIndex((i) => i + 1)}
-            style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}
-          >
-            {isLast ? "Continuer" : "Suivant"}
-          </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-5)" }}>
+          <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
+            <span style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>{TIER_LIMITS[recommended].label} te correspond</span>
+            <div style={{ font: "400 14px var(--font-core)", color: "var(--text-secondary)", marginTop: 6 }}>D'après tes réponses — modifiable à tout moment dans Réglages → Abonnement.</div>
+          </div>
+          {tierError && <div style={{ color: "var(--red)", fontSize: 13, textAlign: "center" }}>{tierError}</div>}
+          {["amateur", "confirme", "investisseur"].map((tierKey) => {
+            const t = TIER_LIMITS[tierKey];
+            const isRecommended = tierKey === recommended;
+            return (
+              <button
+                key={tierKey}
+                onClick={() => chooseTier(tierKey)}
+                disabled={choosing}
+                style={{
+                  textAlign: "left", background: "var(--surface-raised)", boxShadow: isRecommended ? "var(--elev-raised)" : "var(--elev-raised-sm)",
+                  border: isRecommended ? "2px solid var(--accent-bg)" : "2px solid transparent",
+                  borderRadius: "var(--radius-lg)", padding: "var(--space-4)", cursor: "pointer", opacity: choosing ? 0.6 : 1, display: "flex", flexDirection: "column", gap: 4,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                  <span style={{ font: "600 17px var(--font-core)", color: "var(--text-primary)" }}>{t.label}{isRecommended ? " · Recommandé" : ""}</span>
+                  <span style={{ font: "600 15px var(--font-core)", color: "var(--text-secondary)" }}>{t.price === 0 ? "Gratuit" : `${t.price.toFixed(2).replace(".", ",")} €/mois`}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { ReglagesScreen } from "../components/ReglagesScreen";
 import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
 import { Onboarding } from "../components/Onboarding";
+import { Coachmark } from "../components/Coachmark";
 
 export default function Home() {
   const [session, setSession] = useState(undefined); // undefined = vérification en cours, null = déconnecté
@@ -57,6 +58,36 @@ function ExpensesApp({ session }) {
   function dismissOnboarding() {
     if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
     setShowOnboarding(false);
+  }
+
+  // Visite guidée façon "spotlight" : deux phases — d'abord le circuit des vrais boutons de l'app
+  // (tour), puis le questionnaire de recommandation de palier (questionnaire), géré par Onboarding.
+  const [onboardingPhase, setOnboardingPhase] = useState("tour");
+  const [tourStep, setTourStep] = useState(0);
+  const touring = showOnboarding && onboardingPhase === "tour";
+  const tourRefsStore = useRef({});
+  function tourRef(key) {
+    return (el) => { tourRefsStore.current[key] = el; };
+  }
+  const TOUR_STEPS = [
+    { ref: "addButton", tab: "apercu", title: "Ajouter une opération", text: "Ce bouton ouvre le formulaire d'ajout — dépense, revenu, ou virement entre tes comptes — où que tu sois dans l'app." },
+    { ref: "tab-reglages", tab: "apercu", title: "Réglages", text: "Tout se configure ici : Raccourci iOS, comptes, catégories, export, abonnement." },
+    { ref: "menu-Raccourci iOS", tab: "reglages", title: "Le Raccourci iOS", text: "Génère ta clé pour enregistrer une dépense sans même ouvrir l'app." },
+    { ref: "menu-Comptes", tab: "reglages", title: "Comptes et épargne", text: "Ajoute tes comptes principaux et tes livrets ici." },
+    { ref: "menu-Catégories", tab: "reglages", title: "Catégories", text: "Personnalise tes catégories, leurs couleurs, et des règles de catégorisation automatique." },
+    { ref: "tab-budgets", tab: "apercu", title: "Budgets", text: "La répartition réelle de tes dépenses, par catégorie ou par compte." },
+    { ref: "pill-Tous", tab: "apercu", filterAccount: "Tous", title: "Patrimoine", text: "Cumule tous tes comptes et livrets en une seule vue d'ensemble." },
+  ];
+  useEffect(() => {
+    if (!touring) return;
+    const step = TOUR_STEPS[tourStep];
+    if (!step) return;
+    if (activeTab !== step.tab) setActiveTab(step.tab);
+    if (step.filterAccount && filterAccount !== step.filterAccount) setFilterAccount(step.filterAccount);
+  }, [touring, tourStep]);
+  function nextTourStep() {
+    if (tourStep >= TOUR_STEPS.length - 1) setOnboardingPhase("questionnaire");
+    else setTourStep((s) => s + 1);
   }
 
   async function handleSignOut() {
@@ -594,6 +625,7 @@ function ExpensesApp({ session }) {
                   ]}
                   onChange={setFilterAccount}
                   activeColor={activeBankColor}
+                  getRef={(v) => tourRef(`pill-${v}`)}
                 />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
@@ -633,7 +665,7 @@ function ExpensesApp({ session }) {
                     {savingsAccounts.map((acc, i) => (
                       <React.Fragment key={acc.id}>
                         {i > 0 ? <Divider /> : null}
-                        <ListRow Icon={PiggyBank} title={acc.name} onClick={() => setSavingsDetailAccount(acc.name)} trailing={<Amount value={fmtEUR(accountBalance(acc.name))} showSign={false} />} chevron />
+                        <ListRow Icon={PiggyBank} iconColor={BANK_PRESETS.find((b) => b.id === acc.bank_id)?.primary} title={acc.name} onClick={() => setSavingsDetailAccount(acc.name)} trailing={<Amount value={fmtEUR(accountBalance(acc.name))} showSign={false} />} chevron />
                       </React.Fragment>
                     ))}
                   </Card>
@@ -778,6 +810,7 @@ function ExpensesApp({ session }) {
             categoryRules={categoryRules} onCreateCategoryRule={createCategoryRuleHandler} onDeleteCategoryRule={deleteCategoryRuleHandler}
             onChangeCategoryColor={updateCategoryColorHandler}
             transactions={transactions} plan={plan}
+            getMenuRef={(title) => tourRef(`menu-${title}`)}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut}
           />
@@ -793,8 +826,10 @@ function ExpensesApp({ session }) {
           { value: "budgets", label: "Budgets", Icon: PieChartIcon },
           { value: "reglages", label: "Réglages", Icon: Settings },
         ]}
+        getRef={(v) => tourRef(`tab-${v}`)}
         trailing={
           <button
+            ref={tourRef("addButton")}
             onClick={() => setShowAdd(true)}
             aria-label="Ajouter une opération"
             style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
@@ -803,6 +838,19 @@ function ExpensesApp({ session }) {
           </button>
         }
       />
+
+      {touring && (
+        <Coachmark
+          targetRef={{ current: tourRefsStore.current[TOUR_STEPS[tourStep].ref] }}
+          measureKey={`${tourStep}-${activeTab}`}
+          stepLabel={`Étape ${tourStep + 1} sur ${TOUR_STEPS.length}`}
+          title={TOUR_STEPS[tourStep].title}
+          text={TOUR_STEPS[tourStep].text}
+          isLast={tourStep === TOUR_STEPS.length - 1}
+          onNext={nextTourStep}
+          onSkip={() => setOnboardingPhase("questionnaire")}
+        />
+      )}
 
       {(showAdd || editing) && (
         <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
@@ -819,7 +867,7 @@ function ExpensesApp({ session }) {
         <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
       )}
 
-      {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
+      {showOnboarding && onboardingPhase === "questionnaire" && <Onboarding onDone={dismissOnboarding} />}
     </div>
   );
 }

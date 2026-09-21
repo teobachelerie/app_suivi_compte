@@ -103,6 +103,16 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Onboarding repensé : visite guidée réelle + questionnaire de palier
+
+L'ancien tutoriel en diapositives (captures d'écran factices) est remplacé par une vraie visite guidée : l'écran se grise, un seul vrai bouton reste visible en surbrillance à chaque étape (le "+", Réglages, Raccourci iOS, Comptes, Catégories, Budgets, Patrimoine), avec une bulle qui explique et un bouton "Suivant" — la visite navigue elle-même dans l'app au fil des étapes. "Passer tout" saute directement au questionnaire.
+
+À la fin : un questionnaire de 5 questions calcule un score sur 10 et recommande un palier (0-3 → Amateur, 4-7 → Confirmé, 8-10 → Investisseur), avec le choix final identique à avant (redirection Stripe si palier payant).
+
+**Écran Abonnement (Réglages) refait en vrai tableau comparatif** : les 3 paliers côte à côte avec coche/croix par fonctionnalité, calculé directement à partir de `TIER_LIMITS` (une seule source de vérité, plus de prix ou de limites dupliqués entre fichiers).
+
+**Correctif thème banque** : la couleur choisie pour un livret (pas seulement un compte principal) s'affiche maintenant sur son icône dans la liste Épargne — ça n'avait aucun effet visuel avant.
+
 ## Thème visuel par banque (couleurs uniquement, pas de logos)
 
 Réglages → Comptes → petite pastille colorée à côté de chaque compte (avant le crayon) → choisis une banque parmi 10 préréglages français (Société Générale, Trade Republic, Boursorama, BNP Paribas, Crédit Agricole, La Banque Postale, LCL, Caisse d'Épargne, Revolut, N26). Une fois assignée, sa couleur teinte le sélecteur de compte en haut d'Accueil (segment actif) et une fine bande en haut de la carte de solde, quand ce compte est sélectionné.

@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { ChevronRight, Check, Pencil, Trash2 } from "lucide-react";
 
-export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = false, onClick, style }) {
+export const ListRow = forwardRef(function ListRow({ Icon, emoji, iconColor, title, subtitle, trailing, chevron = false, onClick, style }, ref) {
   const [pressed, setPressed] = useState(false);
   const interactive = Boolean(onClick);
   return (
     <div
+      ref={ref}
       onClick={onClick}
       onPointerDown={() => interactive && setPressed(true)}
       onPointerUp={() => setPressed(false)}
@@ -17,8 +18,8 @@ export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = fals
           {emoji}
         </span>
       ) : Icon ? (
-        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
-          <Icon size={18} color="var(--icon-primary)" />
+        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: iconColor ? `color-mix(in srgb, ${iconColor} 18%, var(--surface-raised))` : "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
+          <Icon size={18} color={iconColor || "var(--icon-primary)"} />
         </span>
       ) : null}
       <span style={{ flex: 1, minWidth: 0 }}>
@@ -29,7 +30,7 @@ export function ListRow({ Icon, emoji, title, subtitle, trailing, chevron = fals
       {chevron ? <ChevronRight size={16} color="var(--grey-3)" /> : null}
     </div>
   );
-}
+});
 
 export function EditableRow({ name, onRename, onDelete, color, onColorChange, extra }) {
   const [editing, setEditing] = useState(false);

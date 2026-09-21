@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
-import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESETS } from "../lib/constants";
+import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESETS, TIER_LIMITS } from "../lib/constants";
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
 import { categoryColor } from "../lib/format";
@@ -104,9 +104,10 @@ function ApiKeysSection() {
   );
 }
 
-function MenuRow({ Icon, title, subtitle, onClick }) {
+function MenuRow({ Icon, title, subtitle, onClick, mkRef }) {
   return (
     <ListRow
+      ref={mkRef}
       Icon={Icon}
       title={title}
       subtitle={subtitle}
@@ -126,7 +127,7 @@ export function ReglagesScreen(props) {
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
-    transactions, plan, openOptions, userEmail, onSignOut,
+    transactions, plan, openOptions, userEmail, onSignOut, getMenuRef,
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
@@ -335,38 +336,76 @@ export function ReglagesScreen(props) {
         )}
 
         {section === "Abonnement" && (
-          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>PALIER ACTUEL</span>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{plan?.limits.label || "…"}</div>
-              {plan?.currentPeriodEnd && (
-                <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 4 }}>
-                  {plan.cancelAtPeriodEnd
-                    ? `Annulation effective le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`
-                    : `Renouvellement le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`}
-                </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>PALIER ACTUEL</span>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>{plan?.limits.label || "…"}</div>
+                {plan?.currentPeriodEnd && (
+                  <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 4 }}>
+                    {plan.cancelAtPeriodEnd
+                      ? `Annulation effective le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`
+                      : `Renouvellement le ${new Date(plan.currentPeriodEnd).toLocaleDateString("fr-FR")}`}
+                  </div>
+                )}
+              </div>
+              {billingError && <div style={{ color: "var(--red)", fontSize: 13 }}>{billingError}</div>}
+              {(plan?.tier === "confirme" || plan?.tier === "investisseur") && plan?.stripeStatus && (
+                <button onClick={openPortal} disabled={billingLoading} style={{ background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", color: "var(--text-primary)", border: "none", borderRadius: "var(--radius-control)", padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
+                  Gérer mon abonnement
+                </button>
               )}
-            </div>
-            {billingError && <div style={{ color: "var(--red)", fontSize: 13 }}>{billingError}</div>}
-            {plan?.tier !== "confirme" && plan?.tier !== "investisseur" && (
-              <button onClick={() => startCheckout("confirme")} disabled={billingLoading} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
-                Passer à Confirmé — 4,99 €/mois
-              </button>
-            )}
-            {plan?.tier !== "investisseur" && (
-              <button onClick={() => startCheckout("investisseur")} disabled={billingLoading} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
-                Passer à Investisseur — 8,99 €/mois
-              </button>
-            )}
-            {(plan?.tier === "confirme" || plan?.tier === "investisseur") && plan?.stripeStatus && (
-              <button onClick={openPortal} disabled={billingLoading} style={{ background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", color: "var(--text-primary)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: billingLoading ? 0.6 : 1 }}>
-                Gérer mon abonnement
-              </button>
-            )}
-            {(plan?.tier === "confirme" || plan?.tier === "investisseur") && !plan?.stripeStatus && (
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Palier accordé manuellement — rien à gérer ici.</div>
-            )}
-          </Card>
+              {(plan?.tier === "confirme" || plan?.tier === "investisseur") && !plan?.stripeStatus && (
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Palier accordé manuellement — rien à gérer ici.</div>
+              )}
+            </Card>
+
+            {["amateur", "confirme", "investisseur"].map((tierKey) => {
+              const t = TIER_LIMITS[tierKey];
+              const isCurrent = plan?.tier === tierKey;
+              const tierOrder = ["amateur", "confirme", "investisseur"];
+              const isDowngrade = plan && tierOrder.indexOf(tierKey) < tierOrder.indexOf(plan.tier);
+              const rows = [
+                { label: "Comptes", value: t.accounts === null ? "Illimités" : String(t.accounts) },
+                { label: "Objectifs", value: t.goals === null ? "Illimités" : String(t.goals) },
+                { label: "Export de l'historique", value: t.exportMonths === null ? "Complet" : `${t.exportMonths} derniers mois` },
+                { label: "Couleurs de catégorie personnalisées", value: t.customColors },
+                { label: "Catégorisation automatique", value: t.autoRules },
+              ];
+              return (
+                <Card key={tierKey} padding="lg" style={{ display: "flex", flexDirection: "column", gap: 14, border: isCurrent ? "2px solid var(--accent-bg)" : "2px solid transparent" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                    <span style={{ font: "700 19px var(--font-display)", color: "var(--text-primary)" }}>{t.label}</span>
+                    <span style={{ font: "600 16px var(--font-core)", color: "var(--text-secondary)" }}>{t.price === 0 ? "Gratuit" : `${t.price.toFixed(2).replace(".", ",")} €/mois`}</span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {rows.map((r) => (
+                      <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+                        {typeof r.value === "boolean" ? (
+                          r.value ? <Check size={16} color="var(--green)" style={{ flexShrink: 0 }} /> : <X size={16} color="var(--grey-3)" style={{ flexShrink: 0 }} />
+                        ) : (
+                          <Check size={16} color="var(--green)" style={{ flexShrink: 0 }} />
+                        )}
+                        <span style={{ color: typeof r.value === "boolean" && !r.value ? "var(--text-tertiary)" : "var(--text-primary)", flex: 1 }}>{r.label}</span>
+                        {typeof r.value !== "boolean" && <span style={{ color: "var(--text-tertiary)", fontWeight: 600 }}>{r.value}</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {isCurrent ? (
+                    <div style={{ textAlign: "center", padding: "12px 0", fontSize: 14, fontWeight: 600, color: "var(--text-tertiary)" }}>Palier actuel</div>
+                  ) : isDowngrade ? (
+                    <div style={{ textAlign: "center", padding: "12px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Rétrograder via "Gérer mon abonnement" ci-dessus</div>
+                  ) : (
+                    <button onClick={() => startCheckout(tierKey)} disabled={billingLoading || tierKey === "amateur"} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "13px 0", fontSize: 14, fontWeight: 600, cursor: tierKey === "amateur" ? "default" : "pointer", opacity: billingLoading ? 0.6 : 1 }}>
+                      {tierKey === "amateur" ? "Palier de départ" : `Passer à ${t.label}`}
+                    </button>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
         )}
 
         {section === "Compte" && (
@@ -389,11 +428,11 @@ export function ReglagesScreen(props) {
         <Divider inset={0} />
         <MenuRow Icon={SlidersHorizontal} title="Affichage" onClick={() => setSection("Affichage")} />
         <Divider inset={0} />
-        <MenuRow Icon={Wallet} title="Comptes" onClick={() => setSection("Comptes")} />
+        <MenuRow Icon={Wallet} title="Comptes" onClick={() => setSection("Comptes")} mkRef={getMenuRef?.("Comptes")} />
         <Divider inset={0} />
-        <MenuRow Icon={Tag} title="Catégories" onClick={() => setSection("Catégories")} />
+        <MenuRow Icon={Tag} title="Catégories" onClick={() => setSection("Catégories")} mkRef={getMenuRef?.("Catégories")} />
         <Divider inset={0} />
-        <MenuRow Icon={Zap} title="Raccourci iOS" onClick={() => setSection("Raccourci iOS")} />
+        <MenuRow Icon={Zap} title="Raccourci iOS" onClick={() => setSection("Raccourci iOS")} mkRef={getMenuRef?.("Raccourci iOS")} />
         <Divider inset={0} />
         <MenuRow Icon={FileDown} title="Export" onClick={() => setSection("Export")} />
         <Divider inset={0} />
