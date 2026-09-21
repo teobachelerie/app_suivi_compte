@@ -93,6 +93,10 @@ function ExpensesApp({ session }) {
   async function handleSignOut() {
     await supabaseClient.auth.signOut();
   }
+  async function handleDeleteUserAccount() {
+    await api("/api/account/delete", { method: "POST" });
+    await supabaseClient.auth.signOut();
+  }
   const [themeMode, setThemeMode] = useState("light");
   useEffect(() => {
     const saved = typeof window !== "undefined" && window.localStorage.getItem("expenses-theme");
@@ -812,7 +816,7 @@ function ExpensesApp({ session }) {
             transactions={transactions} plan={plan}
             getMenuRef={(title) => tourRef(`menu-${title}`)}
             openOptions={setOptionSheet}
-            userEmail={session.user.email} onSignOut={handleSignOut}
+            userEmail={session.user.email} onSignOut={handleSignOut} onDeleteUserAccount={handleDeleteUserAccount}
           />
         )}
       </div>

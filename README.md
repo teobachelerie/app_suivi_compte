@@ -103,6 +103,10 @@ Chaque jour à 6h UTC (~7h ou 8h à Paris selon l'heure d'été), une tâche pla
 
 ⚠️ À vérifier une fois déployé : le plan gratuit Vercel a historiquement limité le nombre et la fréquence des tâches planifiées. Une seule tâche quotidienne comme ici devrait passer, mais confirme dans ton dashboard Vercel (Settings → Cron Jobs) que la tâche apparaît bien active et s'exécute.
 
+## Suppression de compte
+
+Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confirmation explicite avant l'action. Annule immédiatement l'abonnement Stripe actif s'il y en a un, puis supprime le compte Supabase Auth — toutes les données (transactions, comptes, catégories, objectifs, abonnements suivis, palier) sont supprimées avec, automatiquement, chaque table étant déjà déclarée en suppression en cascade. Irréversible. Permet aussi de recréer un compte avec la même adresse email juste après.
+
 ## Onboarding repensé : visite guidée réelle + questionnaire de palier
 
 L'ancien tutoriel en diapositives (captures d'écran factices) est remplacé par une vraie visite guidée : l'écran se grise, un seul vrai bouton reste visible en surbrillance à chaque étape (le "+", Réglages, Raccourci iOS, Comptes, Catégories, Budgets, Patrimoine), avec une bulle qui explique et un bouton "Suivant" — la visite navigue elle-même dans l'app au fil des étapes. "Passer tout" saute directement au questionnaire.

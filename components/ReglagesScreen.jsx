@@ -127,7 +127,7 @@ export function ReglagesScreen(props) {
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
-    transactions, plan, openOptions, userEmail, onSignOut, getMenuRef,
+    transactions, plan, openOptions, userEmail, onSignOut, onDeleteUserAccount, getMenuRef,
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
@@ -166,6 +166,13 @@ export function ReglagesScreen(props) {
 
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  async function confirmDeleteAccount() {
+    setDeleting(true); setDeleteError("");
+    try { await onDeleteUserAccount(); } catch (e) { setDeleteError(e.message); setDeleting(false); }
+  }
   async function startCheckout(tier) {
     setBillingLoading(true); setBillingError("");
     try {
@@ -409,12 +416,40 @@ export function ReglagesScreen(props) {
         )}
 
         {section === "Compte" && (
-          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>{userEmail}</span>
-            <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "12px 0", cursor: "pointer" }}>
-              <LogOut size={16} /> Déconnexion
-            </button>
-          </Card>
+          <>
+            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>{userEmail}</span>
+              <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "12px 0", cursor: "pointer" }}>
+                <LogOut size={16} /> Déconnexion
+              </button>
+            </Card>
+
+            <div>
+              <span style={{ ...sectionLabelStyle, marginTop: "var(--space-4)" }}>ZONE DE DANGER</span>
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {deleteError && <div style={{ color: "var(--red)", fontSize: 13 }}>{deleteError}</div>}
+                {!confirmingDelete ? (
+                  <button onClick={() => setConfirmingDelete(true)} style={{ background: "transparent", border: "none", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "8px 0", cursor: "pointer", textAlign: "left" }}>
+                    Supprimer mon compte
+                  </button>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                      Toutes tes transactions, comptes, catégories, objectifs et abonnements suivis seront supprimés définitivement. Ton abonnement Stripe actif, s'il y en a un, sera annulé immédiatement. C'est irréversible.
+                    </span>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button onClick={() => setConfirmingDelete(false)} disabled={deleting} style={{ flex: 1, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--text-primary)" }}>
+                        Annuler
+                      </button>
+                      <button onClick={confirmDeleteAccount} disabled={deleting} style={{ flex: 1, background: "var(--red)", color: "#FFFFFF", border: "none", borderRadius: "var(--radius-control)", padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
+                        {deleting ? "Suppression…" : "Confirmer la suppression"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </Card>
+            </div>
+          </>
         )}
       </div>
     );
