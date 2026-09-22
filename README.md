@@ -114,6 +114,11 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 - **Formulations avec tirets longs** ("—") repérées dans les textes visibles (visite guidée, questionnaire, simulateur, Réglages) et reformulées en phrases plus simples et directes.
 - **Simulateur PEA** : ajout d'un mode "PEA Jeune vers PEA classique" (interrupteur dans une nouvelle section). Renseigne ton âge actuel, l'âge de passage au PEA classique (18 à 25 ans), et les deux plafonds (20 000 € / 150 000 € par défaut, modifiables). Les versements s'arrêtent automatiquement une fois le plafond du PEA Jeune atteint, la valeur continue de fructifier sur les intérêts déjà acquis, puis les versements reprennent au plafond classique une fois l'âge de transition atteint.
 
+## Chevauchement du sélecteur Dépense/Gain + repère de compte perdu
+
+- **Le sélecteur Dépense/Gain chevauchait le montant** sur les périodes à gros total (3 mois, 6 mois...) : il était positionné en survol au-dessus du contenu au lieu d'être dans le flux normal. Remis dans le flux, sur sa propre ligne — la collision n'est plus possible, quelle que soit la largeur du montant.
+- **Le compte sélectionné n'était visible nulle part une fois entré dans Dépenses, Revenus ou Activité** : ces écrans respectaient déjà le compte choisi sur Accueil (le calcul était juste), mais rien ne l'affichait. Ajout du nom du compte en sous-titre partout, et de la couleur de banque (bande en haut de la carte) sur Dépenses/Revenus, comme sur Accueil.
+
 ## Virement invisible dans l'historique du compte cible
 
 Un virement n'apparaissait que dans l'historique de son compte source — le compte cible voyait son solde augmenter sans aucune ligne pour l'expliquer. Corrigé sur l'écran Activité, l'Accueil et le détail d'un livret : un virement apparaît maintenant des deux côtés (dépense/sortie côté source, arrivée neutre côté cible), sans jamais compter comme dépense ou revenu dans les totaux.

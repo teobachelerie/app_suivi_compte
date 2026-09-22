@@ -697,18 +697,18 @@ function ExpensesApp({ session }) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-              <NavBar back title={summaryType === "Gain" ? "Revenus" : "Dépenses"} onBack={() => setView("dashboard")} />
+              <NavBar back title={summaryType === "Gain" ? "Revenus" : "Dépenses"} subtitle={filterAccount === "Tous" ? "Patrimoine" : filterAccount} onBack={() => setView("dashboard")} />
               <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
 
-              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", position: "relative" }}>
-                <div style={{ position: "absolute", top: "var(--space-5)", right: "var(--space-5)" }}>
-                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 190 }} />
+              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", borderTop: activeBankColor ? `3px solid ${activeBankColor}` : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  {pressedBucket ? (
+                    <span style={{ flex: 1, minWidth: 0, color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{fmtBucketLabel(pressedBucket.dateKey, pressedBucket.granularity).toUpperCase()}</span>
+                  ) : (
+                    <span style={{ flex: 1, minWidth: 0, color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{periodLabel(period, summaryType).toUpperCase()}</span>
+                  )}
+                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 190, flexShrink: 0 }} />
                 </div>
-                {pressedBucket ? (
-                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{fmtBucketLabel(pressedBucket.dateKey, pressedBucket.granularity).toUpperCase()}</span>
-                ) : (
-                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{periodLabel(period, summaryType).toUpperCase()}</span>
-                )}
                 <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : summaryAmount)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
                 <div style={{ height: 110, marginTop: 8 }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -740,7 +740,7 @@ function ExpensesApp({ session }) {
           )
         ) : activeTab === "activite" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-            <NavBar large title="Activité" subtitle={`${activiteFiltered.length} opération${activiteFiltered.length > 1 ? "s" : ""}`} />
+            <NavBar large title="Activité" subtitle={`${activiteFiltered.length} opération${activiteFiltered.length > 1 ? "s" : ""} · ${filterAccount === "Tous" ? "Patrimoine" : filterAccount}`} />
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", borderRadius: "var(--radius-control)", padding: "12px 16px" }}>
               <Search size={16} color="var(--text-tertiary)" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre ou tag" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
