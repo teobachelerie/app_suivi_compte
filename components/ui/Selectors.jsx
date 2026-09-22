@@ -19,7 +19,7 @@ export function SegmentedControl({ options, value, onChange, style }) {
       {options.map((opt) => {
         const on = opt === value;
         return (
-          <button key={opt} type="button" onClick={() => onChange(opt)} style={{ height: 36, border: "none", borderRadius: "var(--radius-sm)", background: on ? "var(--surface-highlight)" : "transparent", boxShadow: on ? "var(--elev-raised-sm)" : "none", color: on ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: on ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", transition: "var(--transition-tactile)" }}>
+          <button key={opt} type="button" onClick={() => onChange(opt)} style={{ height: 36, padding: "0 14px", border: "none", borderRadius: "var(--radius-sm)", background: on ? "var(--surface-highlight)" : "transparent", boxShadow: on ? "var(--elev-raised-sm)" : "none", color: on ? "var(--text-primary)" : "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-subhead)", fontWeight: on ? "var(--weight-semibold)" : "var(--weight-medium)", cursor: "pointer", transition: "var(--transition-tactile)", whiteSpace: "nowrap" }}>
             {opt}
           </button>
         );

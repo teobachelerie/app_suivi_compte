@@ -114,6 +114,12 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 - **Formulations avec tirets longs** ("—") repérées dans les textes visibles (visite guidée, questionnaire, simulateur, Réglages) et reformulées en phrases plus simples et directes.
 - **Simulateur PEA** : ajout d'un mode "PEA Jeune vers PEA classique" (interrupteur dans une nouvelle section). Renseigne ton âge actuel, l'âge de passage au PEA classique (18 à 25 ans), et les deux plafonds (20 000 € / 150 000 € par défaut, modifiables). Les versements s'arrêtent automatiquement une fois le plafond du PEA Jeune atteint, la valeur continue de fructifier sur les intérêts déjà acquis, puis les versements reprennent au plafond classique une fois l'âge de transition atteint.
 
+## Correctifs écran Dépenses/Revenus (graphique mensuel)
+
+- **Texte "Dépense" qui dépassait de son bouton** : corrigé (le bouton n'avait aucun rembourrage interne et une largeur trop étroite).
+- **Sélection d'un mois par appui-maintien, qui bloquait le défilement** : remplacée par un simple appui. Toucher un mois l'affiche en dessous ; le retoucher désélectionne. Le défilement fonctionne à nouveau normalement sur cet écran.
+- **Tri de la liste du mois sélectionné** : un sélecteur "Chronologie / Montant" apparaît une fois un mois choisi — chronologie (comportement de base, plus récent en premier) ou montant décroissant (le plus gros d'abord).
+
 ## Réorganisation du backend (rapidité)
 
 L'ancien `lib/supabase.js` (un seul fichier de 550+ lignes regroupant tout : transactions, abonnements, objectifs, paliers, clés API...) est découpé en fichiers ciblés par fonctionnalité : `lib/db.js` (socle commun : client Supabase, authentification), `lib/apiKeys.js`, `lib/transactions.js`, `lib/billing.js`, `lib/account.js`, `lib/meta.js`, `lib/subscriptions.js`, `lib/goals.js`, `lib/categoryRules.js`. Chaque route API n'importe plus que ce dont elle a réellement besoin.

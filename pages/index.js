@@ -361,6 +361,7 @@ function ExpensesApp({ session }) {
   const spendLabel = (d) => (budgetByAccount ? d.compte : d.category);
   const spendColor = (d) => (budgetByAccount ? paletteColor(d.compte) : categoryColor(categories, d.category));
 
+  const [bucketSortMode, setBucketSortMode] = useState("chrono"); // "chrono" | "montant" — tri de la liste sous le graphique, une fois un mois sélectionné
   const pressedTransactions = useMemo(() => {
     if (!pressedBucket) return null;
     const { dateKey, granularity } = pressedBucket;
@@ -373,14 +374,18 @@ function ExpensesApp({ session }) {
       return t.date.slice(0, 4) === dateKey;
     });
   }, [pressedBucket, transactions, summaryType, filterCategory, filterAccount]);
+  const sortedPressedTransactions = useMemo(() => {
+    if (!pressedTransactions) return null;
+    if (bucketSortMode === "montant") return [...pressedTransactions].sort((a, b) => b.amount - a.amount);
+    return pressedTransactions;
+  }, [pressedTransactions, bucketSortMode]);
 
-  function handleBarPress(state) {
+  function handleBarClick(state) {
     if (state && state.activePayload && state.activePayload[0]) {
-      setPressedBucket(state.activePayload[0].payload);
+      const clicked = state.activePayload[0].payload;
+      // Toucher la même barre une deuxième fois désélectionne et revient au total de la période.
+      setPressedBucket((prev) => (prev && prev.dateKey === clicked.dateKey ? null : clicked));
     }
-  }
-  function handleBarRelease() {
-    setPressedBucket(null);
   }
 
   function groupByDate(list) {
@@ -691,7 +696,7 @@ function ExpensesApp({ session }) {
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", position: "relative" }}>
                 <div style={{ position: "absolute", top: "var(--space-5)", right: "var(--space-5)" }}>
-                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 140 }} />
+                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 190 }} />
                 </div>
                 {pressedBucket ? (
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{fmtBucketLabel(pressedBucket.dateKey, pressedBucket.granularity).toUpperCase()}</span>
@@ -699,16 +704,12 @@ function ExpensesApp({ session }) {
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{periodLabel(period, summaryType).toUpperCase()}</span>
                 )}
                 <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : summaryAmount)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
-                <div style={{ height: 110, touchAction: "none", marginTop: 8 }}>
+                <div style={{ height: 110, marginTop: 8 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={chartData}
                       margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                      onMouseDown={handleBarPress}
-                      onTouchStart={handleBarPress}
-                      onMouseUp={handleBarRelease}
-                      onTouchEnd={handleBarRelease}
-                      onMouseLeave={handleBarRelease}
+                      onClick={handleBarClick}
                     >
                       <XAxis dataKey="name" tick={{ fill: "var(--grey-4)", fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(chartData.length)} />
                       <Bar dataKey="value" fill={summaryType === "Gain" ? "var(--green)" : "var(--red)"} radius={[4, 4, 4, 4]} maxBarSize={18} />
@@ -717,7 +718,18 @@ function ExpensesApp({ session }) {
                 </div>
               </Card>
 
-              {pressedBucket ? renderList(groupByDate(pressedTransactions || []), "Aucune transaction ce jour-là.") : null}
+              {pressedBucket && (
+                <>
+                  <SegmentedControl
+                    options={["Chronologie", "Montant"]}
+                    value={bucketSortMode === "montant" ? "Montant" : "Chronologie"}
+                    onChange={(v) => setBucketSortMode(v === "Montant" ? "montant" : "chrono")}
+                  />
+                  {bucketSortMode === "montant"
+                    ? renderFlatList(sortedPressedTransactions || [], "Aucune transaction ce mois-là.")
+                    : renderList(groupByDate(sortedPressedTransactions || []), "Aucune transaction ce jour-là.")}
+                </>
+              )}
             </div>
           )
         ) : activeTab === "activite" ? (
