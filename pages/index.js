@@ -43,6 +43,12 @@ export default function Home() {
 }
 
 function ExpensesApp({ session }) {
+  // Un virement doit apparaître dans l'historique des DEUX comptes qu'il relie, pas seulement le
+  // compte source — sinon l'argent reçu par le compte cible n'a aucune ligne pour l'expliquer.
+  function touchesAccount(t, accountName) {
+    return t.compte === accountName || t.compteDestination === accountName;
+  }
+
   function txSubtitle(t) {
     if (t.type === "Virement") return `${t.compte} → ${t.compteDestination}`;
     let s = t.splits?.length ? "Fractionné" : t.category;
@@ -278,7 +284,7 @@ function ExpensesApp({ session }) {
   const periodFiltered = useMemo(() => transactions.filter((t) => inPeriod(t, period, latestDate)), [transactions, period, latestDate]);
   const fullyFiltered = useMemo(() => periodFiltered.filter((t) => {
     if (filterCategory !== "Toutes" && t.category !== filterCategory) return false;
-    if (filterAccount !== "Tous" && t.compte !== filterAccount) return false;
+    if (filterAccount !== "Tous" && !touchesAccount(t, filterAccount)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const inTitle = t.title.toLowerCase().includes(q);
@@ -608,7 +614,7 @@ function ExpensesApp({ session }) {
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE ACTUEL</span>
               <Amount value={fmtEUR(savingsBalance)} size="xl" />
             </Card>
-            {renderList(groupByDate(transactions.filter((t) => t.compte === savingsDetailAccount)), "Aucun mouvement pour ce livret.")}
+            {renderList(groupByDate(transactions.filter((t) => touchesAccount(t, savingsDetailAccount))), "Aucun mouvement pour ce livret.")}
           </div>
         ) : activeTab === "apercu" ? (
           showGoals ? (

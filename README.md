@@ -114,6 +114,12 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 - **Formulations avec tirets longs** ("—") repérées dans les textes visibles (visite guidée, questionnaire, simulateur, Réglages) et reformulées en phrases plus simples et directes.
 - **Simulateur PEA** : ajout d'un mode "PEA Jeune vers PEA classique" (interrupteur dans une nouvelle section). Renseigne ton âge actuel, l'âge de passage au PEA classique (18 à 25 ans), et les deux plafonds (20 000 € / 150 000 € par défaut, modifiables). Les versements s'arrêtent automatiquement une fois le plafond du PEA Jeune atteint, la valeur continue de fructifier sur les intérêts déjà acquis, puis les versements reprennent au plafond classique une fois l'âge de transition atteint.
 
+## Virement invisible dans l'historique du compte cible
+
+Un virement n'apparaissait que dans l'historique de son compte source — le compte cible voyait son solde augmenter sans aucune ligne pour l'expliquer. Corrigé sur l'écran Activité, l'Accueil et le détail d'un livret : un virement apparaît maintenant des deux côtés (dépense/sortie côté source, arrivée neutre côté cible), sans jamais compter comme dépense ou revenu dans les totaux.
+
+**Nettoyage manuel à faire de ton côté** : si tu avais des anciennes paires "Dépense + Gain" créées à la main pour simuler un virement avant que cette fonctionnalité existe, converti une des deux lignes en vrai Virement, il faut supprimer l'autre ligne (le doublon), sinon le montant compte deux fois.
+
 ## Correctifs écran Dépenses/Revenus (graphique mensuel)
 
 - **Texte "Dépense" qui dépassait de son bouton** : corrigé (le bouton n'avait aucun rembourrage interne et une largeur trop étroite).
