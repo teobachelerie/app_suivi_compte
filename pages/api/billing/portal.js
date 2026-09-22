@@ -1,5 +1,6 @@
 import Stripe from "stripe";
-import { getUserId, getStripeCustomerId } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { getStripeCustomerId } from "../../../lib/billing";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "crypto";
-import { generateDueSubscriptionTransactions } from "../../../lib/supabase";
+import { generateDueSubscriptionTransactions } from "../../../lib/subscriptions";
 import { todayInParis } from "../../../lib/format";
 
 // "Aujourd'hui" au sens du calendrier français, indépendamment du fuseau horaire du serveur

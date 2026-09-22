@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { setUserPlanFromCheckout, updatePlanByStripeCustomer, upsertAppSubscription, deactivateAppSubscription, getUserIdByStripeCustomer } from "../../../lib/supabase";
+import { setUserPlanFromCheckout, updatePlanByStripeCustomer, upsertAppSubscription, deactivateAppSubscription, getUserIdByStripeCustomer } from "../../../lib/billing";
 
 // Le webhook a besoin du corps BRUT de la requête pour vérifier la signature Stripe — on désactive
 // donc le parsing JSON automatique de Next.js pour cette route précise.

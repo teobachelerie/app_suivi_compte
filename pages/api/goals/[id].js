@@ -1,4 +1,5 @@
-import { getUserId, updateGoal, deleteGoal } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { updateGoal, deleteGoal } from "../../../lib/goals";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

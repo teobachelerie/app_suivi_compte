@@ -1,4 +1,5 @@
-import { getUserId, updateAccountBank } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { updateAccountBank } from "../../../lib/meta";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

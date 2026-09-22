@@ -114,6 +114,14 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 - **Formulations avec tirets longs** ("—") repérées dans les textes visibles (visite guidée, questionnaire, simulateur, Réglages) et reformulées en phrases plus simples et directes.
 - **Simulateur PEA** : ajout d'un mode "PEA Jeune vers PEA classique" (interrupteur dans une nouvelle section). Renseigne ton âge actuel, l'âge de passage au PEA classique (18 à 25 ans), et les deux plafonds (20 000 € / 150 000 € par défaut, modifiables). Les versements s'arrêtent automatiquement une fois le plafond du PEA Jeune atteint, la valeur continue de fructifier sur les intérêts déjà acquis, puis les versements reprennent au plafond classique une fois l'âge de transition atteint.
 
+## Réorganisation du backend (rapidité)
+
+L'ancien `lib/supabase.js` (un seul fichier de 550+ lignes regroupant tout : transactions, abonnements, objectifs, paliers, clés API...) est découpé en fichiers ciblés par fonctionnalité : `lib/db.js` (socle commun : client Supabase, authentification), `lib/apiKeys.js`, `lib/transactions.js`, `lib/billing.js`, `lib/account.js`, `lib/meta.js`, `lib/subscriptions.js`, `lib/goals.js`, `lib/categoryRules.js`. Chaque route API n'importe plus que ce dont elle a réellement besoin.
+
+**Effet concret** : avant, `/api/meta` (utilisée par le Raccourci iOS) embarquait tout le code de l'app à chaque appel, même la partie transactions ou abonnements qu'elle n'utilise jamais. Vérifié après coup sur le code compilé : elle n'embarque plus que le strict nécessaire. Réduit le temps de démarrage à froid du serveur gratuit, sans le supprimer entièrement (ça reste un serveur gratuit).
+
+**Aucun changement de comportement** : mêmes fonctions, mêmes noms, même logique — seul l'endroit où elles vivent dans le code a changé. Aucune migration, aucune variable d'environnement.
+
 ## Raccourci iOS dynamique : méthode simplifiée
 
 `GET /api/meta` renvoie maintenant, en plus des objets complets, `categoryNames`, `accountNames` et `paymentNames` — des chaînes de texte simples, noms séparés par des virgules. Pensé spécifiquement pour le Raccourci iOS : plus fiable d'y découper du texte par virgule que d'extraire une clé sur chaque élément d'une liste d'objets JSON dans l'éditeur Raccourcis (source de confusion constatée en pratique). Limite connue et acceptée : un nom de catégorie ou de compte contenant lui-même une virgule casserait le découpage — aucun de tes noms actuels n'en a.

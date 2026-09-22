@@ -1,4 +1,5 @@
-import { getUserId, updateSubscription, deleteSubscription } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { updateSubscription, deleteSubscription } from "../../../lib/subscriptions";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

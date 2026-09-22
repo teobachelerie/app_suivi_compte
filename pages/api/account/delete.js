@@ -1,5 +1,7 @@
 import Stripe from "stripe";
-import { getUserId, getStripeSubscriptionId, deleteAuthUser } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { getStripeSubscriptionId } from "../../../lib/billing";
+import { deleteAuthUser } from "../../../lib/account";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

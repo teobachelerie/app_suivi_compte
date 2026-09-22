@@ -1,4 +1,5 @@
-import { getUserId, deleteApiKey } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { deleteApiKey } from "../../../lib/apiKeys";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

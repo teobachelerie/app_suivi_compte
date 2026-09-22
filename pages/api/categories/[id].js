@@ -1,4 +1,5 @@
-import { getUserId, updateCategoryColor } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { updateCategoryColor } from "../../../lib/meta";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

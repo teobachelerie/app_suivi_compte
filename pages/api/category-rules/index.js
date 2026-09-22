@@ -1,4 +1,5 @@
-import { getUserId, listCategoryRules, createCategoryRule } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { listCategoryRules, createCategoryRule } from "../../../lib/categoryRules";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

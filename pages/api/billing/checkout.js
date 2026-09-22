@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { getUserId } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
 
 const PRICE_BY_TIER = {
   confirme: process.env.STRIPE_PRICE_CONFIRME,

@@ -1,4 +1,5 @@
-import { queryTransactions, createTransaction, getUserId } from "../../../lib/supabase";
+import { getUserId } from "../../../lib/db";
+import { queryTransactions, createTransaction } from "../../../lib/transactions";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);

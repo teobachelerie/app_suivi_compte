@@ -1,4 +1,5 @@
-import { getSchema, updateSelectOptions, getUserId } from "../../lib/supabase";
+import { getUserId } from "../../lib/db";
+import { getSchema, updateSelectOptions } from "../../lib/meta";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);
