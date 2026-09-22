@@ -114,6 +114,10 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 - **Formulations avec tirets longs** ("—") repérées dans les textes visibles (visite guidée, questionnaire, simulateur, Réglages) et reformulées en phrases plus simples et directes.
 - **Simulateur PEA** : ajout d'un mode "PEA Jeune vers PEA classique" (interrupteur dans une nouvelle section). Renseigne ton âge actuel, l'âge de passage au PEA classique (18 à 25 ans), et les deux plafonds (20 000 € / 150 000 € par défaut, modifiables). Les versements s'arrêtent automatiquement une fois le plafond du PEA Jeune atteint, la valeur continue de fructifier sur les intérêts déjà acquis, puis les versements reprennent au plafond classique une fois l'âge de transition atteint.
 
+## Raccourci iOS dynamique : méthode simplifiée
+
+`GET /api/meta` renvoie maintenant, en plus des objets complets, `categoryNames`, `accountNames` et `paymentNames` — des chaînes de texte simples, noms séparés par des virgules. Pensé spécifiquement pour le Raccourci iOS : plus fiable d'y découper du texte par virgule que d'extraire une clé sur chaque élément d'une liste d'objets JSON dans l'éditeur Raccourcis (source de confusion constatée en pratique). Limite connue et acceptée : un nom de catégorie ou de compte contenant lui-même une virgule casserait le découpage — aucun de tes noms actuels n'en a.
+
 ## Onboarding repensé : visite guidée réelle + questionnaire de palier
 
 L'ancien tutoriel en diapositives (captures d'écran factices) est remplacé par une vraie visite guidée : l'écran se grise, un seul vrai bouton reste visible en surbrillance à chaque étape (le "+", Réglages, Raccourci iOS, Comptes, Catégories, Budgets, Patrimoine), avec une bulle qui explique et un bouton "Suivant" — la visite navigue elle-même dans l'app au fil des étapes. "Passer tout" saute directement au questionnaire.
