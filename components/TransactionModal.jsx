@@ -16,7 +16,6 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
   const [payment, setPayment] = useState(tx?.payment || defaultPayment || "Carte bancaire");
   const [date, setDate] = useState(tx?.date || toLocalISODate(new Date()));
   const [tagsText, setTagsText] = useState((tx?.tags || []).join(", "));
-  const [emoji, setEmoji] = useState(tx?.emoji || "");
   const [splitMode, setSplitMode] = useState(!!tx?.splits?.length);
   const [splits, setSplits] = useState(tx?.splits?.length ? tx.splits : [{ category: category, amount: "" }]);
   const [error, setError] = useState("");
@@ -49,7 +48,7 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
     if (isVirement) {
       if (compte === compteDestination) { setError("Les comptes source et cible doivent être différents."); return; }
       const finalTitle = title.trim() || `${compte} → ${compteDestination}`;
-      onSave({ id: tx?.id, title: finalTitle, amount: amt, category: "Virement automatique", compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: emoji.trim() || null });
+      onSave({ id: tx?.id, title: finalTitle, amount: amt, category: "Virement automatique", compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: null });
       return;
     }
 
@@ -60,9 +59,9 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
       if (cleanSplits.length < 2) { setError("Ajoute au moins deux parts pour fractionner."); return; }
       if (Math.abs(cleanSplits.reduce((s, x) => s + x.amount, 0) - amt) > 0.01) { setError("La somme des parts doit être égale au montant total."); return; }
       const mainCategory = cleanSplits.reduce((a, b) => (b.amount > a.amount ? b : a)).category;
-      onSave({ id: tx?.id, title: title.trim(), amount: amt, category: mainCategory, compte, compteDestination: null, type, payment, date, tags, splits: cleanSplits, emoji: emoji.trim() || null });
+      onSave({ id: tx?.id, title: title.trim(), amount: amt, category: mainCategory, compte, compteDestination: null, type, payment, date, tags, splits: cleanSplits, emoji: null });
     } else {
-      onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, compteDestination: null, type, payment, date, tags, splits: null, emoji: emoji.trim() || null });
+      onSave({ id: tx?.id, title: title.trim(), amount: amt, category, compte, compteDestination: null, type, payment, date, tags, splits: null, emoji: null });
     }
   }
 
@@ -123,8 +122,7 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
         </div>
       )}
 
-      <Field label="Emoji (facultatif)"><input style={fieldInputStyle} value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="🍕" /></Field>
-      <Field label={isVirement ? "Compte source" : "Compte"}><button style={fieldPickerStyle} onClick={() => openOptions({ title: isVirement ? "Compte source" : "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
+            <Field label={isVirement ? "Compte source" : "Compte"}><button style={fieldPickerStyle} onClick={() => openOptions({ title: isVirement ? "Compte source" : "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
       {isVirement && (
         <Field label="Compte cible"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte cible", options: accounts, value: compteDestination, onSelect: setCompteDestination })}>{compteDestination}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
       )}

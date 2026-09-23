@@ -1,7 +1,7 @@
 import { useState, useEffect, forwardRef } from "react";
 import { ChevronRight, Check, Pencil, Trash2 } from "lucide-react";
 
-export const ListRow = forwardRef(function ListRow({ Icon, emoji, iconImage, iconColor, title, subtitle, trailing, chevron = false, onClick, style }, ref) {
+export const ListRow = forwardRef(function ListRow({ Icon, iconImage, iconColor, title, subtitle, trailing, chevron = false, onClick, style }, ref) {
   const [pressed, setPressed] = useState(false);
   const interactive = Boolean(onClick);
   return (
@@ -13,11 +13,7 @@ export const ListRow = forwardRef(function ListRow({ Icon, emoji, iconImage, ico
       onPointerLeave={() => setPressed(false)}
       style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", minHeight: "var(--hit-min)", padding: "var(--space-3) 0", borderRadius: "var(--radius-sm)", opacity: pressed ? 0.55 : 1, cursor: interactive ? "pointer" : "default", transition: "opacity var(--duration-micro) var(--ease-standard)", ...style }}
     >
-      {emoji ? (
-        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", fontSize: 19, lineHeight: 1 }}>
-          {emoji}
-        </span>
-      ) : iconImage ? (
+      {iconImage ? (
         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, flex: "0 0 auto", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
           <img src={iconImage} alt="" width={22} height={22} style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
         </span>

@@ -587,7 +587,7 @@ function ExpensesApp({ session }) {
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+                <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
               </React.Fragment>
             );
           })}
@@ -606,7 +606,7 @@ function ExpensesApp({ session }) {
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+              <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
             </React.Fragment>
           );
         })}
