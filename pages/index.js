@@ -8,7 +8,7 @@ import {
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES, BANK_PRESETS } from "../lib/constants";
-import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor } from "../lib/format";
+import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor, categoryIconUrl } from "../lib/format";
 
 import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
@@ -45,6 +45,13 @@ export default function Home() {
 function ExpensesApp({ session }) {
   // Un virement doit apparaître dans l'historique des DEUX comptes qu'il relie, pas seulement le
   // compte source — sinon l'argent reçu par le compte cible n'a aucune ligne pour l'expliquer.
+  // Icône réelle (SVG) de la catégorie si la taxonomie en fournit une pour ce nom — sinon null,
+  // et l'icône Lucide générique prend le relais (catégories historiques, sans icône dédiée).
+  function categoryIconFor(name) {
+    const cat = categories.find((c) => c.name === name);
+    return cat?.icon ? categoryIconUrl(cat.icon) : null;
+  }
+
   function touchesAccount(t, accountName) {
     return t.compte === accountName || t.compteDestination === accountName;
   }
@@ -575,7 +582,7 @@ function ExpensesApp({ session }) {
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+                <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
               </React.Fragment>
             );
           })}
@@ -594,7 +601,7 @@ function ExpensesApp({ session }) {
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+              <ListRow Icon={Icon} iconImage={t.type === "Virement" ? null : categoryIconFor(t.category)} emoji={t.emoji} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
             </React.Fragment>
           );
         })}
