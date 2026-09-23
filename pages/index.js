@@ -344,13 +344,18 @@ function ExpensesApp({ session }) {
   const netPeriode = revenusPeriode - depensesPeriode;
   // Épargné = virements dont le compte cible est un livret, sur la même période/le même compte
   // source que le reste des totaux ci-dessus — jamais compté comme dépense ni revenu ailleurs.
+  // Toujours calculé sur l'ensemble du patrimoine, jamais limité au compte sélectionné sur
+  // Accueil : l'argent traverse souvent plusieurs comptes (pro -> courant -> livret) avant
+  // d'être épargné, donc un taux "par compte" ne peut donner que des résultats absurdes (un
+  // virement reçu d'un autre de tes comptes n'est pas un revenu de CE compte, mais fait bien
+  // partie de ton revenu total).
   const epargnePeriode = useMemo(() => periodFiltered.reduce((s, t) => {
     if (t.type !== "Virement" || !t.compteDestination) return s;
-    if (filterAccount !== "Tous" && t.compte !== filterAccount) return s;
     const isSavingsTarget = savingsAccounts.some((a) => a.name === t.compteDestination);
     return isSavingsTarget ? s + t.amount : s;
-  }, 0), [periodFiltered, savingsAccounts, filterAccount]);
-  const tauxEpargne = revenusPeriode > 0 ? Math.round((epargnePeriode / revenusPeriode) * 100) : null;
+  }, 0), [periodFiltered, savingsAccounts]);
+  const revenusGlobalPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" ? s + t.amount : s), 0), [periodFiltered]);
+  const tauxEpargne = revenusGlobalPeriode > 0 ? Math.round((epargnePeriode / revenusGlobalPeriode) * 100) : null;
 
   // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles, pas de plafond inventé)
   const categorySpend = useMemo(() => {
@@ -795,10 +800,10 @@ function ExpensesApp({ session }) {
             </Card>
 
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE · {periodLabel(period, "Dépense").toUpperCase()}</span>
+              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE · {periodLabel(period, "Dépense").toUpperCase()} · TOUT LE PATRIMOINE</span>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
                 <span style={{ font: "600 34px var(--font-display)", color: "var(--text-primary)" }}>{tauxEpargne === null ? "—" : `${tauxEpargne} %`}</span>
-                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", textAlign: "right" }}>{fmtEUR(epargnePeriode)} épargnés sur {fmtEUR(revenusPeriode)} de revenus</span>
+                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", textAlign: "right" }}>{fmtEUR(epargnePeriode)} épargnés sur {fmtEUR(revenusGlobalPeriode)} de revenus</span>
               </div>
             </Card>
 
