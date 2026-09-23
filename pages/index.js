@@ -16,6 +16,7 @@ import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../components/ui/Selectors";
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
+import { AddTransactionWizard } from "../components/AddTransactionWizard";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
@@ -907,8 +908,11 @@ function ExpensesApp({ session }) {
         />
       )}
 
-      {(showAdd || editing) && (
-        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => { setShowAdd(false); setEditing(null); }} onSave={saveTransaction} onDelete={editing ? () => deleteTransaction(editing.id) : null} openOptions={setOptionSheet} />
+      {showAdd && (
+        <AddTransactionWizard categories={categories} accounts={accounts} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => setShowAdd(false)} onSave={saveTransaction} />
+      )}
+      {editing && (
+        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => setEditing(null)} onSave={saveTransaction} onDelete={() => deleteTransaction(editing.id)} openOptions={setOptionSheet} />
       )}
 
       {showFilterSheet && (

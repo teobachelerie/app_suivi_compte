@@ -139,6 +139,18 @@ Nouvelle carte dans Budgets, juste avant "Total dépensé" : (virements vers un 
 2. Vérifie dans Supabase (Table Editor → categories) que ton compte a bien de nouvelles lignes avec un `tier` renseigné.
 3. Remplace le dossier local, push, Redeploy + vérification du commit.
 
+## Nouvel assistant d'ajout de transaction (façon app de référence)
+
+Le bouton "+" ouvre maintenant un parcours en 3 étapes plutôt qu'un formulaire unique : type (Dépense/Gain/Virement) → catégorie (grille d'icônes, groupée par famille) → montant (clavier calculatrice avec +, −, ×, ÷) → titre et détails (compte, moyen de paiement, date, tags, une nouvelle Remarque libre). Modifier une transaction existante garde l'ancien formulaire à un seul écran, inchangé — cette refonte ne concerne que la création.
+
+**Nouveau champ** : `notes` sur les transactions (migration `014-transaction-notes.sql`, purement additive).
+
+**Volontairement laissé de côté, à traiter séparément si tu veux** : les pièces jointes (demande un vrai système de stockage de fichiers, absent de l'app aujourd'hui) et les onglets "Défaut / À venir / Abonnement" de l'app de référence (nos abonnements sont déjà un système séparé et plus complet).
+
+## Correctif : icônes manquantes sur les catégories historiques adoptées
+
+Transport, Santé, Shopping et Loisirs (tes catégories réutilisées comme parent lors de la migration de taxonomie) n'avaient jamais reçu d'icône. Script `corriger-icones-categories-historiques.sql` livré séparément — simple mise à jour, aucun risque.
+
 ## Chevauchement du sélecteur Dépense/Gain + repère de compte perdu
 
 - **Le sélecteur Dépense/Gain chevauchait le montant** sur les périodes à gros total (3 mois, 6 mois...) : il était positionné en survol au-dessus du contenu au lieu d'être dans le flux normal. Remis dans le flux, sur sa propre ligne — la collision n'est plus possible, quelle que soit la largeur du montant.
