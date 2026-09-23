@@ -1,5 +1,8 @@
 {
   "crons": [
     { "path": "/api/cron/subscriptions", "schedule": "0 6 * * *" }
-  ]
+  ],
+  "functions": {
+    "pages/api/transactions/import.js": { "maxDuration": 30 }
+  }
 }
