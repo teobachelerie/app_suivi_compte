@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Upload, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
@@ -127,7 +127,7 @@ export function ReglagesScreen(props) {
     showAccountFilter, onToggleShowAccountFilter, groupBudgetByAccount, onToggleGroupBudgetByAccount,
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
-    transactions, plan, openOptions, userEmail, onSignOut, onDeleteUserAccount, getMenuRef,
+    transactions, plan, openOptions, userEmail, onSignOut, onDeleteUserAccount, getMenuRef, onImportComplete,
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
@@ -169,6 +169,28 @@ export function ReglagesScreen(props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const importInputRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null); // { imported, errors } | { error }
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permet de resélectionner le même fichier après une correction
+    if (!file) return;
+    setImporting(true); setImportResult(null);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const rows = Array.isArray(parsed) ? parsed : parsed.transactions;
+      if (!Array.isArray(rows)) throw new Error("Le fichier ne contient pas une liste de transactions reconnaissable.");
+      const result = await api("/api/transactions/import", { method: "POST", body: { transactions: rows } });
+      setImportResult(result);
+      if (result.imported > 0 && onImportComplete) onImportComplete();
+    } catch (e) {
+      setImportResult({ imported: 0, errors: [e.message] });
+    } finally {
+      setImporting(false);
+    }
+  }
   async function confirmDeleteAccount() {
     setDeleting(true); setDeleteError("");
     try { await onDeleteUserAccount(); } catch (e) { setDeleteError(e.message); setDeleting(false); }
@@ -339,6 +361,38 @@ export function ReglagesScreen(props) {
                 trailing={<ChevronRight size={16} color="var(--grey-3)" />}
               />
             </Card>
+
+            <div style={{ marginTop: "var(--space-4)" }}>
+              <span style={sectionLabelStyle}>IMPORTER</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
+                Fichier JSON au même format que l'export. Chaque catégorie et chaque compte doit déjà exister exactement sous ce nom — sinon l'import entier est rejeté, avec le détail des lignes à corriger, rien n'est importé à moitié.
+              </div>
+              <input ref={importInputRef} type="file" accept="application/json,.json" onChange={handleImportFile} style={{ display: "none" }} />
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <ListRow
+                  Icon={Upload}
+                  title={importing ? "Import en cours…" : "Importer un fichier JSON"}
+                  onClick={() => !importing && importInputRef.current?.click()}
+                  trailing={<ChevronRight size={16} color="var(--grey-3)" />}
+                />
+              </Card>
+              {importResult && (
+                <Card padding="md" style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {importResult.imported > 0 ? (
+                    <span style={{ fontSize: 14, color: "var(--green)", fontWeight: 600 }}>{importResult.imported} transaction{importResult.imported > 1 ? "s" : ""} importée{importResult.imported > 1 ? "s" : ""}.</span>
+                  ) : (
+                    <span style={{ fontSize: 14, color: "var(--red)", fontWeight: 600 }}>Rien n'a été importé — {importResult.errors.length} erreur{importResult.errors.length > 1 ? "s" : ""} à corriger :</span>
+                  )}
+                  {importResult.errors?.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 220, overflowY: "auto" }}>
+                      {importResult.errors.map((err, i) => (
+                        <span key={i} style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{err}</span>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
+            </div>
           </div>
         )}
 

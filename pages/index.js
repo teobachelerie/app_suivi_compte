@@ -310,7 +310,10 @@ function ExpensesApp({ session }) {
     const acc = accounts.find((a) => a.name === filterAccount);
     return BANK_PRESETS.find((b) => b.id === acc?.bank_id)?.primary || null;
   }, [accounts, filterAccount]);
-  const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
+  // Les catégories de la nouvelle taxonomie ont des sous-catégories obligatoires : leur en-tête de
+  // famille (parent_id null, tier défini) n'est jamais sélectionnable directement, seules ses
+  // sous-catégories (dont "Autre") le sont. Une catégorie historique (tier null) reste sélectionnable.
+  const categoryNames = useMemo(() => categories.filter((c) => c.parent_id || !c.tier).map((c) => c.name), [categories]);
   const accountNames = useMemo(() => accounts.map((a) => a.name), [accounts]);
   function accountBalance(acc) {
     // Un virement interne ne change jamais le patrimoine total (l'argent reste "chez moi") — on
@@ -332,6 +335,15 @@ function ExpensesApp({ session }) {
   const revenusPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
   const depensesPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Dépense" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
   const netPeriode = revenusPeriode - depensesPeriode;
+  // Épargné = virements dont le compte cible est un livret, sur la même période/le même compte
+  // source que le reste des totaux ci-dessus — jamais compté comme dépense ni revenu ailleurs.
+  const epargnePeriode = useMemo(() => periodFiltered.reduce((s, t) => {
+    if (t.type !== "Virement" || !t.compteDestination) return s;
+    if (filterAccount !== "Tous" && t.compte !== filterAccount) return s;
+    const isSavingsTarget = savingsAccounts.some((a) => a.name === t.compteDestination);
+    return isSavingsTarget ? s + t.amount : s;
+  }, 0), [periodFiltered, savingsAccounts, filterAccount]);
+  const tauxEpargne = revenusPeriode > 0 ? Math.round((epargnePeriode / revenusPeriode) * 100) : null;
 
   // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles, pas de plafond inventé)
   const categorySpend = useMemo(() => {
@@ -775,6 +787,14 @@ function ExpensesApp({ session }) {
               </div>
             </Card>
 
+            <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE · {periodLabel(period, "Dépense").toUpperCase()}</span>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ font: "600 34px var(--font-display)", color: "var(--text-primary)" }}>{tauxEpargne === null ? "—" : `${tauxEpargne} %`}</span>
+                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", textAlign: "right" }}>{fmtEUR(epargnePeriode)} épargnés sur {fmtEUR(revenusPeriode)} de revenus</span>
+              </div>
+            </Card>
+
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
               <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
@@ -835,6 +855,7 @@ function ExpensesApp({ session }) {
             getMenuRef={(title) => tourRef(`menu-${title}`)}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut} onDeleteUserAccount={handleDeleteUserAccount}
+            onImportComplete={loadAll}
           />
         )}
       </div>
