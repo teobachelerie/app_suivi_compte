@@ -98,7 +98,7 @@ function ApiKeysSection() {
 
       <div style={{ display: "flex", gap: 8 }}>
         <input style={fieldInputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nom (ex. iPhone)" />
-        <button onClick={handleCreate} disabled={creating} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)", opacity: creating ? 0.6 : 1 }}>Créer</button>
+        <button onClick={handleCreate} disabled={creating || !label.trim()} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)", opacity: creating || !label.trim() ? 0.6 : 1 }}>Créer</button>
       </div>
     </div>
   );

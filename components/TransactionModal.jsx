@@ -48,7 +48,7 @@ export function TransactionModal({ tx, categories, accounts, categoryRules, onCl
     if (isVirement) {
       if (compte === compteDestination) { setError("Les comptes source et cible doivent être différents."); return; }
       const finalTitle = title.trim() || `${compte} → ${compteDestination}`;
-      onSave({ id: tx?.id, title: finalTitle, amount: amt, category: "Virement automatique", compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: null });
+      onSave({ id: tx?.id, title: finalTitle, amount: amt, category: null, compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: null });
       return;
     }
 

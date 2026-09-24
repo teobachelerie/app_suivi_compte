@@ -696,7 +696,6 @@ function ExpensesApp({ session }) {
                     { value: "Tous", label: "Patrimoine" },
                   ]}
                   onChange={setFilterAccount}
-                  activeColor={activeBankColor}
                   getRef={(v) => tourRef(`pill-${v}`)}
                 />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

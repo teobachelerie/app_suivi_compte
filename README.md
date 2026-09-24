@@ -118,6 +118,19 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 
 Nouvelle carte dans Budgets, juste avant "Total dépensé" : (virements vers un livret ÷ revenus de la période) × 100. N'utilise que les virements dont le compte cible est un livret — jamais compté comme dépense ou revenu ailleurs, respecte le même compte/la même période que le reste de l'onglet Budgets. Affiche "—" si aucun revenu sur la période (pas de division par zéro).
 
+## Nettoyage taxonomie v2 (brief du 24/09) — 8 correctifs
+
+1. **Catégories obsolètes supprimées** : Voyage, Nourriture & Boissons (doublons), Virement automatique (redondante avec le type de transaction "Virement" — les virements n'ont plus de catégorie du tout, ni en base ni dans le code applicatif).
+2. **Migration automatique** : transactions "Épargne" rattachées sous Finances / Admin (la catégorie existante est réutilisée, pas dupliquée) ; "Client" → Freelance / Indépendant, "Employeur" → Salaire (catégories vidées puis supprimées).
+3. **Volontairement non traité** : "Abonnement" et "Services" restent intacts, à reclasser toi-même transaction par transaction (nature trop variable pour une règle fiable, comme précisé dans le brief).
+4. **Sélecteur de catégorie** : la famille elle-même apparaît en premier choix dans ses propres sous-catégories, sans suffixe "(général)".
+5. **Agrégation Budgets** : déjà corrigée dans un chantier précédent (regroupement par famille racine uniquement) — vérifié, rien à changer.
+6. **Onglet compte actif unifié** : le fond coloré selon la banque assignée est retiré de l'onglet lui-même (qui reste neutre pour tous les comptes) ; l'accent de couleur reste uniquement sur la bordure de carte, déjà cohérente.
+7. **Couleur d'Épargne** : passée à un teal (#38D9A9), qui ne rentre plus en conflit avec le rouge des dépenses.
+8. **Clé Raccourcis iOS** : le bouton "Créer" est désactivé tant qu'aucun nom n'est saisi.
+
+**Migration à exécuter** : `migration-016-taxonomie-v2.sql` — combine tout (taxonomie, migrations de données, suppressions, couleur). Sûre à relancer, mais fait de vraies suppressions cette fois (catégories obsolètes) : lis-la avant de l'exécuter si tu veux vérifier toi-même.
+
 ## Nouvelle taxonomie de catégories + import de données
 
 **Ce qui change** : 12 familles de catégories (dont "Abonnements", ajoutée à ta demande), 74 sous-catégories, chacune avec une icône et un palier. Purement additif : tes catégories actuelles (Abonnement, Client, Loisirs, Nourriture & Boissons, Santé, Services, Shopping, Transport, Virement automatique, Épargne) restent intactes, utilisables, non restreintes par palier — la nouvelle taxonomie s'ajoute à côté. Les futurs comptes ne reçoivent plus que la nouvelle taxonomie.

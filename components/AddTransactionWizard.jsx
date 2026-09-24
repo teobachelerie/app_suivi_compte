@@ -108,7 +108,7 @@ function CategoryPickerSheet({ categories, onPick, onVirement, onClose }) {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 10 }}>
-            <CategoryTile icon={currentFamily.icon} label={`${activeFamily} (général)`} onClick={() => onPick("Dépense", activeFamily)} />
+            <CategoryTile icon={currentFamily.icon} label={activeFamily} onClick={() => onPick("Dépense", activeFamily)} />
             {currentFamily.subs.map((c) => (
               <CategoryTile key={c.id} icon={c.icon} label={c.name} onClick={() => onPick("Dépense", c.name)} />
             ))}
@@ -166,7 +166,7 @@ export function AddTransactionWizard({ categories, accounts, categoryRules, defa
     if (type === "Virement") {
       if (compte === compteDestination) { setError("Les comptes source et cible doivent être différents."); return; }
       onSave({
-        title: title.trim() || `${compte} → ${compteDestination}`, amount: amt, category: "Virement automatique",
+        title: title.trim() || `${compte} → ${compteDestination}`, amount: amt, category: null,
         compte, compteDestination, type, payment: "Virement", date, tags, splits: null, emoji: null, notes: notes.trim() || null,
       });
     } else {
