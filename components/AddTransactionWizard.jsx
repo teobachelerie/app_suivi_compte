@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, Delete } from "lucide-react";
+import { Delete } from "lucide-react";
 import { Field, fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
+import { SegmentedControl } from "./ui/Selectors";
 import { categoryIconUrl } from "../lib/format";
 
 const OPERATORS = { "+": (a, b) => a + b, "−": (a, b) => a - b, "×": (a, b) => a * b, "÷": (a, b) => (b === 0 ? a : a / b) };
@@ -40,20 +41,88 @@ function useCalculator() {
   return { display, pressDigit, pressComma, pressBackspace, pressOperator, result, expressionLabel };
 }
 
-function CategoryTile({ cat, onClick }) {
-  const url = categoryIconUrl(cat.icon);
+function CategoryTile({ icon, label, onClick }) {
+  const url = categoryIconUrl(icon);
   return (
     <button onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}>
       <span style={{ width: 52, height: 52, borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {url ? <img src={url} alt="" width={28} height={28} /> : <span style={{ fontSize: 20 }}>•</span>}
       </span>
-      <span style={{ fontSize: 12, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2 }}>{cat.name}</span>
+      <span style={{ fontSize: 12, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2 }}>{label}</span>
     </button>
   );
 }
 
+// Feuille du bas pour choisir le type (Dépense/Revenu) puis la catégorie. Comportement voulu :
+// - Dépenses/Revenus toujours visibles et cliquables, à tout moment.
+// - Taper sur Dépenses (même si déjà actif) revient toujours à la grille des familles.
+// - Taper sur Revenus bascule direct sur les sous-catégories de Revenus (une seule famille là-bas,
+//   pas d'étape intermédiaire).
+// - Taper une famille (ex. Loisirs) montre ses sous-catégories, plus la famille elle-même en haut
+//   pour la choisir globalement si aucune sous-catégorie précise ne convient.
+function CategoryPickerSheet({ categories, onPick, onVirement, onClose }) {
+  const [activeType, setActiveType] = useState("Dépense"); // "Dépense" | "Gain"
+  const [activeFamily, setActiveFamily] = useState(null); // null = grille des familles
+
+  const leafCategories = useMemo(() => categories.filter((c) => c.parent_id || !c.tier), [categories]);
+  const families = useMemo(() => {
+    const byParent = new Map();
+    for (const c of leafCategories) {
+      const parent = categories.find((p) => p.id === c.parent_id);
+      const familyName = parent ? parent.name : c.name; // catégorie historique sans famille = sa propre famille
+      const familyIcon = parent ? parent.icon : c.icon;
+      if (!byParent.has(familyName)) byParent.set(familyName, { icon: familyIcon, subs: [] });
+      byParent.get(familyName).subs.push(c);
+    }
+    return byParent;
+  }, [leafCategories, categories]);
+
+  function chooseType(t) {
+    setActiveType(t);
+    setActiveFamily(null); // revient toujours à la vue de premier niveau du type choisi
+  }
+
+  const familyNames = [...families.keys()].filter((n) => n !== "Revenus");
+  const revenusFamily = families.get("Revenus");
+  const currentFamily = activeFamily ? families.get(activeFamily) : null;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, maxHeight: "75dvh", overflowY: "auto", background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", boxShadow: "var(--elev-overlay)", padding: "var(--space-4) var(--gutter-screen) calc(env(safe-area-inset-bottom, 0px) + var(--space-5))" }}>
+        <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "0 auto var(--space-4)" }} />
+        <SegmentedControl options={["Dépenses", "Revenus"]} value={activeType === "Gain" ? "Revenus" : "Dépenses"} onChange={(v) => chooseType(v === "Revenus" ? "Gain" : "Dépense")} style={{ marginBottom: "var(--space-4)" }} />
+
+        {activeType === "Gain" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+            {(revenusFamily?.subs || []).map((c) => (
+              <CategoryTile key={c.id} icon={c.icon} label={c.name} onClick={() => onPick("Gain", c.name)} />
+            ))}
+          </div>
+        ) : !activeFamily ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+            {familyNames.map((name) => (
+              <CategoryTile key={name} icon={families.get(name).icon} label={name} onClick={() => setActiveFamily(name)} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+            <CategoryTile icon={currentFamily.icon} label={`${activeFamily} (général)`} onClick={() => onPick("Dépense", activeFamily)} />
+            {currentFamily.subs.map((c) => (
+              <CategoryTile key={c.id} icon={c.icon} label={c.name} onClick={() => onPick("Dépense", c.name)} />
+            ))}
+          </div>
+        )}
+
+        <button onClick={onVirement} style={{ display: "block", margin: "var(--space-5) auto 0", background: "none", border: "none", color: "var(--text-secondary)", fontSize: 13, textDecoration: "underline", cursor: "pointer" }}>
+          Ou faire un virement entre mes comptes
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AddTransactionWizard({ categories, accounts, categoryRules, defaultAccount, defaultPayment, onClose, onSave, saving }) {
-  const [step, setStep] = useState("type"); // type -> category (sauf Virement) -> amount -> details
+  const [step, setStep] = useState("category"); // category -> amount -> details
   const [type, setType] = useState(null);
   const [category, setCategory] = useState(null);
   const [title, setTitle] = useState("");
@@ -66,27 +135,14 @@ export function AddTransactionWizard({ categories, accounts, categoryRules, defa
   const [error, setError] = useState("");
   const calc = useCalculator();
 
-  // Familles pertinentes selon le type : "Revenus" pour un gain, tout le reste pour une dépense.
-  const leafCategories = useMemo(() => categories.filter((c) => c.parent_id || !c.tier), [categories]);
-  const families = useMemo(() => {
-    const byParent = new Map();
-    for (const c of leafCategories) {
-      const parent = categories.find((p) => p.id === c.parent_id);
-      const familyName = parent ? parent.name : c.name; // catégorie historique sans famille = sa propre famille
-      if (!byParent.has(familyName)) byParent.set(familyName, []);
-      byParent.get(familyName).push(c);
-    }
-    const entries = [...byParent.entries()];
-    if (type === "Gain") return entries.filter(([name]) => name === "Revenus");
-    return entries.filter(([name]) => name !== "Revenus");
-  }, [leafCategories, categories, type]);
-
-  function chooseType(t) {
+  function handlePickCategory(t, catName) {
     setType(t);
-    setStep(t === "Virement" ? "amount" : "category");
+    setCategory(catName);
+    setStep("amount");
   }
-  function chooseCategory(name) {
-    setCategory(name);
+  function handlePickVirement() {
+    setType("Virement");
+    setCategory(null);
     setStep("amount");
   }
   function confirmAmount() {
@@ -95,11 +151,11 @@ export function AddTransactionWizard({ categories, accounts, categoryRules, defa
     setError("");
     setStep("details");
   }
-  function goBack() {
-    if (step === "category") setStep("type");
-    else if (step === "amount") setStep(type === "Virement" ? "type" : "category");
-    else if (step === "details") setStep("amount");
-    else onClose();
+  function goBackFromAmount() {
+    setStep("category");
+  }
+  function goBackFromDetails() {
+    setStep("amount");
   }
 
   function handleConfirm() {
@@ -120,41 +176,18 @@ export function AddTransactionWizard({ categories, accounts, categoryRules, defa
     }
   }
 
-  const STEP_TITLES = { type: "Nouvelle opération", category: "Catégorie", amount: "Montant", details: "Détails" };
+  if (step === "category") {
+    return <CategoryPickerSheet categories={categories} onPick={handlePickCategory} onVirement={handlePickVirement} onClose={onClose} />;
+  }
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--surface-base)", zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "var(--font-core)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--gutter-screen) var(--space-3)" }}>
-        <button onClick={goBack} style={{ background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", width: 40, height: 40, borderRadius: "var(--radius-round)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <ChevronLeft size={20} color="var(--text-primary)" />
+        <button onClick={step === "amount" ? goBackFromAmount : goBackFromDetails} style={{ background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", width: 40, height: 40, borderRadius: "var(--radius-round)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18 }}>
+          ‹
         </button>
-        <span style={{ font: "600 17px var(--font-core)", color: "var(--text-primary)" }}>{STEP_TITLES[step]}</span>
+        <span style={{ font: "600 17px var(--font-core)", color: "var(--text-primary)" }}>{step === "amount" ? "Montant" : "Détails"}</span>
       </div>
-
-      {step === "type" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 14, padding: "0 var(--gutter-screen)" }}>
-          {["Dépense", "Gain", "Virement"].map((t) => (
-            <button key={t} onClick={() => chooseType(t)} style={{ background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", borderRadius: "var(--radius-lg)", padding: "20px", fontSize: 17, fontWeight: 600, color: t === "Gain" ? "var(--green)" : t === "Dépense" ? "var(--red)" : "var(--text-primary)", cursor: "pointer" }}>
-              {t === "Virement" ? "Virement entre mes comptes" : t}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {step === "category" && (
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 var(--gutter-screen) var(--space-6)" }}>
-          {families.map(([familyName, subs]) => (
-            <div key={familyName} style={{ marginBottom: "var(--space-5)" }}>
-              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: 10 }}>{familyName.toUpperCase()}</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 14 }}>
-                {subs.map((c) => (
-                  <CategoryTile key={c.id} cat={c} onClick={() => chooseCategory(c.name)} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {step === "amount" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>

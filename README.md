@@ -139,6 +139,16 @@ Nouvelle carte dans Budgets, juste avant "Total dépensé" : (virements vers un 
 2. Vérifie dans Supabase (Table Editor → categories) que ton compte a bien de nouvelles lignes avec un `tier` renseigné.
 3. Remplace le dossier local, push, Redeploy + vérification du commit.
 
+## Rebranding : Finelio
+
+Nom, icône (favicon, icône iOS, icônes PWA 192/512) et manifest PWA mis à jour depuis les nouveaux logos. Le logo carré sert de source pour toutes les icônes (les plateformes appliquent elles-mêmes l'arrondi) ; le logo App Store 1024 est conservé à part (`appstore-icon-1024-reserve-future.png`, à la racine), pas branché au web, pour une future soumission native. L'abonnement interne à l'app (visible dans tes abonnements récurrents) est renommé "Finelio" ; la recherche reconnaît encore l'ancien nom "Cap Finances" une fois, pour basculer automatiquement sans dupliquer la ligne.
+
+**Sur l'URL** : je ne peux pas la changer moi-même (pas d'accès à ton compte Vercel), mais tu peux renommer le projet toi-même dans Vercel → Settings → General → Project Name, ce qui change gratuitement le sous-domaine (`finelio.vercel.app` si disponible). Pour un vrai nom de domaine à toi, il faudrait l'acheter puis le relier dans Vercel → Settings → Domains — dis-moi si tu veux qu'on regarde ça.
+
+## Nouvelle sélection de catégorie dans l'assistant d'ajout
+
+Refaite en feuille du bas, avec le comportement exact demandé : Dépenses/Revenus toujours visibles en haut, retaper sur Dépenses revient toujours à la grille des familles, taper sur Revenus bascule directement sur ses sous-catégories (une seule famille de revenus, pas d'étape intermédiaire), taper une famille (ex. Loisirs) montre ses sous-catégories avec la famille elle-même sélectionnable en premier choix. Les étapes montant et détails, que tu avais validées, n'ont pas changé.
+
 ## Nouvel assistant d'ajout de transaction (façon app de référence)
 
 Le bouton "+" ouvre maintenant un parcours en 3 étapes plutôt qu'un formulaire unique : type (Dépense/Gain/Virement) → catégorie (grille d'icônes, groupée par famille) → montant (clavier calculatrice avec +, −, ×, ÷) → titre et détails (compte, moyen de paiement, date, tags, une nouvelle Remarque libre). Modifier une transaction existante garde l'ancien formulaire à un seul écran, inchangé — cette refonte ne concerne que la création.
