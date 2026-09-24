@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Delete } from "lucide-react";
+import { Delete, ShoppingBag } from "lucide-react";
 import { Field, fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { SegmentedControl } from "./ui/Selectors";
 import { categoryIconUrl } from "../lib/format";
+import { CATEGORY_ICON } from "../lib/constants";
 
 const OPERATORS = { "+": (a, b) => a + b, "−": (a, b) => a - b, "×": (a, b) => a * b, "÷": (a, b) => (b === 0 ? a : a / b) };
 
@@ -43,12 +44,13 @@ function useCalculator() {
 
 function CategoryTile({ icon, label, onClick }) {
   const url = categoryIconUrl(icon);
+  const FallbackIcon = CATEGORY_ICON[label] || ShoppingBag;
   return (
-    <button onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}>
-      <span style={{ width: 52, height: 52, borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {url ? <img src={url} alt="" width={28} height={28} /> : <span style={{ fontSize: 20 }}>•</span>}
+    <button onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+      <span style={{ width: 42, height: 42, borderRadius: "var(--radius-md)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {url ? <img src={url} alt="" width={22} height={22} /> : <FallbackIcon size={18} color="var(--icon-primary)" />}
       </span>
-      <span style={{ fontSize: 12, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.15 }}>{label}</span>
     </button>
   );
 }
@@ -88,24 +90,24 @@ function CategoryPickerSheet({ categories, onPick, onVirement, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--surface-scrim)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, maxHeight: "75dvh", overflowY: "auto", background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", boxShadow: "var(--elev-overlay)", padding: "var(--space-4) var(--gutter-screen) calc(env(safe-area-inset-bottom, 0px) + var(--space-5))" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, maxHeight: "62dvh", overflowY: "auto", background: "var(--surface-base)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", boxShadow: "var(--elev-overlay)", padding: "var(--space-4) var(--gutter-screen) calc(env(safe-area-inset-bottom, 0px) + var(--space-5))" }}>
         <div style={{ width: 36, height: 5, borderRadius: 3, background: "var(--grey-2)", margin: "0 auto var(--space-4)" }} />
         <SegmentedControl options={["Dépenses", "Revenus"]} value={activeType === "Gain" ? "Revenus" : "Dépenses"} onChange={(v) => chooseType(v === "Revenus" ? "Gain" : "Dépense")} style={{ marginBottom: "var(--space-4)" }} />
 
         {activeType === "Gain" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 10 }}>
             {(revenusFamily?.subs || []).map((c) => (
               <CategoryTile key={c.id} icon={c.icon} label={c.name} onClick={() => onPick("Gain", c.name)} />
             ))}
           </div>
         ) : !activeFamily ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 10 }}>
             {familyNames.map((name) => (
               <CategoryTile key={name} icon={families.get(name).icon} label={name} onClick={() => setActiveFamily(name)} />
             ))}
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", rowGap: 10 }}>
             <CategoryTile icon={currentFamily.icon} label={`${activeFamily} (général)`} onClick={() => onPick("Dépense", activeFamily)} />
             {currentFamily.subs.map((c) => (
               <CategoryTile key={c.id} icon={c.icon} label={c.name} onClick={() => onPick("Dépense", c.name)} />
@@ -113,7 +115,7 @@ function CategoryPickerSheet({ categories, onPick, onVirement, onClose }) {
           </div>
         )}
 
-        <button onClick={onVirement} style={{ display: "block", margin: "var(--space-5) auto 0", background: "none", border: "none", color: "var(--text-secondary)", fontSize: 13, textDecoration: "underline", cursor: "pointer" }}>
+        <button onClick={onVirement} style={{ display: "block", margin: "var(--space-3) auto 0", background: "none", border: "none", color: "var(--text-secondary)", fontSize: 13, textDecoration: "underline", cursor: "pointer" }}>
           Ou faire un virement entre mes comptes
         </button>
       </div>
