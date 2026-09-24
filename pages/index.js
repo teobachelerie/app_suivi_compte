@@ -72,6 +72,7 @@ function ExpensesApp({ session }) {
   function dismissOnboarding() {
     if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
     setShowOnboarding(false);
+    api("/api/onboarding/complete", { method: "POST" }).catch(() => {}); // best-effort : le localStorage suffit pour cette session, le serveur prend le relais pour les suivantes
   }
 
   // Visite guidée façon "spotlight" : deux phases — d'abord le circuit des vrais boutons de l'app
@@ -244,7 +245,16 @@ function ExpensesApp({ session }) {
       api("/api/subscriptions").then(setSubscriptions).catch(() => {});
       api("/api/goals").then(setGoals).catch(() => {});
       api("/api/category-rules").then(setCategoryRules).catch(() => {});
-      api("/api/billing/plan").then(setPlan).catch(() => {});
+      api("/api/billing/plan").then((p) => {
+        setPlan(p);
+        // Le serveur est la source de vérité : s'il confirme que l'onboarding a déjà été vu, on le
+        // ferme même si le localStorage local (effacé par Safari entre deux sessions PWA, par
+        // exemple) laissait croire le contraire.
+        if (p.onboardingSeen) {
+          if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
+          setShowOnboarding(false);
+        }
+      }).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -358,21 +368,42 @@ function ExpensesApp({ session }) {
   const revenusGlobalPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" ? s + t.amount : s), 0), [periodFiltered]);
   const tauxEpargne = revenusGlobalPeriode > 0 ? Math.round((epargnePeriode / revenusGlobalPeriode) * 100) : null;
 
-  // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles, pas de plafond inventé)
+  // Répartition des dépenses par catégorie sur la période — pour l'onglet Budgets (données réelles,
+  // pas de plafond inventé). Regroupée par famille : chaque famille agrège le total de toutes ses
+  // sous-catégories (+ ce qui est directement tagué sur la famille elle-même, sans sous-catégorie
+  // précisée) ; le détail par sous-catégorie n'apparaît qu'au dépli. Le % est calculé sur le total
+  // réel de toutes les dépenses, pas sur la plus grosse catégorie (l'ancien calcul faisait
+  // afficher "100 %" sur la catégorie la plus dépensée, ce qui n'a pas de sens comme pourcentage).
   const categorySpend = useMemo(() => {
-    const totals = {};
+    const leafTotals = {};
     periodFiltered.forEach((t) => {
       if (t.type !== "Dépense") return;
       if (filterAccount !== "Tous" && t.compte !== filterAccount) return;
       if (t.splits?.length) {
-        t.splits.forEach((s) => { totals[s.category] = (totals[s.category] || 0) + s.amount; });
+        t.splits.forEach((s) => { leafTotals[s.category] = (leafTotals[s.category] || 0) + s.amount; });
       } else {
-        totals[t.category] = (totals[t.category] || 0) + t.amount;
+        leafTotals[t.category] = (leafTotals[t.category] || 0) + t.amount;
       }
     });
-    const max = Math.max(1, ...Object.values(totals));
-    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, pct: (amount / max) * 100 }));
-  }, [periodFiltered, filterAccount]);
+    const families = {}; // { familyName: { amount, subs: { subName: amount } } }
+    Object.entries(leafTotals).forEach(([name, amount]) => {
+      const cat = categories.find((c) => c.name === name);
+      const parent = cat?.parent_id ? categories.find((p) => p.id === cat.parent_id) : null;
+      const familyName = parent ? parent.name : name;
+      if (!families[familyName]) families[familyName] = { amount: 0, subs: {} };
+      families[familyName].amount += amount;
+      if (parent) families[familyName].subs[name] = (families[familyName].subs[name] || 0) + amount;
+    });
+    const grandTotal = Math.max(1, Object.values(families).reduce((s, f) => s + f.amount, 0));
+    return Object.entries(families)
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .map(([familyName, f]) => ({
+        category: familyName,
+        amount: f.amount,
+        pct: (f.amount / grandTotal) * 100,
+        subs: Object.entries(f.subs).filter(([, amount]) => amount > 0).sort((a, b) => b[1] - a[1]).map(([name, amount]) => ({ category: name, amount })),
+      }));
+  }, [periodFiltered, filterAccount, categories]);
 
   // Répartition des dépenses par compte sur la période — pour l'onglet Budgets, activable dans Réglages.
   const accountSpend = useMemo(() => {
@@ -382,11 +413,12 @@ function ExpensesApp({ session }) {
       if (filterAccount !== "Tous" && t.compte !== filterAccount) return;
       totals[t.compte] = (totals[t.compte] || 0) + t.amount;
     });
-    const max = Math.max(1, ...Object.values(totals));
-    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([compte, amount]) => ({ compte, amount, pct: (amount / max) * 100 }));
+    const total = Math.max(1, Object.values(totals).reduce((s, v) => s + v, 0));
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([compte, amount]) => ({ compte, amount, pct: (amount / total) * 100 }));
   }, [periodFiltered, filterAccount]);
 
   const [budgetView, setBudgetView] = useState("categorie"); // "categorie" | "compte" — bascule locale, visible seulement si l'option est activée dans Réglages
+  const [expandedFamily, setExpandedFamily] = useState(null);
   const budgetByAccount = groupBudgetByAccount && budgetView === "compte";
   const activeSpend = budgetByAccount ? accountSpend : categorySpend;
   const spendLabel = (d) => (budgetByAccount ? d.compte : d.category);
@@ -803,7 +835,7 @@ function ExpensesApp({ session }) {
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE · {periodLabel(period, "Dépense").toUpperCase()} · TOUT LE PATRIMOINE</span>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ font: "600 34px var(--font-display)", color: "var(--text-primary)" }}>{tauxEpargne === null ? "—" : `${tauxEpargne} %`}</span>
+                <span style={{ font: "600 34px var(--font-display)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>{tauxEpargne === null ? "—" : `${tauxEpargne}%`}</span>
                 <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", textAlign: "right" }}>{fmtEUR(epargnePeriode)} épargnés sur {fmtEUR(revenusGlobalPeriode)} de revenus</span>
               </div>
             </Card>
@@ -834,17 +866,31 @@ function ExpensesApp({ session }) {
                 </Card>
 
                 <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                  {activeSpend.map((d, i) => (
-                    <React.Fragment key={spendLabel(d)}>
-                      {i > 0 ? <Divider /> : null}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
-                        <span style={{ width: 11, height: 11, borderRadius: "50%", background: spendColor(d), flexShrink: 0 }} />
-                        <span style={{ flex: 1, fontSize: 14 }}>{spendLabel(d)}</span>
-                        <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{d.pct.toFixed(0)} %</span>
-                        <Amount value={fmtEUR(d.amount)} size="sm" direction="expense" showSign={false} />
-                      </div>
-                    </React.Fragment>
-                  ))}
+                  {activeSpend.map((d, i) => {
+                    const hasSubs = !budgetByAccount && d.subs?.length > 0;
+                    const isOpen = expandedFamily === spendLabel(d);
+                    return (
+                      <React.Fragment key={spendLabel(d)}>
+                        {i > 0 ? <Divider /> : null}
+                        <div
+                          onClick={hasSubs ? () => setExpandedFamily(isOpen ? null : spendLabel(d)) : undefined}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: hasSubs ? "pointer" : "default" }}
+                        >
+                          <span style={{ width: 11, height: 11, borderRadius: "50%", background: spendColor(d), flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 14 }}>{spendLabel(d)}</span>
+                          <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{d.pct.toFixed(0)} %</span>
+                          <Amount value={fmtEUR(d.amount)} size="sm" direction="expense" showSign={false} />
+                          {hasSubs && <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)", flexShrink: 0 }} />}
+                        </div>
+                        {isOpen && d.subs.map((s) => (
+                          <div key={s.category} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0 8px 21px" }}>
+                            <span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{s.category}</span>
+                            <Amount value={fmtEUR(s.amount)} size="sm" direction="expense" showSign={false} />
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </Card>
               </>
             )}

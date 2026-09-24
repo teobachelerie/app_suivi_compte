@@ -157,6 +157,24 @@ Le bouton "+" ouvre maintenant un parcours en 3 étapes plutôt qu'un formulaire
 
 **Volontairement laissé de côté, à traiter séparément si tu veux** : les pièces jointes (demande un vrai système de stockage de fichiers, absent de l'app aujourd'hui) et les onglets "Défaut / À venir / Abonnement" de l'app de référence (nos abonnements sont déjà un système séparé et plus complet).
 
+## Arborescence dans Budgets et Réglages → Catégories, et vrai pourcentage
+
+**Le "100 %" sur Transport était un vrai bug** : le calcul comparait chaque catégorie à la plus grosse, pas au total réel des dépenses — la catégorie la plus dépensée affichait donc toujours 100 % par construction. Corrigé : le pourcentage reflète maintenant la vraie part du total.
+
+**Budgets** : la liste ne montre plus que les familles (Transport, Loisirs, etc.), chacune avec son total agrégé (famille + toutes ses sous-catégories) et son vrai %. Toucher une famille déplie ses sous-catégories ayant plus de 0 € sur la période. Le camembert suit la même logique (tranches par famille, pas par sous-catégorie).
+
+**Réglages → Catégories** : même principe — seules les familles sont visibles au départ, toucher l'une d'elles déplie ses sous-catégories, chacune restant modifiable (nom, couleur, suppression) exactement comme avant.
+
+**Nuance à connaître** : si une famille a à la fois des dépenses directement taguées sur elle-même (sans sous-catégorie précisée) et des dépenses sur ses sous-catégories, le total affiché en haut inclut les deux, mais seules les sous-catégories apparaissent une fois dépliée — la somme du détail peut donc être légèrement inférieure au total affiché. Dis-moi si tu veux que j'ajoute une ligne "Divers" pour réconcilier ça visuellement.
+
+## Correctif : visite guidée + questionnaire qui se relançaient à chaque connexion
+
+L'état "déjà vu" n'était stocké qu'en localStorage, côté navigateur — fragile sur PWA iOS (Safari peut effacer ce stockage entre deux sessions, ce qui correspond exactement au symptôme). Déplacé côté serveur (`user_plans.onboarding_seen`), qui devient la source de vérité ; le localStorage ne sert plus que d'optimisation pour éviter un flash au premier rendu, et se réconcilie automatiquement avec le serveur au chargement. Migration `015-onboarding-server-side.sql`, additive.
+
+## ⚠️ Renommage du projet Vercel en finelio.vercel.app : une action à faire toi-même dans Stripe
+
+Le webhook Stripe (Développeurs → Webhooks) pointe encore vers l'ancienne URL `app-suivi-compte-eight.vercel.app/api/billing/webhook`. Si Vercel a bien libéré cette ancienne adresse au profit de la nouvelle, ce webhook ne reçoit plus rien — les mises à jour d'abonnement (paiement, annulation) cesseraient silencieusement de fonctionner. Va dans Stripe → Développeurs → Webhooks, modifie l'URL de l'endpoint existant en `https://finelio.vercel.app/api/billing/webhook` (ou supprime-le et recrée-le). Je ne peux pas le faire moi-même, je n'ai pas accès à ton compte Stripe.
+
 ## Correctif : icônes manquantes sur les catégories historiques adoptées
 
 Transport, Santé, Shopping et Loisirs (tes catégories réutilisées comme parent lors de la migration de taxonomie) n'avaient jamais reçu d'icône. Script `corriger-icones-categories-historiques.sql` livré séparément — simple mise à jour, aucun risque.
@@ -238,7 +256,7 @@ Le vrai checkout, en mode test Stripe (aucun argent réel, cartes de test unique
 **Étapes, dans l'ordre** :
 1. Ajoute les 3 premières variables ci-dessus sur Vercel.
 2. Déploie ce code (dossier remplacé, push, Redeploy + vérification du commit comme d'habitude).
-3. Une fois en ligne, va sur Stripe (toujours en mode test) → Développeurs → Webhooks → "Ajouter un endpoint". URL : `https://app-suivi-compte-eight.vercel.app/api/billing/webhook`. Événements à écouter : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
+3. Une fois en ligne, va sur Stripe (toujours en mode test) → Développeurs → Webhooks → "Ajouter un endpoint". URL : `https://finelio.vercel.app/api/billing/webhook`. Événements à écouter : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
 4. Stripe affiche alors un "Secret de signature" (`whsec_...`) — copie-le, ajoute-le comme 4ème variable `STRIPE_WEBHOOK_SECRET` sur Vercel.
 5. Redeploy une deuxième fois (obligatoire pour que cette dernière variable soit prise en compte).
 

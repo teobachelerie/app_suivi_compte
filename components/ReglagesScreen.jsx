@@ -170,6 +170,7 @@ export function ReglagesScreen(props) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const importInputRef = useRef(null);
+  const [expandedCatFamily, setExpandedCatFamily] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null); // { imported, errors } | { error }
   async function handleImportFile(e) {
@@ -280,14 +281,31 @@ export function ReglagesScreen(props) {
           <>
             <div>
               <span style={sectionLabelStyle}>CATÉGORIES</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une catégorie ou l'icône crayon pour la renommer.</div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une famille pour voir ses sous-catégories. Touchez un nom ou l'icône crayon pour le renommer.</div>
               <Card padding="md" style={{ marginBottom: 12 }}>
-                {categories.map((c, i) => (
-                  <React.Fragment key={c.id}>
-                    {i > 0 ? <Divider /> : null}
-                    <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} color={categoryColor(categories, c.name)} onColorChange={(v) => onChangeCategoryColor(c.id, v)} />
-                  </React.Fragment>
-                ))}
+                {categories.filter((c) => !c.parent_id).map((fam, i) => {
+                  const children = categories.filter((c) => c.parent_id === fam.id);
+                  const isOpen = expandedCatFamily === fam.id;
+                  return (
+                    <React.Fragment key={fam.id}>
+                      {i > 0 ? <Divider /> : null}
+                      <EditableRow
+                        name={fam.name} onRename={(newName) => onRenameCategory(fam.id, newName)} onDelete={() => onDeleteCategory(fam.id)}
+                        color={categoryColor(categories, fam.name)} onColorChange={(v) => onChangeCategoryColor(fam.id, v)}
+                        extra={children.length > 0 ? (
+                          <button onClick={(e) => { e.stopPropagation(); setExpandedCatFamily(isOpen ? null : fam.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+                            <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)" }} />
+                          </button>
+                        ) : null}
+                      />
+                      {isOpen && children.map((c) => (
+                        <div key={c.id} style={{ paddingLeft: 21 }}>
+                          <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} color={categoryColor(categories, c.name)} onColorChange={(v) => onChangeCategoryColor(c.id, v)} />
+                        </div>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </Card>
               <div style={{ display: "flex", gap: 8 }}>
                 <input style={fieldInputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
