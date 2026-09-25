@@ -77,7 +77,7 @@ delete from categories where user_id = '7cc685f6-6e1e-44fb-ac8b-5487157848a1' an
 -- === 4. Couleur d'Épargne (le hachage automatique tombait sur un rouge/saumon, en conflit avec
 --        la convention "rouge = dépense" utilisée partout ailleurs) ===
 update categories set color = '#38D9A9'
-where user_id = '{USER_ID}' and name = 'Épargne';
+where user_id = '7cc685f6-6e1e-44fb-ac8b-5487157848a1' and name = 'Épargne';
 
 -- === 5. Non traité ici, volontairement : "Abonnement" et "Services" ===
 -- Reclassement manuel demandé explicitement (nature trop variable pour une règle fiable) — ces
