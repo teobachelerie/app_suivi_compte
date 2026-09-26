@@ -192,6 +192,7 @@ html, body {
   overscroll-behavior: none;
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
+  background: var(--surface-0);
 }
 
 body {
