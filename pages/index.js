@@ -13,10 +13,11 @@ import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInt
 import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
 import { NavBar, TabBar } from "../components/ui/Navigation";
-import { StatTile, SegmentedControl, AccountPill, PeriodChips } from "../components/ui/Selectors";
+import { StatTile, SegmentedControl, PeriodChips } from "../components/ui/Selectors";
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { AddTransactionWizard } from "../components/AddTransactionWizard";
+import { AccountCardStack } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
@@ -688,27 +689,20 @@ function ExpensesApp({ session }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
 
-              <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", borderTop: activeBankColor ? `3px solid ${activeBankColor}` : "none" }}>
-                <AccountPill
-                  value={filterAccount}
-                  options={[
-                    ...coreAccounts.map((a) => ({ value: a.name, label: a.name.replace("Compte ", "") })),
-                    { value: "Tous", label: "Patrimoine" },
-                  ]}
-                  onChange={setFilterAccount}
-                  getRef={(v) => tourRef(`pill-${v}`)}
-                />
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>SOLDE DU COMPTE</span>
-                  <Amount value={fmtEUR(balanceTotal)} size="balance" />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                  {netPeriode >= 0 ? <ArrowDownLeft size={14} color="var(--green)" /> : <ArrowUpRight size={14} color="var(--red)" />}
-                  <span style={{ font: "500 13px var(--font-core)", color: "var(--text-secondary)" }}>
-                    {netPeriode >= 0 ? "+" : "−"}{fmtEUR(Math.abs(netPeriode))} sur {periodLabel(period, "Gain").replace("Reçu ", "")}
-                  </span>
-                </div>
-              </Card>
+              <AccountCardStack
+                accounts={[
+                  ...coreAccounts.map((a) => ({ key: a.name, name: a.name.replace("Compte ", ""), bankId: a.bank_id })),
+                  { key: "Tous", name: "Patrimoine", bankId: null },
+                ]}
+                active={filterAccount}
+                onSelect={setFilterAccount}
+                bankPresets={BANK_PRESETS}
+                balanceValue={fmtEUR(balanceTotal)}
+                balanceLabel={`sur ${periodLabel(period, "Gain").replace("Reçu ", "")}`}
+                variationDirection={netPeriode >= 0 ? "up" : "down"}
+                variationText={`${netPeriode >= 0 ? "+" : "−"}${fmtEUR(Math.abs(netPeriode))}`}
+                getRef={(v) => tourRef(`pill-${v}`)}
+              />
 
               <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
 

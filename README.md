@@ -118,6 +118,16 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 
 Nouvelle carte dans Budgets, juste avant "Total dépensé" : (virements vers un livret ÷ revenus de la période) × 100. N'utilise que les virements dont le compte cible est un livret — jamais compté comme dépense ou revenu ailleurs, respecte le même compte/la même période que le reste de l'onglet Budgets. Affiche "—" si aucun revenu sur la période (pas de division par zéro).
 
+## Pile de cartes de comptes (Accueil)
+
+Remplace l'ancien sélecteur à onglets. Le compte actif est devant en plein (solde, variation, banque) ; les deux autres sont derrière, décalés de 56px, ne montrant que leur nom. Toucher un compte du fond le fait passer devant, les autres reculent d'un cran — animation 280ms, les deux cartes bougent en même temps, sans effet ressort, comme demandé.
+
+**Couleurs par banque** : traitement sur-mesure pour Société Générale (split rouge/noir) et Boursorama (dégradé rose/bleu), Patrimoine avec le halo de marque Finelio. Pour toute autre banque choisie dans Réglages, un dégradé générique à partir de ses couleurs prend le relais — moins abouti visuellement que les deux cas sur-mesure, mais reste correct.
+
+**Simplification assumée** : les 4 derniers chiffres masqués du compte (visibles dans la maquette) ne sont pas affichés — cette donnée n'existe nulle part dans l'app (aucun champ numéro de compte stocké), les inventer aurait été trompeur. Dis-moi si tu veux qu'on ajoute un vrai champ pour ça.
+
+**Pas encore fait** : l'état où Patrimoine ou Pro serait déjà devant au premier chargement (la maquette ne détaille que l'état Courant-devant, comme noté dans le brief) — pour l'instant, l'ordre initial reprend simplement le compte déjà sélectionné avant ce changement.
+
 ## Nettoyage taxonomie v2 (brief du 24/09) — 8 correctifs
 
 1. **Catégories obsolètes supprimées** : Voyage, Nourriture & Boissons (doublons), Virement automatique (redondante avec le type de transaction "Virement" — les virements n'ont plus de catégorie du tout, ni en base ni dans le code applicatif).
