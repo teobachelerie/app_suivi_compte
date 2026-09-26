@@ -18,9 +18,9 @@ const CARD_STYLES = {
 };
 const PATRIMOINE_STYLE = {
   background:
-    "radial-gradient(circle at 15% 10%, rgba(255,128,46,0.55), transparent 45%), " +
-    "radial-gradient(circle at 95% 30%, rgba(229,63,26,0.5), transparent 50%), " +
-    "radial-gradient(circle at 55% 100%, rgba(99,25,10,0.7), transparent 55%), #000000",
+    "radial-gradient(circle at 15% 10%, rgba(255,138,60,0.85), transparent 48%), " +
+    "radial-gradient(circle at 95% 30%, rgba(235,75,35,0.8), transparent 55%), " +
+    "radial-gradient(circle at 55% 100%, rgba(140,40,15,0.9), transparent 60%), #241712",
   text: "#f6f5f2",
   textMuted: "rgba(246,245,242,0.55)",
   bankLabel: "FINELIO",
@@ -55,16 +55,22 @@ function CardFace({ style, name, isFront, frontContent }) {
 // passer devant — les autres reculent d'un cran chacun.
 export function AccountCardStack({ accounts, active, onSelect, bankPresets, balanceLabel, balanceValue, variationDirection, variationText, getRef }) {
   // accounts: [{ key, name, bankId }] — 3 entrées exactement (Courant, Pro, Patrimoine)
-  const [order, setOrder] = useState(() => {
-    const front = accounts.find((a) => a.key === active) || accounts[0];
-    return [front, ...accounts.filter((a) => a !== front)].map((a) => a.key);
-  });
+  const [order, setOrder] = useState([]);
 
-  // Si le compte actif change depuis l'extérieur (rare, mais pour rester cohérent), on le remet
-  // devant sans perturber l'ordre relatif des deux autres.
+  // Recalcule l'ordre dès que les comptes réels sont disponibles (au premier chargement, ils
+  // peuvent arriver après le tout premier rendu) ou si le compte actif change depuis l'extérieur —
+  // sans jamais planter si "accounts" est encore vide.
   useEffect(() => {
-    setOrder((prev) => (prev[0] === active ? prev : [active, ...prev.filter((k) => k !== active)]));
-  }, [active]);
+    if (accounts.length === 0) return;
+    setOrder((prev) => {
+      const keys = accounts.map((a) => a.key);
+      const stillValid = prev.length === keys.length && prev.every((k) => keys.includes(k));
+      if (stillValid) return prev[0] === active ? prev : [active, ...prev.filter((k) => k !== active)];
+      return [active, ...keys.filter((k) => k !== active)];
+    });
+  }, [accounts, active]);
+
+  if (order.length === 0) return <div style={{ height: CARD_HEIGHT }} />;
 
   function styleFor(acc) {
     if (acc.key === "patrimoine") return PATRIMOINE_STYLE;
@@ -84,7 +90,7 @@ export function AccountCardStack({ accounts, active, onSelect, bankPresets, bala
             ref={getRef ? getRef(key) : undefined}
             onClick={() => { if (!isFront) { setOrder((prev) => [key, ...prev.filter((k) => k !== key)]); onSelect(key); } }}
             style={{
-              position: "absolute", left: 0, right: 0, top: depth * OFFSET, height: CARD_HEIGHT,
+              position: "absolute", left: 0, right: 0, top: (accounts.length - 1 - depth) * OFFSET, height: CARD_HEIGHT,
               borderRadius: "var(--radius-card)", overflow: "hidden",
               zIndex: accounts.length - depth,
               background: style.background,
