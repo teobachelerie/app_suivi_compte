@@ -1,58 +1,70 @@
-/* ============ Soft Ledger Design System — tokens ============ */
+/* ============ Finelio Design System — tokens (thème sombre, palette de marque) ============ */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-  /* neutrals */
-  --white: #FFFFFF;
-  --off-white: #F2F2F7;
-  --grey-1: #E8E8ED;
-  --grey-2: #D8D8DE;
-  --grey-3: #C7C7CC;
-  --grey-4: #8E8E93;
-  --grey-5: #48484A;
-  --black: #000000;
+  /* ===== Palette de marque Finelio (extraite du logo) ===== */
+  --surface-0: #000000;
+  --surface-1: #121212;
+  --surface-2: #1c1613;
+  --border-token: #2a2420;
+  --ink: #f6f5f2;
+  --ink-muted: #9a938c;
+  --accent-red: #e53f1a;
+  --accent-orange: #ff802e;
+  --accent-amber: #ffbb2e;
+  --accent-red-deep: #63190a;
 
-  /* semantic financial accents */
-  --red: #FF3B30;
-  --green: #34C759;
+  /* neutrals (conservés pour compatibilité, alignés sur la nouvelle palette) */
+  --white: var(--ink);
+  --off-white: var(--surface-0);
+  --grey-1: var(--border-token);
+  --grey-2: var(--border-token);
+  --grey-3: var(--ink-muted);
+  --grey-4: var(--ink-muted);
+  --grey-5: var(--ink-muted);
+  --black: var(--surface-0);
+
+  /* semantic financial accents — dépense = rouge, revenu = ambre (pas vert) */
+  --red: var(--accent-red);
+  --green: var(--accent-amber);
 
   /* surfaces */
-  --surface-base: var(--off-white);
-  --surface-raised: var(--off-white);
-  --surface-highlight: var(--white);
-  --surface-inset: var(--off-white);
-  --surface-scrim: rgba(0, 0, 0, 0.18);
-  --surface-danger: #FFEBEA;
+  --surface-base: var(--surface-0);
+  --surface-raised: var(--surface-1);
+  --surface-highlight: var(--surface-2);
+  --surface-inset: var(--surface-1);
+  --surface-scrim: rgba(0, 0, 0, 0.6);
+  --surface-danger: rgba(229, 63, 26, 0.15);
 
-  /* text */
-  --text-primary: var(--black);
-  --text-secondary: var(--grey-5);
-  --text-tertiary: var(--grey-4);
-  --text-inverse: var(--white);
-  --text-expense: var(--red);
-  --text-income: var(--green);
+  /* text — règle stricte : jamais de texte clair sur un fond accent-*, toujours surface-0 dessus */
+  --text-primary: var(--ink);
+  --text-secondary: #c4beb8;
+  --text-tertiary: var(--ink-muted);
+  --text-inverse: var(--surface-0);
+  --text-expense: var(--accent-red);
+  --text-income: var(--accent-amber);
 
   /* icons */
-  --icon-primary: var(--black);
-  --icon-secondary: var(--grey-4);
+  --icon-primary: var(--ink);
+  --icon-secondary: var(--ink-muted);
 
   /* lines */
-  --separator: rgba(0, 0, 0, 0.06);
-  --hairline: rgba(0, 0, 0, 0.10);
+  --separator: var(--border-token);
+  --hairline: var(--border-token);
 
-  /* neumorphic light sources */
-  --light-source: rgba(255, 255, 255, 0.90);
-  --light-source-strong: rgba(255, 255, 255, 1);
-  --dark-source: rgba(0, 0, 0, 0.10);
-  --dark-source-strong: rgba(0, 0, 0, 0.16);
+  /* anciennes sources de lumière neumorphiques — neutralisées, le nouveau design est plat */
+  --light-source: transparent;
+  --light-source-strong: transparent;
+  --dark-source: transparent;
+  --dark-source-strong: transparent;
 
-  /* accent fill (flips per theme so black/white stay legible) */
-  --accent-bg: var(--black);
-  --accent-text: var(--white);
+  /* accent de marque principal (CTA, boutons primaires) — toujours surface-0 dessus */
+  --accent-bg: var(--accent-orange);
+  --accent-text: var(--surface-0);
 
-  /* typography */
-  --font-core: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  /* typography — Inter en premier, comme spécifié par le système de marque */
+  --font-core: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
   --font-numeric: var(--font-display);
 
   --weight-regular: 400;
@@ -115,15 +127,16 @@
   --radius-xl: 28px;
   --radius-round: 999px;
 
-  /* elevation */
+  /* élévation — design plat : plus d'ombre douce, les surfaces se distinguent par leur couleur
+     (surface-0/1/2) et une bordure fine, pas par un relief neumorphique */
   --elev-flat: none;
-  --elev-raised-sm: 3px 3px 8px var(--dark-source), -3px -3px 8px var(--light-source);
-  --elev-raised: 6px 6px 14px var(--dark-source), -5px -5px 12px var(--light-source);
-  --elev-raised-lg: 10px 10px 22px var(--dark-source-strong), -8px -8px 18px var(--light-source-strong);
-  --elev-inset-sm: inset 2px 2px 5px var(--dark-source), inset -2px -2px 5px var(--light-source);
-  --elev-inset: inset 4px 4px 10px var(--dark-source), inset -3px -3px 8px var(--light-source);
-  --elev-press: inset 3px 3px 7px var(--dark-source), inset -2px -2px 6px var(--light-source);
-  --elev-overlay: 0 -2px 24px rgba(0, 0, 0, 0.10), 0 -12px 48px rgba(0, 0, 0, 0.06);
+  --elev-raised-sm: 0 0 0 1px var(--border-token);
+  --elev-raised: 0 0 0 1px var(--border-token);
+  --elev-raised-lg: 0 0 0 1px var(--border-token);
+  --elev-inset-sm: inset 0 0 0 1px var(--border-token);
+  --elev-inset: inset 0 0 0 1px var(--border-token);
+  --elev-press: inset 0 0 0 1px var(--border-token);
+  --elev-overlay: 0 -1px 0 var(--border-token), 0 -16px 40px rgba(0, 0, 0, 0.5);
 
   /* motion */
   --duration-micro: 150ms;
@@ -135,39 +148,38 @@
   --press-scale: 0.985;
 }
 
-/* Dark theme — extrapolated from the (light-only) Soft Ledger tokens above,
-   keeping the same neumorphic construction with inverted light sources. */
+/* Thème sombre = seul thème pour l'instant (identique à :root) — le bouton clair/sombre dans
+   Apparence reste fonctionnel sans erreur, mais ne change plus rien visuellement tant qu'un vrai
+   thème clair n'est pas redessiné avec la nouvelle palette de marque. */
 [data-theme="dark"] {
-  --surface-base: #1C1C1E;
-  --surface-raised: #1C1C1E;
-  --surface-highlight: #2C2C2E;
-  --surface-inset: #1C1C1E;
-  --surface-scrim: rgba(0, 0, 0, 0.55);
-  --surface-danger: rgba(255, 69, 58, 0.15);
+  --surface-base: var(--surface-0);
+  --surface-raised: var(--surface-1);
+  --surface-highlight: var(--surface-2);
+  --surface-inset: var(--surface-1);
+  --surface-scrim: rgba(0, 0, 0, 0.6);
+  --surface-danger: rgba(229, 63, 26, 0.15);
 
-  --text-primary: var(--white);
-  --text-secondary: #C7C7CC;
-  --text-tertiary: #8E8E93;
-  --text-inverse: #0A0A0A;
-  --text-expense: #FF453A;
-  --text-income: #32D74B;
+  --text-primary: var(--ink);
+  --text-secondary: #c4beb8;
+  --text-tertiary: var(--ink-muted);
+  --text-inverse: var(--surface-0);
 
-  --icon-primary: var(--white);
-  --icon-secondary: #8E8E93;
+  --icon-primary: var(--ink);
+  --icon-secondary: var(--ink-muted);
 
-  --separator: rgba(255, 255, 255, 0.08);
-  --hairline: rgba(255, 255, 255, 0.12);
+  --separator: var(--border-token);
+  --hairline: var(--border-token);
 
-  --light-source: rgba(255, 255, 255, 0.045);
-  --light-source-strong: rgba(255, 255, 255, 0.07);
-  --dark-source: rgba(0, 0, 0, 0.55);
-  --dark-source-strong: rgba(0, 0, 0, 0.7);
+  --light-source: transparent;
+  --light-source-strong: transparent;
+  --dark-source: transparent;
+  --dark-source-strong: transparent;
 
-  --red: #FF453A;
-  --green: #32D74B;
+  --red: var(--accent-red);
+  --green: var(--accent-amber);
 
-  --accent-bg: var(--white);
-  --accent-text: #0A0A0A;
+  --accent-bg: var(--accent-orange);
+  --accent-text: var(--surface-0);
 }
 
 html, body {
