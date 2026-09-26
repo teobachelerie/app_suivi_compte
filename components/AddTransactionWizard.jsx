@@ -70,11 +70,18 @@ function CategoryPickerSheet({ categories, onPick, onVirement, onClose }) {
   const families = useMemo(() => {
     const byParent = new Map();
     for (const c of leafCategories) {
-      const parent = categories.find((p) => p.id === c.parent_id);
-      const familyName = parent ? parent.name : c.name; // catégorie historique sans famille = sa propre famille
-      const familyIcon = parent ? parent.icon : c.icon;
-      if (!byParent.has(familyName)) byParent.set(familyName, { icon: familyIcon, subs: [] });
-      byParent.get(familyName).subs.push(c);
+      if (c.parent_id) {
+        // vraie sous-catégorie : rattachée à sa famille
+        const parent = categories.find((p) => p.id === c.parent_id);
+        const familyName = parent ? parent.name : c.name;
+        const familyIcon = parent ? parent.icon : c.icon;
+        if (!byParent.has(familyName)) byParent.set(familyName, { icon: familyIcon, subs: [] });
+        byParent.get(familyName).subs.push(c);
+      } else if (!byParent.has(c.name)) {
+        // catégorie historique autonome : elle EST déjà la tuile de famille (ajoutée séparément
+        // au rendu) — ne jamais la pousser aussi comme sa propre sous-catégorie.
+        byParent.set(c.name, { icon: c.icon, subs: [] });
+      }
     }
     return byParent;
   }, [leafCategories, categories]);

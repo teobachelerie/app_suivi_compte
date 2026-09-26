@@ -124,7 +124,7 @@ function ExpensesApp({ session }) {
       return next;
     });
   }
-  const BG_COLORS = { light: "#F2F2F7", dark: "#1C1C1E" };
+  const BG_COLORS = { light: "#000000", dark: "#000000" };
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.setAttribute("data-theme", themeMode === "dark" ? "dark" : "light");
