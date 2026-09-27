@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, PiggyBank, RefreshCw, Target, TrendingUp,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 
@@ -17,7 +17,7 @@ import { StatTile, SegmentedControl, PeriodChips } from "../components/ui/Select
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionModal } from "../components/TransactionModal";
 import { AddTransactionWizard } from "../components/AddTransactionWizard";
-import { AccountCardStack } from "../components/AccountCardStack";
+import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
@@ -711,6 +711,7 @@ function ExpensesApp({ session }) {
                 variationDirection={netPeriode >= 0 ? "up" : "down"}
                 variationText={`${netPeriode >= 0 ? "+" : "−"}${fmtEUR(Math.abs(netPeriode))}`}
                 getRef={(v) => tourRef(`pill-${v}`)}
+                themeMode={themeMode}
               />
 
               <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
@@ -720,29 +721,35 @@ function ExpensesApp({ session }) {
                 <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
 
-              <Card padding="md" onClick={() => setShowGoals(true)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                <Target size={18} color="var(--icon-secondary)" />
-                <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Objectifs</span>
-                <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
-              </Card>
-
-              <Card padding="md" onClick={() => setShowSimulator(true)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                <TrendingUp size={18} color="var(--icon-secondary)" />
-                <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Simulateur PEA</span>
-                <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Projection à long terme</span>
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <div onClick={() => setShowGoals(true)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", cursor: "pointer" }}>
+                  <Target size={18} color="var(--icon-secondary)" />
+                  <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Objectifs</span>
+                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+                </div>
+                <Divider />
+                <div onClick={() => setShowSimulator(true)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", cursor: "pointer" }}>
+                  <TrendingUp size={18} color="var(--icon-secondary)" />
+                  <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Simulateur PEA</span>
+                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Projection à long terme</span>
+                </div>
               </Card>
 
               {savingsAccounts.length > 0 && (
                 <div>
                   <span style={{ display: "block", color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: "var(--space-3)" }}>ÉPARGNE</span>
-                  <Card padding="md">
-                    {savingsAccounts.map((acc, i) => (
-                      <React.Fragment key={acc.id}>
-                        {i > 0 ? <Divider /> : null}
-                        <ListRow Icon={PiggyBank} iconColor={BANK_PRESETS.find((b) => b.id === acc.bank_id)?.primary} title={acc.name} onClick={() => setSavingsDetailAccount(acc.name)} trailing={<Amount value={fmtEUR(accountBalance(acc.name))} showSign={false} />} chevron />
-                      </React.Fragment>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                    {savingsAccounts.map((acc) => (
+                      <SavingsCard
+                        key={acc.id}
+                        name={acc.name}
+                        balance={fmtEUR(accountBalance(acc.name))}
+                        bankId={acc.bank_id}
+                        bankPresets={BANK_PRESETS}
+                        onClick={() => setSavingsDetailAccount(acc.name)}
+                      />
                     ))}
-                  </Card>
+                  </div>
                 </div>
               )}
 

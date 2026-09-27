@@ -126,6 +126,16 @@ Réglages → Apparence redevient fonctionnel : fond crème chaud, cartes blanch
 - Le halo de dégradé ne s'affiche qu'en mode sombre (pensé pour un fond noir, aurait probablement mal rendu sur fond clair).
 - Les cartes de comptes (Société Générale, Boursorama, Patrimoine) gardent leurs couleurs de marque fixes, inchangées par le thème clair/sombre — comme une vraie carte bancaire ne change pas de couleur selon le thème de ton téléphone.
 
+## Cartes bancaires étendues + disposition Accueil (nouvelles maquettes)
+
+**Bug caché corrigé** : la carte Patrimoine cherchait la mauvaise clé en interne (`"patrimoine"` au lieu de `"Tous"`) — son dégradé de marque n'a donc jamais été appliqué depuis sa création, elle retombait sur un fond plat générique. Corrigé, et son dégradé est maintenant plus riche/chaud comme demandé, avec une vraie variante claire et une vraie variante sombre (contrairement aux cartes de banques réelles, qui restent fixes quel que soit le thème — Patrimoine n'est pas une vraie banque, elle peut s'adapter).
+
+**8 nouvelles banques avec un vrai rendu de carte** (BNP Paribas, Crédit Agricole, La Banque Postale, LCL, Caisse d'Épargne, Revolut, N26, Trade Republic) — avant, seules Société Générale et Boursorama avaient un traitement sur-mesure, les autres tombaient sur un dégradé générique à partir de leurs couleurs. Toutes étaient déjà sélectionnables dans Réglages → Comptes, il ne manquait que le rendu carte dédié. Comme précisé sur ta fiche de référence, certaines couleurs sont des approximations (pas de charte publique officielle pour Boursorama, Crédit Agricole, LCL, Trade Republic) — à ajuster si tu repères un écart avec la vraie identité de la banque.
+
+**Livrets en cartes bancaires** : Livret A et Livret Jeune (et tout autre livret) affichent maintenant la carte de leur banque assignée (même traitement que les comptes principaux), côte à côte en deux colonnes, au lieu d'une liste avec icône générique.
+
+**Disposition Accueil** : Objectifs et Simulateur PEA fusionnés en une seule carte à deux lignes.
+
 ## Pile de cartes de comptes (Accueil)
 
 Remplace l'ancien sélecteur à onglets. Le compte actif est devant en plein (solde, variation, banque) ; les deux autres sont derrière, décalés de 56px, ne montrant que leur nom. Toucher un compte du fond le fait passer devant, les autres reculent d'un cran — animation 280ms, les deux cartes bougent en même temps, sans effet ressort, comme demandé.

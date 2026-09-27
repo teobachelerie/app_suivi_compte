@@ -15,19 +15,81 @@ const CARD_STYLES = {
     textMuted: "rgba(26,14,20,0.6)",
     bankLabel: "BOURSORAMA",
   },
+  "bnp-paribas": {
+    background: "linear-gradient(135deg, #00543C 0%, #00A651 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.6)",
+    bankLabel: "BNP PARIBAS",
+  },
+  "credit-agricole": {
+    background: "linear-gradient(135deg, #3C7A1E 0%, #8DC63F 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.6)",
+    bankLabel: "CRÉDIT AGRICOLE",
+  },
+  "banque-postale": {
+    background: "linear-gradient(135deg, #005A96 0%, #3AA8D8 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.6)",
+    bankLabel: "LA BANQUE POSTALE",
+  },
+  "lcl": {
+    background: "linear-gradient(135deg, #002B4D 0%, #0B5C96 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.55)",
+    bankLabel: "LCL",
+  },
+  "caisse-epargne": {
+    background: "linear-gradient(135deg, #C8102E 0%, #E2001A 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.6)",
+    bankLabel: "CAISSE D'ÉPARGNE",
+  },
+  "revolut": {
+    background: "linear-gradient(135deg, #1A1A1A 0%, #2E2E2E 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.55)",
+    bankLabel: "REVOLUT",
+  },
+  "n26": {
+    background: "linear-gradient(135deg, #1E6F5C 0%, #4FBFA5 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.6)",
+    bankLabel: "N26",
+  },
+  "trade-republic": {
+    background: "linear-gradient(135deg, #1A1A1A 0%, #3A3A3C 100%)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.55)",
+    bankLabel: "TRADE REPUBLIC",
+  },
 };
-const PATRIMOINE_STYLE = {
+
+// Patrimoine n'est pas une banque : un halo de marque Finelio, plus chaud et plus riche que le
+// reste de l'app pour bien se distinguer dans la pile — décliné clair/sombre puisque ce n'est pas
+// une couleur de banque figée.
+const PATRIMOINE_STYLE_DARK = {
   background:
-    "radial-gradient(circle at 15% 10%, rgba(255,138,60,0.85), transparent 48%), " +
-    "radial-gradient(circle at 95% 30%, rgba(235,75,35,0.8), transparent 55%), " +
-    "radial-gradient(circle at 55% 100%, rgba(140,40,15,0.9), transparent 60%), #241712",
+    "radial-gradient(circle at 18% 12%, rgba(255,160,80,0.95), transparent 50%), " +
+    "radial-gradient(circle at 90% 35%, rgba(235,95,40,0.9), transparent 58%), " +
+    "radial-gradient(circle at 50% 105%, rgba(180,70,25,1), transparent 68%), #3d2210",
   text: "#f6f5f2",
-  textMuted: "rgba(246,245,242,0.55)",
+  textMuted: "rgba(246,245,242,0.6)",
   bankLabel: "FINELIO",
 };
+const PATRIMOINE_STYLE_LIGHT = {
+  background:
+    "radial-gradient(circle at 18% 12%, rgba(255,190,130,0.95), transparent 50%), " +
+    "radial-gradient(circle at 90% 35%, rgba(255,140,80,0.85), transparent 58%), " +
+    "radial-gradient(circle at 50% 105%, rgba(230,110,50,0.9), transparent 68%), #FBDCC0",
+  text: "#3d2210",
+  textMuted: "rgba(61,34,16,0.65)",
+  bankLabel: "FINELIO",
+};
+
 // Repli pour une banque non prévue par la maquette (n'importe quel autre préréglage choisi dans
 // Réglages) : un dégradé simple à partir de sa couleur, texte clair par défaut — reste correct
-// visuellement même si moins abouti que les deux traitements sur-mesure ci-dessus.
+// visuellement même si moins abouti que les traitements sur-mesure ci-dessus.
 function fallbackStyle(bankPreset) {
   if (!bankPreset) return { background: "var(--surface-2)", text: "var(--text-primary)", textMuted: "var(--text-tertiary)", bankLabel: "" };
   return {
@@ -36,6 +98,14 @@ function fallbackStyle(bankPreset) {
     textMuted: "rgba(255,255,255,0.6)",
     bankLabel: bankPreset.name.toUpperCase(),
   };
+}
+
+// Résolution du style d'une carte de compte — exportée pour être réutilisée telle quelle par les
+// cartes de livret (même traitement de marque, en plus compact).
+export function styleForAccountCard(acc, bankPresets, themeMode) {
+  if (acc.key === "Tous") return themeMode === "light" ? PATRIMOINE_STYLE_LIGHT : PATRIMOINE_STYLE_DARK;
+  if (acc.bankId && CARD_STYLES[acc.bankId]) return CARD_STYLES[acc.bankId];
+  return fallbackStyle(bankPresets.find((b) => b.id === acc.bankId));
 }
 
 const CARD_HEIGHT = 200;
@@ -53,7 +123,7 @@ function CardFace({ style, name, isFront, frontContent }) {
 // Pile de cartes de comptes : le compte actif est devant en plein, les deux autres sont derrière,
 // décalés vers le haut, ne montrant qu'un bandeau avec leur nom. Toucher un compte du fond le fait
 // passer devant — les autres reculent d'un cran chacun.
-export function AccountCardStack({ accounts, active, onSelect, bankPresets, balanceLabel, balanceValue, variationDirection, variationText, getRef }) {
+export function AccountCardStack({ accounts, active, onSelect, bankPresets, balanceLabel, balanceValue, variationDirection, variationText, getRef, themeMode }) {
   // accounts: [{ key, name, bankId }] — 3 entrées exactement (Courant, Pro, Patrimoine)
   const [order, setOrder] = useState([]);
 
@@ -72,18 +142,12 @@ export function AccountCardStack({ accounts, active, onSelect, bankPresets, bala
 
   if (order.length === 0) return <div style={{ height: CARD_HEIGHT }} />;
 
-  function styleFor(acc) {
-    if (acc.key === "patrimoine") return PATRIMOINE_STYLE;
-    if (acc.bankId && CARD_STYLES[acc.bankId]) return CARD_STYLES[acc.bankId];
-    return fallbackStyle(bankPresets.find((b) => b.id === acc.bankId));
-  }
-
   return (
     <div style={{ position: "relative", height: CARD_HEIGHT + OFFSET * (accounts.length - 1) }}>
       {order.map((key, depth) => {
         const acc = accounts.find((a) => a.key === key);
         const isFront = depth === 0;
-        const style = styleFor(acc);
+        const style = styleForAccountCard(acc, bankPresets, themeMode);
         return (
           <div
             key={key}
@@ -121,6 +185,26 @@ export function AccountCardStack({ accounts, active, onSelect, bankPresets, bala
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Carte compacte pour un livret (Livret A, Livret Jeune...) — même traitement de marque que la
+// pile de comptes, en plus petit, sans variation ni bandeau banque (juste nom + solde), pour un
+// affichage côte à côte dans la section Épargne.
+export function SavingsCard({ name, balance, bankId, bankPresets, onClick }) {
+  const style = styleForAccountCard({ key: name, bankId }, bankPresets, "dark");
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        borderRadius: "var(--radius-lg)", overflow: "hidden", background: style.background,
+        padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between",
+        height: 110, cursor: onClick ? "pointer" : "default",
+      }}
+    >
+      <span style={{ color: style.text, fontSize: 14, fontWeight: 700 }}>{name}</span>
+      <span style={{ color: style.text, fontSize: 20, fontWeight: 700 }}>{balance}</span>
     </div>
   );
 }
