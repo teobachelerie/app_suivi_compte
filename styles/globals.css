@@ -194,12 +194,16 @@
   --accent-text: var(--on-accent);
 }
 
-html, body {
+html {
+  height: calc(100% + env(safe-area-inset-top, 0px));
+  background: var(--surface-0);
+}
+
+body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: var(--app-height, 100dvh);
-  height: -webkit-fill-available;
+  height: 100%;
   position: fixed;
   overflow: hidden;
   overscroll-behavior: none;
