@@ -19,7 +19,7 @@ export function NavBar({ title, subtitle, back = false, onBack, action, large = 
 
 export function TabBar({ items, value, onChange, trailing, getRef }) {
   return (
-    <nav style={{ position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, padding: "0 var(--space-4) calc(env(safe-area-inset-bottom, 0px) + 16px)", zIndex: 30, pointerEvents: "none" }}>
+    <nav style={{ position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, padding: "0 var(--space-4) 20px", zIndex: 30, pointerEvents: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--surface-inset)", borderRadius: "var(--radius-round)", padding: 7, boxShadow: "var(--elev-inset)", pointerEvents: "auto" }}>
         {items.map((it) => {
           const on = it.value === value;
