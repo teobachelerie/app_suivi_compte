@@ -655,8 +655,17 @@ function ExpensesApp({ session }) {
   const todayHeader = fmtTodayHeader();
 
   return (
-    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" }}>
-      <div style={{ maxWidth: 420, margin: "0 auto", padding: "calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter-screen) 0" }}>
+    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)", position: "relative" }}>
+      {!showAdd && !editing && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 12% 6%, rgba(255,128,46,0.16), transparent 42%), " +
+            "radial-gradient(circle at 92% 26%, rgba(229,63,26,0.14), transparent 48%), " +
+            "radial-gradient(circle at 55% 92%, rgba(99,25,10,0.20), transparent 52%)",
+        }} />
+      )}
+      <div style={{ maxWidth: 420, margin: "0 auto", padding: "calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter-screen) 0", position: "relative", zIndex: 1 }}>
 
         {error && (
           <div style={{ background: "var(--surface-danger)", color: "var(--red)", borderRadius: "var(--radius-control)", padding: "10px 14px", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
