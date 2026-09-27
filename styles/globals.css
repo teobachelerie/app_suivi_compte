@@ -2,17 +2,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-  /* ===== Palette de marque Finelio (extraite du logo) ===== */
-  --surface-0: #000000;
-  --surface-1: #121212;
-  --surface-2: #1c1613;
-  --border-token: #2a2420;
-  --ink: #f6f5f2;
-  --ink-muted: #9a938c;
+  /* ===== Palette de marque Finelio — thème clair (par défaut) ===== */
+  --surface-0: #FBF6F2;
+  --surface-1: #FFFFFF;
+  --surface-2: #F3EAE2;
+  --border-token: #EFE6DE;
+  --ink: #1E1712;
+  --ink-muted: #8A8078;
   --accent-red: #e53f1a;
   --accent-orange: #ff802e;
   --accent-amber: #ffbb2e;
+  --accent-amber-text: #B8790A;
   --accent-red-deep: #63190a;
+  /* texte posé sur un fond accent-* (bouton, puce colorée) : toujours sombre, quel que soit le
+     thème — ne jamais lier ceci à surface-0, qui lui change de couleur entre clair et sombre. */
+  --on-accent: #14100c;
 
   /* neutrals (conservés pour compatibilité, alignés sur la nouvelle palette) */
   --white: var(--ink);
@@ -26,23 +30,23 @@
 
   /* semantic financial accents — dépense = rouge, revenu = ambre (pas vert) */
   --red: var(--accent-red);
-  --green: var(--accent-amber);
+  --green: var(--accent-amber-text);
 
   /* surfaces */
   --surface-base: var(--surface-0);
   --surface-raised: var(--surface-1);
   --surface-highlight: var(--surface-2);
   --surface-inset: var(--surface-1);
-  --surface-scrim: rgba(0, 0, 0, 0.6);
-  --surface-danger: rgba(229, 63, 26, 0.15);
+  --surface-scrim: rgba(30, 23, 18, 0.35);
+  --surface-danger: rgba(229, 63, 26, 0.10);
 
-  /* text — règle stricte : jamais de texte clair sur un fond accent-*, toujours surface-0 dessus */
+  /* text — règle stricte : jamais de texte clair sur un fond accent-*, toujours --on-accent dessus */
   --text-primary: var(--ink);
-  --text-secondary: #c4beb8;
+  --text-secondary: #55493F;
   --text-tertiary: var(--ink-muted);
   --text-inverse: var(--surface-0);
   --text-expense: var(--accent-red);
-  --text-income: var(--accent-amber);
+  --text-income: var(--accent-amber-text);
 
   /* icons */
   --icon-primary: var(--ink);
@@ -58,9 +62,9 @@
   --dark-source: transparent;
   --dark-source-strong: transparent;
 
-  /* accent de marque principal (CTA, boutons primaires) — toujours surface-0 dessus */
+  /* accent de marque principal (CTA, boutons primaires) — toujours --on-accent dessus */
   --accent-bg: var(--accent-orange);
-  --accent-text: var(--surface-0);
+  --accent-text: var(--on-accent);
 
   /* typography — Inter en premier, comme spécifié par le système de marque */
   --font-core: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
@@ -152,6 +156,13 @@
    Apparence reste fonctionnel sans erreur, mais ne change plus rien visuellement tant qu'un vrai
    thème clair n'est pas redessiné avec la nouvelle palette de marque. */
 [data-theme="dark"] {
+  --surface-0: #000000;
+  --surface-1: #121212;
+  --surface-2: #1c1613;
+  --border-token: #2a2420;
+  --ink: #f6f5f2;
+  --ink-muted: #9a938c;
+
   --surface-base: var(--surface-0);
   --surface-raised: var(--surface-1);
   --surface-highlight: var(--surface-2);
@@ -163,6 +174,7 @@
   --text-secondary: #c4beb8;
   --text-tertiary: var(--ink-muted);
   --text-inverse: var(--surface-0);
+  --text-income: var(--accent-amber);
 
   --icon-primary: var(--ink);
   --icon-secondary: var(--ink-muted);
@@ -179,7 +191,7 @@
   --green: var(--accent-amber);
 
   --accent-bg: var(--accent-orange);
-  --accent-text: var(--surface-0);
+  --accent-text: var(--on-accent);
 }
 
 html, body {

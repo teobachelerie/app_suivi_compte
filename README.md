@@ -118,6 +118,14 @@ Réglages → Compte → "Zone de danger" → "Supprimer mon compte", avec confi
 
 Nouvelle carte dans Budgets, juste avant "Total dépensé" : (virements vers un livret ÷ revenus de la période) × 100. N'utilise que les virements dont le compte cible est un livret — jamais compté comme dépense ou revenu ailleurs, respecte le même compte/la même période que le reste de l'onglet Budgets. Affiche "—" si aucun revenu sur la période (pas de division par zéro).
 
+## Vrai thème clair (deuxième thème fonctionnel)
+
+Réglages → Apparence redevient fonctionnel : fond crème chaud, cartes blanches, bordure fine, mêmes accents de marque (le jaune/ambre des revenus est assombri en mode clair pour rester lisible sur fond blanc, le rouge des dépenses reste identique). Sombre reste le choix par défaut pour ne pas changer ce que tu vois sans le demander — le clair est un choix, pas un remplacement.
+
+**Deux choix assumés, à toi de me dire si tu veux ajuster** :
+- Le halo de dégradé ne s'affiche qu'en mode sombre (pensé pour un fond noir, aurait probablement mal rendu sur fond clair).
+- Les cartes de comptes (Société Générale, Boursorama, Patrimoine) gardent leurs couleurs de marque fixes, inchangées par le thème clair/sombre — comme une vraie carte bancaire ne change pas de couleur selon le thème de ton téléphone.
+
 ## Pile de cartes de comptes (Accueil)
 
 Remplace l'ancien sélecteur à onglets. Le compte actif est devant en plein (solde, variation, banque) ; les deux autres sont derrière, décalés de 56px, ne montrant que leur nom. Toucher un compte du fond le fait passer devant, les autres reculent d'un cran — animation 280ms, les deux cartes bougent en même temps, sans effet ressort, comme demandé.

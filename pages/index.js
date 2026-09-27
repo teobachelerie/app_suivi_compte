@@ -113,7 +113,7 @@ function ExpensesApp({ session }) {
     await api("/api/account/delete", { method: "POST" });
     await supabaseClient.auth.signOut();
   }
-  const [themeMode, setThemeMode] = useState("light");
+  const [themeMode, setThemeMode] = useState("dark");
   useEffect(() => {
     const saved = typeof window !== "undefined" && window.localStorage.getItem("expenses-theme");
     if (saved === "light" || saved === "dark") setThemeMode(saved);
@@ -125,7 +125,7 @@ function ExpensesApp({ session }) {
       return next;
     });
   }
-  const BG_COLORS = { light: "#000000", dark: "#000000" };
+  const BG_COLORS = { light: "#FBF6F2", dark: "#000000" };
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.setAttribute("data-theme", themeMode === "dark" ? "dark" : "light");
@@ -656,7 +656,7 @@ function ExpensesApp({ session }) {
 
   return (
     <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)", position: "relative" }}>
-      {!showAdd && !editing && (
+      {themeMode === "dark" && !showAdd && !editing && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
           background:
