@@ -240,3 +240,51 @@ body {
 }
 
 ::-webkit-scrollbar { display: none; }
+
+/* ===== Écrans de chargement, notification, célébration ===== */
+
+/* Halo de marque : n'apparaît qu'en thème sombre, piloté uniquement par le CSS pour être correct dès
+   le tout premier rendu (l'attribut data-theme est posé avant, par un script en tête de page). */
+.fin-halo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 12% 6%, rgba(255,128,46,0.38), transparent 48%),
+    radial-gradient(circle at 92% 26%, rgba(229,63,26,0.34), transparent 54%),
+    radial-gradient(circle at 55% 92%, rgba(99,25,10,0.45), transparent 58%);
+}
+[data-theme="dark"] .fin-halo { opacity: 1; }
+
+.fin-skel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-token);
+}
+.fin-skel-block { background: var(--surface-2); border-radius: 10px; }
+
+/* Toute animation passe par ici : sans mouvement si l'utilisateur a demandé de les réduire. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fin-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  @keyframes fin-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @keyframes fin-breathe { 0%, 100% { transform: scale(0.94); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+  @keyframes fin-toast-in {
+    from { opacity: 0; transform: translate(-50%, 14px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes fin-burst {
+    from { transform: translate(0, 0) scale(1); opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+  }
+  @keyframes fin-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,187,46,0); } 50% { box-shadow: 0 0 14px 2px rgba(255,187,46,0.55); } }
+
+  .fin-skel-pulse { animation: fin-pulse 1.5s ease-in-out infinite; }
+  .fin-skel-shimmer {
+    background-image: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--ink) 10%, transparent) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: fin-shimmer 1.7s linear infinite;
+  }
+  .fin-logo-breathe { animation: fin-breathe 1.9s ease-in-out infinite; }
+  .fin-goal-glow { animation: fin-glow 2.4s ease-in-out infinite; }
+}

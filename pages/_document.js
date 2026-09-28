@@ -18,7 +18,7 @@ export default function Document() {
       <body>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("expenses-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}`,
+            __html: `var d=document.documentElement;try{d.setAttribute("data-theme",localStorage.getItem("expenses-theme")==="light"?"light":"dark");}catch(e){d.setAttribute("data-theme","dark");}`,
           }}
         />
         <Main />

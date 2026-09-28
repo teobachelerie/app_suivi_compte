@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Target, ChevronDown, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Target, ChevronDown, Trash2, Check } from "lucide-react";
 import { Card, Divider, Amount, ProgressBar } from "./ui/Primitives";
 import { ListRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
 import { Sheet, Field, fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { fmtEUR, requiredMonthly } from "../lib/format";
+import { haptic } from "../lib/haptics";
 
 function GoalForm({ goal, accounts, onClose, onSave, onDelete, openOptions, saving }) {
   const [title, setTitle] = useState(goal?.title || "");
@@ -43,6 +44,67 @@ function GoalForm({ goal, accounts, onClose, onSave, onDelete, openOptions, savi
   );
 }
 
+
+const BURST_COLORS = ["#ffbb2e", "#ff802e", "#e53f1a"];
+
+// Barre de progression d'un objectif. Quand il est atteint : la barre reste éclairée, et une petite
+// gerbe de particules part de son extrémité UNE SEULE FOIS (mémorisée par objectif) avec un retour
+// haptique — jamais à chaque ouverture de l'écran. Aucun effet si l'utilisateur a demandé de réduire
+// les animations (les keyframes n'existent alors pas, voir globals.css).
+function GoalProgress({ goal, pct, reached, monthly }) {
+  const [burst, setBurst] = useState(false);
+
+  useEffect(() => {
+    if (!reached) return undefined;
+    const key = `finelio-goal-celebrated-${goal.id}`;
+    try {
+      if (window.localStorage.getItem(key)) return undefined;
+      window.localStorage.setItem(key, "1");
+    } catch { return undefined; }
+    setBurst(true);
+    haptic("success");
+    const timer = setTimeout(() => setBurst(false), 1300);
+    return () => clearTimeout(timer);
+  }, [reached, goal.id]);
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ position: "relative" }}>
+        <div className={reached ? "fin-goal-glow" : ""} style={{ borderRadius: "var(--radius-round)" }}>
+          <ProgressBar value={pct} tone="income" />
+        </div>
+        {burst && (
+          <div aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", width: 0, height: 0, pointerEvents: "none" }}>
+            {Array.from({ length: 12 }, (_, i) => {
+              const angle = (i / 12) * Math.PI * 2;
+              const dist = 26 + (i % 3) * 10;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute", width: 6, height: 6, marginLeft: -3, marginTop: -3, borderRadius: "50%",
+                    background: BURST_COLORS[i % 3],
+                    "--dx": `${Math.cos(angle) * dist}px`, "--dy": `${Math.sin(angle) * dist}px`,
+                    animation: "fin-burst 850ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards",
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, fontSize: 12, color: "var(--text-tertiary)" }}>
+        <span>{fmtEUR(goal.currentBalance)} sur {fmtEUR(goal.targetAmount)}</span>
+        {reached ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--green)", fontWeight: 600 }}><Check size={13} /> Objectif atteint</span>
+        ) : (
+          <span>{fmtEUR(monthly)} / mois à verser</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // `goals` doit déjà contenir currentBalance par objectif (calculé dans pages/index.js à partir des
 // transactions, car GoalsScreen ne connaît pas l'historique des transactions lui-même).
 export function GoalsScreen({ goals, accounts, onBack, onCreate, onUpdate, onDelete, openOptions, saving }) {
@@ -69,13 +131,7 @@ export function GoalsScreen({ goals, accounts, onBack, onCreate, onUpdate, onDel
                   onClick={() => setEditing(g)}
                   trailing={<Amount value={fmtEUR(g.targetAmount)} showSign={false} direction="neutral" />}
                 />
-                <div style={{ marginTop: 10 }}>
-                  <ProgressBar value={pct} tone="income" />
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "var(--text-tertiary)" }}>
-                    <span>{fmtEUR(g.currentBalance)} sur {fmtEUR(g.targetAmount)}</span>
-                    <span>{reached ? "Objectif atteint 🎉" : `${fmtEUR(monthly)} / mois à verser`}</span>
-                  </div>
-                </div>
+                <GoalProgress goal={g} pct={pct} reached={reached} monthly={monthly} />
               </div>
             </div>
           );

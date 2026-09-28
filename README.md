@@ -136,6 +136,20 @@ Réglages → Apparence redevient fonctionnel : fond crème chaud, cartes blanch
 
 **Disposition Accueil** : Objectifs et Simulateur PEA fusionnés en une seule carte à deux lignes.
 
+## Animations, haptiques, plafonds, récurrences, annulation
+
+**Migration à exécuter** : `supabase/migration-017-category-budgets.sql` (table des plafonds mensuels, purement additive).
+
+- **Montants qui défilent** (`lib/useAnimatedNumber.js`) : le solde de la pile, les tuiles Revenus/Dépenses et le total de l'écran Dépenses glissent vers leur nouvelle valeur (500 ms, ease-out). Repart de la valeur affichée si la cible change en cours de route ; saute directement à la cible si l'utilisateur a réduit les animations dans les réglages de son téléphone.
+- **Retours haptiques** (`lib/haptics.js`) : Android via `navigator.vibrate` ; iPhone via l'astuce documentée de l'interrupteur HTML caché (`<input type="checkbox" switch>`, Safari 17.4+, iPhone 7 et suivants). Contournement, pas une API officielle : peut cesser de fonctionner avec une future version d'iOS, d'où des `try/catch` partout — il ne peut jamais casser l'app. Désactivable dans Réglages → Affichage. Utilisé : changement de compte (pile), onglets, période, enregistrement, suppression, annulation, objectif atteint, plafond franchi.
+- **Écran de chargement** (`components/LoadingScreen.jsx`) : trois variantes (`skeleton`, `shimmer`, `logo`), choisie par la constante `LOADING_VARIANT` en tête de `pages/index.js`. Pendant la vérification de la session (avant de savoir si l'utilisateur est connecté), toujours le logo.
+- **Correctif thème** : le script de démarrage (`pages/_document.js`) ne posait le thème sombre que s'il avait été explicitement enregistré ; sans préférence enregistrée, la page démarrait en clair puis basculait (éclair crème). Sombre par défaut désormais.
+- **Célébration d'objectif** (`components/GoalsScreen.jsx`) : à 100 %, la barre reste éclairée et une gerbe de particules part de son extrémité une seule fois par objectif (mémorisé dans le localStorage), avec retour haptique.
+- **Plafonds par catégorie** (`lib/budgets.js`, `/api/budgets`, `components/BudgetSheet.jsx`) : plafond mensuel par famille (sous-catégories comprises, tous comptes), toujours sur le mois calendaire en cours, indépendamment du sélecteur de période. Barre ambre → orange dès 80 % → rouge à 100 %. Notification uniquement au moment précis où une dépense franchit 80 % ou 100 %. Pas de limite par palier pour l'instant.
+- **Récurrences détectées** (`lib/insights.js`) : dépenses présentes au moins 3 mois distincts, très majoritairement consécutifs, encore actives, au plus une par mois, montants des 3 dernières occurrences stables (±25 %). Prudent volontairement. Ajouter une récurrence crée un abonnement avec `skipCurrentMonth` (`lib/subscriptions.js`) : la dépense de ce mois-ci existe déjà, elle n'est pas dupliquée et la tâche planifiée est neutralisée pour le mois en cours. « Ignorer » est mémorisé dans le localStorage (retrouvées si Safari l'efface).
+- **Comparaison contextuelle** : écran Dépenses/Revenus, variation par rapport à la fenêtre de même durée juste avant. Les périodes de l'app sont des fenêtres glissantes se terminant à la dernière transaction, pas des mois calendaires, donc jamais comparées à un mois entier. Rien d'affiché si la période précédente est vide ou pour « Depuis toujours ».
+- **Suppression annulable** : la transaction disparaît tout de suite mais n'est supprimée côté serveur qu'après 5 s, ou dès que l'app passe en arrière-plan. Exclue des rafraîchissements automatiques pendant ce délai. Si l'app est tuée pendant les 5 s, la suppression n'a pas lieu (rien n'est perdu).
+
 ## Pile de cartes de comptes (Accueil)
 
 Remplace l'ancien sélecteur à onglets. Le compte actif est devant en plein (solde, variation, banque) ; les deux autres sont derrière, décalés de 56px, ne montrant que leur nom. Toucher un compte du fond le fait passer devant, les autres reculent d'un cran — animation 280ms, les deux cartes bougent en même temps, sans effet ressort, comme demandé.

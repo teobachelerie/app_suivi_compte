@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RefreshCw, ChevronDown, Trash2 } from "lucide-react";
+import { RefreshCw, ChevronDown, Trash2, X } from "lucide-react";
 import { Card, Divider, Amount, Switch } from "./ui/Primitives";
 import { ListRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
@@ -47,8 +47,9 @@ function SubscriptionForm({ sub, categories, accounts, defaultPayment, defaultAc
   );
 }
 
-export function SubscriptionsScreen({ subscriptions, categories, accounts, defaultPayment, defaultAccount, onBack, onCreate, onUpdate, onDelete, openOptions, saving }) {
+export function SubscriptionsScreen({ subscriptions, categories, accounts, defaultPayment, defaultAccount, onBack, onCreate, onUpdate, onDelete, openOptions, saving, suggestions = [], onAddSuggestion, onDismissSuggestion }) {
   const [editing, setEditing] = useState(null); // subscription en cours d'édition, ou {} pour "nouveau"
+  const [addingKey, setAddingKey] = useState(null); // récurrence en cours d'ajout (désactive son bouton)
   const total = subscriptions.filter((s) => s.active).reduce((s, x) => s + x.amount, 0);
 
   return (
@@ -59,6 +60,41 @@ export function SubscriptionsScreen({ subscriptions, categories, accounts, defau
         <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL MENSUEL · ABONNEMENTS ACTIFS</span>
         <Amount value={fmtEUR(total)} direction="expense" size="xl" showSign={false} />
       </Card>
+
+      {suggestions.length > 0 && (
+        <div>
+          <span style={{ display: "block", color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: "var(--space-2)" }}>RÉCURRENCES DÉTECTÉES</span>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: "var(--space-3)" }}>
+            Ces dépenses reviennent chaque mois à un montant stable. Ajoute-les pour les suivre comme abonnements.
+          </div>
+          <Card padding="md">
+            {suggestions.map((sg, i) => (
+              <div key={sg.key}>
+                {i > 0 ? <Divider /> : null}
+                <ListRow
+                  Icon={RefreshCw}
+                  title={sg.title}
+                  subtitle={`${fmtEUR(sg.amount)} · vers le ${sg.billingDay} · ${sg.occurrences} fois`}
+                  trailing={
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        disabled={addingKey === sg.key}
+                        onClick={async () => { setAddingKey(sg.key); try { await onAddSuggestion(sg); } finally { setAddingKey(null); } }}
+                        style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-round)", padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: addingKey === sg.key ? 0.6 : 1 }}
+                      >
+                        {addingKey === sg.key ? "…" : "Ajouter"}
+                      </button>
+                      <button onClick={() => onDismissSuggestion(sg.key)} aria-label="Ignorer" style={{ background: "none", border: "none", padding: 6, cursor: "pointer", display: "flex" }}>
+                        <X size={16} color="var(--text-tertiary)" />
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
 
       <Card padding="md">
         {subscriptions.length === 0 && <div style={{ padding: "8px 0", fontSize: 14, color: "var(--text-tertiary)", textAlign: "center" }}>Aucun abonnement pour l'instant.</div>}

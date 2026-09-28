@@ -8,6 +8,7 @@ import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESE
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
 import { categoryColor } from "../lib/format";
+import { haptic, isHapticsEnabled, setHapticsEnabled } from "../lib/haptics";
 
 const sectionLabelStyle = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
 
@@ -131,6 +132,8 @@ export function ReglagesScreen(props) {
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
+  const [hapticsOn, setHapticsOn] = useState(true);
+  useEffect(() => { setHapticsOn(isHapticsEnabled()); }, []); // lu côté client uniquement (localStorage)
   const isLight = themeMode === "light";
   const [newRuleKeyword, setNewRuleKeyword] = useState("");
   const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
@@ -233,6 +236,11 @@ export function ReglagesScreen(props) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
               <span style={{ fontSize: 15 }}>Grouper le budget par compte</span>
               <Switch checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
+            </div>
+            <Divider inset={0} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+              <span style={{ fontSize: 15 }}>Retours haptiques</span>
+              <Switch checked={hapticsOn} onChange={(v) => { setHapticsOn(v); setHapticsEnabled(v); if (v) haptic("light"); }} />
             </div>
           </Card>
         )}

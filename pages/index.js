@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
   Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp,
-  Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight,
+  Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 
 import { api } from "../lib/api";
@@ -25,6 +25,17 @@ import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
 import { Onboarding } from "../components/Onboarding";
 import { Coachmark } from "../components/Coachmark";
+import { Toast } from "../components/Toast";
+import { LoadingScreen } from "../components/LoadingScreen";
+import { BudgetSheet } from "../components/BudgetSheet";
+import { haptic } from "../lib/haptics";
+import { useAnimatedNumber } from "../lib/useAnimatedNumber";
+import { detectRecurring, monthSpendByFamily, budgetStatus, crossedThreshold, previousWindow, COMPARE_LABEL, percentChange } from "../lib/insights";
+
+// Variante de l'écran de chargement après connexion : "skeleton" | "shimmer" | "logo".
+const LOADING_VARIANT = "skeleton";
+// Insère un élément à une position donnée sans muter le tableau (remise en place après annulation).
+const insertAt = (arr, item, index) => [...arr.slice(0, index), item, ...arr.slice(index)];
 
 export default function Home() {
   const [session, setSession] = useState(undefined); // undefined = vérification en cours, null = déconnecté
@@ -36,7 +47,7 @@ export default function Home() {
   }, []);
 
   if (session === undefined) {
-    return <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement…</div>;
+    return <LoadingScreen variant={LOADING_VARIANT} data={false} />;
   }
   if (!session) {
     return <AuthScreen />;
@@ -228,6 +239,17 @@ function ExpensesApp({ session }) {
   const [showSimulator, setShowSimulator] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
+  const [budgets, setBudgets] = useState([]);
+  const [budgetEditing, setBudgetEditing] = useState(null); // {} = nouveau plafond
+  const [savingBudget, setSavingBudget] = useState(false);
+  const [toast, setToast] = useState(null);
+  // Suppression en attente pendant la fenêtre d'annulation : { tx, index }. La transaction est déjà
+  // retirée de l'écran mais pas encore supprimée côté serveur.
+  const pendingDeleteRef = useRef(null);
+  const [dismissedRecurring, setDismissedRecurring] = useState([]);
+  useEffect(() => {
+    try { setDismissedRecurring(JSON.parse(window.localStorage.getItem("finelio-dismissed-recurring") || "[]")); } catch { /* sans effet */ }
+  }, []);
 
   const loadAll = useCallback(async (opts) => {
     const silent = opts && opts.silent;
@@ -235,7 +257,9 @@ function ExpensesApp({ session }) {
     if (!silent) setError("");
     try {
       const [txs, meta] = await Promise.all([api("/api/transactions"), api("/api/meta")]);
-      setTransactions(txs);
+      // Une transaction en cours de suppression annulable ne doit pas réapparaître à cause d'un
+      // rafraîchissement (toutes les 2 min, ou au retour sur l'app) pendant la fenêtre d'annulation.
+      setTransactions(pendingDeleteRef.current ? txs.filter((t) => t.id !== pendingDeleteRef.current.tx.id) : txs);
       setCategories(meta.categories);
       setAccounts(meta.accounts);
       const coreIds = coreAccountIdsRef.current;
@@ -246,6 +270,7 @@ function ExpensesApp({ session }) {
       api("/api/subscriptions").then(setSubscriptions).catch(() => {});
       api("/api/goals").then(setGoals).catch(() => {});
       api("/api/category-rules").then(setCategoryRules).catch(() => {});
+      api("/api/budgets").then(setBudgets).catch(() => {});
       api("/api/billing/plan").then((p) => {
         setPlan(p);
         // Le serveur est la source de vérité : s'il confirme que l'onboarding a déjà été vu, on le
@@ -353,6 +378,41 @@ function ExpensesApp({ session }) {
   // Revenus / dépenses de la période sélectionnée, pour le compte actif — additif, mêmes données que summaryAmount mais pour les deux sens à la fois (nécessaire pour les deux StatTile + le delta sous le solde)
   const revenusPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Gain" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
   const depensesPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Dépense" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
+
+  // Montants qui défilent vers leur nouvelle valeur au lieu de sauter d'un coup.
+  const animBalance = useAnimatedNumber(balanceTotal);
+  const animRevenus = useAnimatedNumber(revenusPeriode);
+  const animDepenses = useAnimatedNumber(depensesPeriode);
+  const animSummary = useAnimatedNumber(summaryAmount);
+
+  // Variation par rapport à la fenêtre de même durée juste avant (mêmes filtres que summaryAmount).
+  const comparison = useMemo(() => {
+    const win = previousWindow(period, latestDate);
+    if (!win) return null;
+    const previousAmount = transactions.reduce((sum, t) => {
+      if (t.date < win.start || t.date > win.end) return sum;
+      if (t.type !== summaryType) return sum;
+      if (filterCategory !== "Toutes" && t.category !== filterCategory) return sum;
+      if (filterAccount !== "Tous" && t.compte !== filterAccount) return sum;
+      return sum + t.amount;
+    }, 0);
+    const pct = percentChange(summaryAmount, previousAmount);
+    return pct === null ? null : { pct, label: COMPARE_LABEL[period] };
+  }, [transactions, period, latestDate, summaryType, filterCategory, filterAccount, summaryAmount]);
+
+  // Plafonds : dépense du mois en cours par famille (indépendante du sélecteur de période).
+  const monthFamilySpend = useMemo(() => monthSpendByFamily(transactions, categories, new Date()), [transactions, categories]);
+  const budgetRows = useMemo(() => budgets.map((b) => {
+    const spent = monthFamilySpend[b.category] || 0;
+    return { ...b, spent, ...budgetStatus(spent, b.monthlyLimit) };
+  }), [budgets, monthFamilySpend]);
+  const budgetFamilies = useMemo(() => categories.filter((c) => !c.parent_id && !c.is_fallback && c.name !== "Revenus").map((c) => c.name), [categories]);
+
+  // Récurrences : dépenses mensuelles régulières pas encore suivies comme abonnements.
+  const recurringSuggestions = useMemo(
+    () => detectRecurring(transactions, { subscriptions, dismissed: dismissedRecurring }),
+    [transactions, subscriptions, dismissedRecurring],
+  );
   const netPeriode = revenusPeriode - depensesPeriode;
   // Épargné = virements dont le compte cible est un livret, sur la même période/le même compte
   // source que le reste des totaux ci-dessus — jamais compté comme dépense ni revenu ailleurs.
@@ -479,18 +539,111 @@ function ExpensesApp({ session }) {
       } else {
         const created = await api("/api/transactions", { method: "POST", body: tx });
         setTransactions((prev) => [created, ...prev]);
+        checkBudgetAlert(created);
       }
       setShowAdd(false);
       setEditing(null);
+      haptic("success");
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   }
-  async function deleteTransaction(id) {
-    setSaving(true);
+
+  // Alerte uniquement au moment précis où une dépense fait franchir 80 % ou 100 % d'un plafond,
+  // jamais à chaque ajout suivant.
+  function checkBudgetAlert(created) {
+    if (created.type !== "Dépense" || budgets.length === 0) return;
+    const added = monthSpendByFamily([created], categories, new Date());
+    let alert = null;
+    Object.keys(added).forEach((family) => {
+      const budget = budgets.find((b) => b.category === family);
+      if (!budget) return;
+      const before = monthFamilySpend[family] || 0;
+      const after = before + added[family];
+      const crossed = crossedThreshold(before, after, budget.monthlyLimit);
+      if (crossed === "over") alert = { message: `Plafond « ${family} » dépassé de ${fmtEUR(after - budget.monthlyLimit)}` };
+      else if (crossed === "warning" && !alert) alert = { message: `Plafond « ${family} » atteint à ${Math.round((after / budget.monthlyLimit) * 100)} %` };
+    });
+    if (!alert) return;
+    commitPendingDelete();
+    haptic("warning");
+    setToast({ id: Date.now(), message: alert.message, duration: 5000 });
+  }
+  // Valide côté serveur la suppression en attente. En cas d'échec, la transaction n'a pas été
+  // supprimée : on la remet à sa place plutôt que de laisser l'écran mentir.
+  const commitPendingDelete = useCallback(() => {
+    const pending = pendingDeleteRef.current;
+    if (!pending) return;
+    pendingDeleteRef.current = null;
+    api(`/api/transactions/${pending.tx.id}`, { method: "DELETE" }).catch((e) => {
+      setTransactions((prev) => (prev.some((t) => t.id === pending.tx.id) ? prev : insertAt(prev, pending.tx, pending.index)));
+      setError(e.message);
+    });
+  }, []);
+
+  function undoPendingDelete() {
+    const pending = pendingDeleteRef.current;
+    if (!pending) return;
+    pendingDeleteRef.current = null;
+    setTransactions((prev) => (prev.some((t) => t.id === pending.tx.id) ? prev : insertAt(prev, pending.tx, pending.index)));
+    haptic("light");
+  }
+
+  // La transaction disparaît tout de suite de l'écran, mais n'est réellement supprimée qu'à la fin de
+  // la fenêtre d'annulation (5 s), ou dès que l'app passe en arrière-plan.
+  function deleteTransaction(id) {
+    const index = transactions.findIndex((t) => t.id === id);
+    if (index === -1) return;
+    commitPendingDelete(); // une suppression précédente encore annulable est validée d'abord
+    pendingDeleteRef.current = { tx: transactions[index], index };
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setEditing(null);
+    haptic("warning");
+    setToast({ id: Date.now(), message: "Transaction supprimée", actionLabel: "Annuler", onAction: undoPendingDelete, onExpire: commitPendingDelete, duration: 5000 });
+  }
+
+  useEffect(() => {
+    function flushIfHidden() {
+      // L'app passe en arrière-plan : la suppression est validée, donc le bouton "Annuler" ne servirait plus.
+      if (document.visibilityState === "hidden" && pendingDeleteRef.current) { commitPendingDelete(); setToast(null); }
+    }
+    document.addEventListener("visibilitychange", flushIfHidden);
+    return () => document.removeEventListener("visibilitychange", flushIfHidden);
+  }, [commitPendingDelete]);
+
+  const changePeriod = (p) => { haptic("light"); setPeriod(p); };
+
+  async function saveBudget(b) {
+    setSavingBudget(true);
     try {
-      await api(`/api/transactions/${id}`, { method: "DELETE" });
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
-      setEditing(null);
-    } catch (e) { setError(e.message); } finally { setSaving(false); }
+      const saved = await api("/api/budgets", { method: "POST", body: b });
+      setBudgets((prev) => [...prev.filter((x) => x.category !== saved.category), saved].sort((a, c) => a.category.localeCompare(c.category, "fr")));
+      setBudgetEditing(null);
+      haptic("success");
+    } catch (e) { setError(e.message); } finally { setSavingBudget(false); }
+  }
+  async function removeBudget(id) {
+    setSavingBudget(true);
+    try {
+      await api(`/api/budgets/${id}`, { method: "DELETE" });
+      setBudgets((prev) => prev.filter((x) => x.id !== id));
+      setBudgetEditing(null);
+      haptic("warning");
+    } catch (e) { setError(e.message); } finally { setSavingBudget(false); }
+  }
+
+  async function addRecurringSuggestion(sg) {
+    const created = await createSubscription({
+      title: sg.title, amount: sg.amount, category: sg.category, compte: sg.compte, payment: sg.payment,
+      billingDay: sg.billingDay, skipCurrentMonth: sg.hasThisMonth,
+    });
+    if (created) haptic("success");
+  }
+  function dismissRecurring(key) {
+    setDismissedRecurring((prev) => {
+      const next = prev.includes(key) ? prev : [...prev, key];
+      try { window.localStorage.setItem("finelio-dismissed-recurring", JSON.stringify(next)); } catch { /* sans effet */ }
+      return next;
+    });
+    haptic("light");
   }
 
   async function createSubscription(s) {
@@ -498,6 +651,7 @@ function ExpensesApp({ session }) {
     try {
       const created = await api("/api/subscriptions", { method: "POST", body: s });
       setSubscriptions((prev) => [...prev, created].sort((a, b) => a.billingDay - b.billingDay));
+      return created;
     } catch (e) { setError(e.message); } finally { setSavingSub(false); }
   }
   async function updateSubscriptionHandler(id, patch) {
@@ -649,7 +803,7 @@ function ExpensesApp({ session }) {
   }
 
   if (loading) {
-    return <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, sans-serif" }}>Chargement des dépenses…</div>;
+    return <LoadingScreen variant={LOADING_VARIANT} />;
   }
 
   const todayHeader = fmtTodayHeader();
@@ -704,9 +858,9 @@ function ExpensesApp({ session }) {
                   { key: "Tous", name: "Patrimoine", bankId: null },
                 ]}
                 active={filterAccount}
-                onSelect={setFilterAccount}
+                onSelect={(k) => { haptic("medium"); setFilterAccount(k); }}
                 bankPresets={BANK_PRESETS}
-                balanceValue={fmtEUR(balanceTotal)}
+                balanceValue={fmtEUR(animBalance)}
                 balanceLabel={`sur ${periodLabel(period, "Gain").replace("Reçu ", "")}`}
                 variationDirection={netPeriode >= 0 ? "up" : "down"}
                 variationText={`${netPeriode >= 0 ? "+" : "−"}${fmtEUR(Math.abs(netPeriode))}`}
@@ -714,11 +868,11 @@ function ExpensesApp({ session }) {
                 themeMode={themeMode}
               />
 
-              <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
+              <PeriodChips value={period} onChange={changePeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: changePeriod })} />
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-                <StatTile label="REVENUS" value={fmtEUR(revenusPeriode)} direction="income" Icon={ArrowDownLeft} onClick={() => { setSummaryType("Gain"); setView("flow"); }} />
-                <StatTile label="DÉPENSES" value={fmtEUR(depensesPeriode)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
+                <StatTile label="REVENUS" value={fmtEUR(animRevenus)} direction="income" Icon={ArrowDownLeft} onClick={() => { setSummaryType("Gain"); setView("flow"); }} />
+                <StatTile label="DÉPENSES" value={fmtEUR(animDepenses)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
 
               <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -764,7 +918,7 @@ function ExpensesApp({ session }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar back title={summaryType === "Gain" ? "Revenus" : "Dépenses"} subtitle={filterAccount === "Tous" ? "Patrimoine" : filterAccount} onBack={() => setView("dashboard")} />
-              <PeriodChips value={period} onChange={setPeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: setPeriod })} />
+              <PeriodChips value={period} onChange={changePeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: changePeriod })} />
 
               <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", borderTop: activeBankColor ? `3px solid ${activeBankColor}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -775,7 +929,26 @@ function ExpensesApp({ session }) {
                   )}
                   <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 190, flexShrink: 0 }} />
                 </div>
-                <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : summaryAmount)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
+                <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : animSummary)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
+                {!pressedBucket && comparison && (() => {
+                  const up = comparison.pct >= 0;
+                  const flat = Math.abs(comparison.pct) < 0.5;
+                  // Pour des dépenses, une baisse est une bonne nouvelle ; pour des revenus, une hausse.
+                  const good = summaryType === "Dépense" ? !up : up;
+                  const shown = comparison.pct > 999 ? "> +999 %" : `${up ? "+" : "−"}${Math.abs(comparison.pct).toFixed(0)} %`;
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, font: "500 13px var(--font-core)" }}>
+                      {flat ? (
+                        <span style={{ color: "var(--text-tertiary)" }}>≈ stable</span>
+                      ) : (
+                        <span style={{ display: "flex", alignItems: "center", gap: 3, color: good ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
+                          {up ? <ArrowUp size={13} /> : <ArrowDown size={13} />}{shown}
+                        </span>
+                      )}
+                      <span style={{ color: "var(--text-tertiary)" }}>{comparison.label}</span>
+                    </div>
+                  );
+                })()}
                 <div style={{ height: 110, marginTop: 8 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -824,6 +997,7 @@ function ExpensesApp({ session }) {
               onBack={() => setShowSubscriptions(false)}
               onCreate={createSubscription} onUpdate={updateSubscriptionHandler} onDelete={deleteSubscriptionHandler}
               openOptions={setOptionSheet} saving={savingSub}
+              suggestions={recurringSuggestions} onAddSuggestion={addRecurringSuggestion} onDismissSuggestion={dismissRecurring}
             />
           ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -839,6 +1013,9 @@ function ExpensesApp({ session }) {
                 <Amount value={fmtEUR(subscriptions.filter((s) => s.active).reduce((s, x) => s + x.amount, 0))} direction="expense" size="lg" showSign={false} />
                 <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{subscriptions.filter((s) => s.active).length} actif{subscriptions.filter((s) => s.active).length > 1 ? "s" : ""} / mois</span>
               </div>
+              {recurringSuggestions.length > 0 && (
+                <span style={{ font: "500 12px var(--font-core)", color: "var(--accent-orange)" }}>{recurringSuggestions.length} récurrence{recurringSuggestions.length > 1 ? "s" : ""} détectée{recurringSuggestions.length > 1 ? "s" : ""}</span>
+              )}
             </Card>
 
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -849,10 +1026,32 @@ function ExpensesApp({ session }) {
               </div>
             </Card>
 
+            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>PLAFONDS · CE MOIS</span>
+                <button onClick={() => setBudgetEditing({})} style={{ background: "none", border: "none", padding: "2px 0", font: "600 13px var(--font-core)", color: "var(--accent-orange)", cursor: "pointer" }}>+ Ajouter</button>
+              </div>
+              {budgetRows.length === 0 ? (
+                <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Fixe un plafond mensuel sur une catégorie pour suivre ton budget en temps réel.</span>
+              ) : budgetRows.map((b) => (
+                <div key={b.id} onClick={() => setBudgetEditing(b)} style={{ display: "flex", flexDirection: "column", gap: 6, cursor: "pointer" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: categoryColor(categories, b.category), flexShrink: 0 }} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14 }}>{b.category}</span>
+                    <span className="ds-tabular" style={{ fontSize: 13, color: "var(--text-secondary)" }}>{fmtEUR(b.spent)} / {fmtEUR(b.monthlyLimit)}</span>
+                  </div>
+                  <ProgressBar value={Math.min(100, b.pct)} tone={b.state === "over" ? "expense" : b.state === "warning" ? "neutral" : "income"} />
+                  <span style={{ fontSize: 12, color: b.state === "over" ? "var(--red)" : "var(--text-tertiary)" }}>
+                    {b.state === "over" ? `Dépassé de ${fmtEUR(-b.remaining)}` : `Il reste ${fmtEUR(b.remaining)}`}
+                  </span>
+                </div>
+              ))}
+            </Card>
+
             <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
               <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
-              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"}, sans plafond configuré</span>
+              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"}</span>
             </Card>
 
             {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}
@@ -930,7 +1129,7 @@ function ExpensesApp({ session }) {
 
       <TabBar
         value={activeTab}
-        onChange={(v) => { setActiveTab(v); setView("dashboard"); setSavingsDetailAccount(null); }}
+        onChange={(v) => { haptic("light"); setActiveTab(v); setView("dashboard"); setSavingsDetailAccount(null); }}
         items={[
           { value: "apercu", label: "Accueil", Icon: HomeIcon },
           { value: "activite", label: "Activité", Icon: List },
@@ -941,7 +1140,7 @@ function ExpensesApp({ session }) {
         trailing={
           <button
             ref={tourRef("addButton")}
-            onClick={() => setShowAdd(true)}
+            onClick={() => { haptic("light"); setShowAdd(true); }}
             aria-label="Ajouter une opération"
             style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
           >
@@ -980,6 +1179,19 @@ function ExpensesApp({ session }) {
       {optionSheet && (
         <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
       )}
+
+      {budgetEditing && (
+        <BudgetSheet
+          budget={budgetEditing.id ? budgetEditing : null}
+          availableFamilies={budgetFamilies.filter((f) => !budgets.some((b) => b.category === f))}
+          saving={savingBudget}
+          onClose={() => setBudgetEditing(null)}
+          onSave={saveBudget}
+          onDelete={budgetEditing.id ? () => removeBudget(budgetEditing.id) : null}
+        />
+      )}
+
+      <Toast toast={toast} onDismiss={(id) => setToast((cur) => (cur && cur.id === id ? null : cur))} />
 
       {showOnboarding && onboardingPhase === "questionnaire" && <Onboarding onDone={dismissOnboarding} />}
     </div>
