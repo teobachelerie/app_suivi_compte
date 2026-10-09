@@ -5,6 +5,9 @@ import {
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 
+// authLink doit rester importé en premier : il lit le fragment d'URL du lien email avant que
+// supabase-js ne l'efface (voir lib/authLink.js).
+import { RECOVERY_LINK, LINK_ERROR } from "../lib/authLink";
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES, BANK_PRESETS } from "../lib/constants";
@@ -23,6 +26,7 @@ import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
 import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
+import { ResetPasswordScreen } from "../components/ResetPasswordScreen";
 import { Onboarding } from "../components/Onboarding";
 import { Coachmark } from "../components/Coachmark";
 import { Toast } from "../components/Toast";
@@ -39,18 +43,34 @@ const insertAt = (arr, item, index) => [...arr.slice(0, index), item, ...arr.sli
 
 export default function Home() {
   const [session, setSession] = useState(undefined); // undefined = vérification en cours, null = déconnecté
+  // true tant que l'utilisateur, arrivé par le lien « mot de passe oublié », n'a pas choisi son nouveau
+  // mot de passe. Initialisé à false puis posé dans l'effet : lire window pendant le rendu ferait
+  // diverger le HTML pré-rendu et le premier rendu navigateur.
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
+    if (RECOVERY_LINK) setRecovery(true);
     supabaseClient.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((event, s) => {
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      setSession(s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   if (session === undefined) {
     return <LoadingScreen variant={LOADING_VARIANT} data={false} />;
   }
+  if (recovery && session) {
+    return (
+      <ResetPasswordScreen
+        onDone={() => setRecovery(false)}
+        onCancel={() => { setRecovery(false); supabaseClient.auth.signOut(); }}
+      />
+    );
+  }
   if (!session) {
-    return <AuthScreen />;
+    return <AuthScreen initialError={LINK_ERROR} />;
   }
   return <ExpensesApp session={session} />;
 }

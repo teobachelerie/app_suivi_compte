@@ -4,11 +4,11 @@ import { Card } from "./ui/Primitives";
 import { fieldInputStyle } from "./ui/Sheets";
 import { describeAuthError } from "../lib/authErrors";
 
-export function AuthScreen() {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+export function AuthScreen({ initialError = null }) {
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null); // { kind, text, detail } — voir lib/authErrors.js
+  const [error, setError] = useState(initialError); // { kind, text, detail } — voir lib/authErrors.js
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,6 +31,12 @@ export function AuthScreen() {
           setInfo("Compte créé. Si une confirmation par email est activée, vérifie ta boîte de réception avant de te connecter.");
           setMode("login");
         }
+      } else if (mode === "forgot") {
+        // Réponse volontairement identique que le compte existe ou non : Supabase ne révèle jamais
+        // quels emails ont un compte, et on ne le contourne pas.
+        const { error: err } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+        if (err) throw err;
+        setInfo("Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé. Pense à vérifier les spams.");
       } else {
         const { error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (err) throw err;
@@ -66,6 +72,9 @@ export function AuthScreen() {
         </div>
 
         <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          {mode === "forgot" ? (
+            <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>Entre l'email de ton compte. Tu recevras un lien pour choisir un nouveau mot de passe.</div>
+          ) : (
           <div style={{ display: "flex", gap: "var(--space-1)", padding: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)" }}>
             {["login", "signup"].map((m) => (
               <button
@@ -78,10 +87,13 @@ export function AuthScreen() {
               </button>
             ))}
           </div>
+          )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             <input type="email" required autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={fieldInputStyle} />
-            <input type="password" required autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} style={fieldInputStyle} minLength={6} />
+            {mode !== "forgot" && (
+              <input type="password" required autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} style={fieldInputStyle} minLength={6} />
+            )}
 
             {error && (
               <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -97,8 +109,18 @@ export function AuthScreen() {
             {info && <div style={{ color: "var(--green)", fontSize: 13 }}>{info}</div>}
 
             <button type="submit" disabled={busy} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: busy ? 0.6 : 1, boxShadow: "var(--elev-raised-sm)" }}>
-              {busy ? "…" : mode === "signup" ? "Créer mon compte" : "Se connecter"}
+              {busy ? "…" : mode === "signup" ? "Créer mon compte" : mode === "forgot" ? "Envoyer le lien" : "Se connecter"}
             </button>
+            {mode === "login" && (
+              <button type="button" onClick={() => { setMode("forgot"); setError(null); setInfo(""); }} style={{ background: "none", border: "none", padding: 0, color: "var(--text-tertiary)", fontSize: 13, cursor: "pointer" }}>
+                Mot de passe oublié ?
+              </button>
+            )}
+            {mode === "forgot" && (
+              <button type="button" onClick={() => { setMode("login"); setError(null); setInfo(""); }} style={{ background: "none", border: "none", padding: 0, color: "var(--text-tertiary)", fontSize: 13, cursor: "pointer" }}>
+                Retour à la connexion
+              </button>
+            )}
           </form>
         </Card>
       </div>
