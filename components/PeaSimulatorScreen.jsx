@@ -10,15 +10,29 @@ function monthlyRate(annualPct) {
   return Math.pow(1 + annualPct / 100, 1 / 12) - 1;
 }
 
+// Plafond légal des versements sur un PEA (les gains, eux, ne sont pas plafonnés).
+const PLAFOND_VERSEMENTS = 150000;
+// Fiscalité sur les gains (taux en vigueur depuis le 01/01/2026, à revérifier si la loi change) :
+// - PEA de 5 ans ou plus : prélèvements sociaux uniquement (CSG relevée à 10,6 %), pas d'impôt sur le revenu.
+// - PEA de moins de 5 ans : flat tax = 12,8 % d'impôt + prélèvements sociaux.
+const PRELEVEMENTS_SOCIAUX = 18.6;
+const FLAT_TAX = 12.8 + PRELEVEMENTS_SOCIAUX;
+
+function tauxImposition(dureeAnnees) {
+  return dureeAnnees >= 5 ? PRELEVEMENTS_SOCIAUX : FLAT_TAX;
+}
+
 function simulate(p) {
   const rMensuel = monthlyRate(p.rendementAnnuel);
-  let valeur = p.apportInitial;
-  let verseNet = p.apportInitial;
+  let verseNet = Math.min(p.apportInitial, PLAFOND_VERSEMENTS);
+  let valeur = verseNet;
   const points = [{ annee: 0, verse: Math.round(verseNet), interets: 0, total: Math.round(valeur) }];
 
   for (let mois = 1; mois <= p.dureeAnnees * 12; mois++) {
-    valeur = valeur * (1 + rMensuel) + p.versementMensuel;
-    verseNet += p.versementMensuel;
+    // Une fois le plafond atteint, plus aucun versement : seuls les intérêts composés continuent.
+    const versement = Math.min(p.versementMensuel, Math.max(0, PLAFOND_VERSEMENTS - verseNet));
+    valeur = valeur * (1 + rMensuel) + versement;
+    verseNet += versement;
 
     if (mois % 12 === 0) {
       const interets = Math.max(0, valeur - verseNet);
@@ -49,17 +63,28 @@ export function PeaSimulatorScreen({ onBack }) {
   ]);
   const last = points[points.length - 1];
   const gainPct = last.verse > 0 ? (last.interets / last.verse) * 100 : 0;
+  const tauxTaxe = tauxImposition(params.dureeAnnees);
+  const net = last.total - last.interets * (tauxTaxe / 100);
+  const anneePlafond = last.verse >= PLAFOND_VERSEMENTS ? points.find((pt) => pt.verse >= PLAFOND_VERSEMENTS)?.annee : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <NavBar back title="Simulateur PEA" onBack={onBack} />
 
       <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>PLUS-VALUE APRÈS {params.dureeAnnees} ANS</span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ font: "600 34px var(--font-display)", color: "var(--accent-amber)" }}>{gainPct.toFixed(0)} %</span>
-          <span style={{ font: "400 15px var(--font-core)", color: "var(--text-tertiary)" }}>{fmtEUR(last.verse)} versés</span>
+        <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL BRUT APRÈS {params.dureeAnnees} ANS</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <span style={{ font: "600 34px var(--font-display)", color: "var(--accent-amber)" }}>{fmtEUR(last.total)}</span>
+          <span style={{ font: "400 15px var(--font-core)", color: "var(--text-tertiary)" }}>+{gainPct.toFixed(0)} %</span>
         </div>
+        <span style={{ font: "400 15px var(--font-core)", color: "var(--text-tertiary)" }}>
+          {fmtEUR(net)} net après taxes ({tauxTaxe.toString().replace(".", ",")} % sur les gains)
+        </span>
+        {anneePlafond !== null && (
+          <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>
+            Plafond de {fmtEUR(PLAFOND_VERSEMENTS)} atteint à l'année {anneePlafond} : plus de versements ensuite.
+          </span>
+        )}
       </Card>
 
       <Card padding="md" style={{ height: 260, paddingBottom: "var(--space-5)" }}>
@@ -92,7 +117,7 @@ export function PeaSimulatorScreen({ onBack }) {
       </div>
 
       <div style={{ fontSize: 12, color: "var(--text-tertiary)", textAlign: "center", padding: "0 var(--space-4)" }}>
-        Simulation indicative, avec un rendement composé mensuellement. Ne constitue pas un conseil en investissement : les marchés réels ne suivent jamais une courbe aussi lisse.
+        Simulation indicative, avec un rendement composé mensuellement. Versements plafonnés à 150 000 €. Net calculé avec 18,6 % de prélèvements sociaux si la durée est d'au moins 5 ans, sinon avec la flat tax de 31,4 %. Ne constitue pas un conseil en investissement : les marchés réels ne suivent jamais une courbe aussi lisse.
       </div>
     </div>
   );
