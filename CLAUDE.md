@@ -8,7 +8,9 @@ Contexte complet : `docs/HANDOFF.md`. Maquettes cibles et design system : `docs/
 
 - Next.js 14 (Pages Router), React 18.3, JavaScript sans TypeScript, lucide-react, recharts, supabase-js, Stripe (mode test).
 - Base et authentification : Supabase (Postgres). Déploiement : Vercel, branche `main` en production (GitHub `teobachelerie/app_suivi_compte`).
-- `npm run dev` et `npm run build`. Il n'y a ni test, ni lint, ni CI dans le dépôt à ce jour.
+- `npm run dev` et `npm run build`. `npm run lint` (ESLint, règles Next), `npm run format` (Prettier, vérification seule : ne reformate pas le dépôt entier). Pas de CI à ce jour.
+- Vérification visuelle : `npm run build` puis `npm run capture` (WebKit profil iPhone, API simulée dans le navigateur, aucune base ; sortie dans `tools/visual/out/`, ignorée par git) et `npm run test:sheet` (comportement des feuilles). Détails dans `tools/visual/README.md`.
+- Développement et prévisualisation Vercel : second projet Supabase `finelio-dev`, jamais la production (`docs/ENVIRONNEMENT-DEV.md`).
 - Variables d'environnement : noms dans `.env.local.example`. Ne jamais écrire une valeur réelle dans le code, un log, un commit ou une réponse.
 - Repère de poids : le build affiche environ 82 kB de JS partagé. Toute dépendance ajoutée se justifie par son poids.
 
@@ -49,6 +51,10 @@ Références : `docs/design-reference/design-system/README.md` et les maquettes.
 - Élévation par bordure fine (`--border-token`). Plus d'ombres néomorphiques. Les anciens tokens (`--elev-*`, `--surface-raised/inset/highlight/base`) sont des alias de compatibilité vers ce rendu plat.
 - Cartes de comptes : couleurs de banque réelles, jamais de logo.
 - Mouvement : tokens `--duration-micro` (150 ms), `--duration-base` (200 ms), `--duration-slow` (250 ms), `--ease-standard`, `--ease-out`. La pile de cartes de comptes utilise 280 ms avec `cubic-bezier(0.2, 0.8, 0.2, 1)`. Toute animation CSS passe sous `@media (prefers-reduced-motion: no-preference)`, et les animations JS testent `matchMedia` (voir `lib/useAnimatedNumber.js`).
+
+## Primitives d'interface (à utiliser pour tout nouvel écran)
+
+`components/ui/` : `Button`, `TextField`, `PickerField` (remplace `<select>`), `Chip`, `BottomSheet` (entrée, sortie, glissé pour fermer, clavier iOS). Leur style vit dans `styles/globals.css` (classes `.fin-*`). Champs en 16 px minimum (sinon Safari iOS zoome). Les anciens `Sheet`, `TopSheet`, `OptionSheet`, `Field` de `Sheets.jsx` sont à migrer, pas à étendre.
 
 ## Conventions de code
 

@@ -34,6 +34,12 @@ const scenarios = [
   { name: "14-budgets-bas", run: async (p) => { await tab(p, 2); await settle(p, 300); await p.mouse.move(200, 400); await p.evaluate(() => { document.getElementById("__next").scrollTo(0, 99999); }); } },
   { name: "15-abonnements", run: async (p) => { await tab(p, 2); await p.getByText("ABONNEMENTS").first().click(); } },
   { name: "16-plafond-sheet", run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); } },
+  { name: "16b-plafond-liste", run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 500); await p.getByLabel("Catégorie").click(); } },
+  { name: "16c-plafond-erreur", run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 500); await clickText(p, "Confirmer"); } },
+  { name: "16d-plafond-edition", run: async (p) => { await tab(p, 2); await p.getByText("Loisirs", { exact: true }).first().click(); } },
+  { name: "16e-plafond-saisie", run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 500); await p.getByLabel("Plafond par mois").fill("250"); } },
+  { name: "16f-plafond-sortie-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 600); await p.getByRole("button", { name: "Fermer" }).click(); await p.waitForTimeout(90); } },
+  { name: "16g-plafond-entree-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await p.waitForTimeout(90); } },
   { name: "17-reglages", run: async (p) => { await tab(p, 3); } },
   ...["Apparence", "Affichage", "Comptes", "Catégories", "Raccourci iOS", "Export", "Abonnement", "Compte"].map((s, i) => ({
     name: `18-reglages-${String(i).padStart(2, "0")}-${s.replace(/[^a-zA-Z]/g, "").toLowerCase()}`,
@@ -61,22 +67,27 @@ if (!process.env.BASE) {
   server = spawn("npx", ["next", "start", "-p", "3100"], { cwd: REPO, env, stdio: "ignore" });
   for (let i = 0; i < 60; i++) { try { if ((await fetch(BASE)).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
 }
+// Garde-fou : un scénario qui se fige (WebKit bloqué) ne doit pas bloquer toute la série.
+const withTimeout = (promise, ms, label) => Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error(`délai dépassé (${label})`)), ms))]);
 const browser = await launch();
 const report = [];
 for (const size of sizes) for (const theme of themes) for (const sc of scenarios) {
   if (only && !only.some((o) => sc.name.includes(o))) continue;
-  const page = await newPage(browser, { theme, size, ...(sc.opts || {}) });
+  let page;
   try {
-    if (!sc.opts?.apiDelay) await page.waitForSelector("nav button, input[type=email], input[type=password]", { timeout: 15000 }).catch(() => {});
-    await settle(page, 1000);
-    await sc.run(page);
-    await settle(page, sc.wait ?? 900);
-    await page.screenshot({ path: outPath(size, theme, `${sc.name}.png`) });
+    page = await withTimeout(newPage(browser, { theme, size, ...(sc.opts || {}) }), 45000, `${sc.name} ouverture`);
+    await withTimeout((async () => {
+      if (!sc.opts?.apiDelay) await page.waitForSelector("nav button, input[type=email], input[type=password]", { timeout: 15000 }).catch(() => {});
+      await settle(page, 1000);
+      await sc.run(page);
+      await settle(page, sc.wait ?? 900);
+      await page.screenshot({ path: outPath(size, theme, `${sc.name}.png`) });
+    })(), 90000, sc.name);
     if (page.logs.length) report.push({ size, theme, scenario: sc.name, logs: page.logs.slice(0, 5) });
   } catch (e) {
     report.push({ size, theme, scenario: sc.name, error: e.message.split("\n")[0] });
   }
-  await page.context().close();
+  await page?.context().close().catch(() => {});
 }
 await browser.close();
 server?.kill();

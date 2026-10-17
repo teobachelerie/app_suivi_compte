@@ -14,10 +14,10 @@ export async function launch() {
   return webkit.launch();
 }
 
-export async function newPage(browser, { theme = "dark", size = "390x844", authed = true, onboardingSeen = true, apiDelay = 0 } = {}) {
+export async function newPage(browser, { theme = "dark", size = "390x844", authed = true, onboardingSeen = true, apiDelay = 0, reducedMotion = "no-preference" } = {}) {
   const [width, height] = SIZES[size];
   const ctx = await browser.newContext({
-    ...devices["iPhone 14"], viewport: { width, height }, deviceScaleFactor: 2, locale: "fr-FR", timezoneId: "Europe/Paris",
+    ...devices["iPhone 14"], viewport: { width, height }, deviceScaleFactor: 2, locale: "fr-FR", timezoneId: "Europe/Paris", reducedMotion,
   });
   const page = await ctx.newPage();
   const logs = [];
