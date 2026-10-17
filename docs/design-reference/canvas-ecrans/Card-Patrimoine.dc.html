@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte — Patrimoine</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0;background:#000;} .card-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}</style>
+</helmet>
+<div class="card-root" style="width: 350px; height: 200px; box-sizing: border-box; border-radius: 24px; overflow: hidden; position: relative; background: #000000;">
+  <div style="position: absolute; inset: 0; background:
+    radial-gradient(circle at 15% 10%, rgba(255,128,46,0.55), transparent 45%),
+    radial-gradient(circle at 95% 30%, rgba(229,63,26,0.5), transparent 50%),
+    radial-gradient(circle at 55% 100%, rgba(99,25,10,0.7), transparent 55%);"></div>
+  <div style="position: relative; z-index: 1; height: 100%; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+    <span style="color: #f6f5f2; font-size: 17px; font-weight: 700;">Patrimoine</span>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="color: #f6f5f2; font-size: 34px; font-weight: 700; line-height: 1;">7420,03&nbsp;€</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53f1a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6 17 17"/><path d="M17 6v11H6"/></svg>
+        <span style="color: #e53f1a; font-size: 13px; font-weight: 600;">−8609,93&nbsp;€</span>
+        <span style="color: rgba(246,245,242,0.55); font-size: 13px;">sur ce mois-ci</span>
+      </div>
+    </div>
+    <span style="color: rgba(246,245,242,0.6); font-size: 13px; font-weight: 700; letter-spacing: 0.04em;">FINELIO</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":350,"height":200}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

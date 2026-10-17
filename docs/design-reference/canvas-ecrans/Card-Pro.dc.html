@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte — Pro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0;background:#000;} .card-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}</style>
+</helmet>
+<div class="card-root" style="width: 350px; height: 200px; box-sizing: border-box; border-radius: 24px; overflow: hidden; position: relative;">
+  <div style="position: absolute; inset: 0; background: linear-gradient(120deg, #ff3d8a 0%, #ff3d8a 48%, #8fd9f5 100%);"></div>
+  <div style="position: relative; z-index: 1; height: 100%; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+    <span style="color: #1a0e14; font-size: 17px; font-weight: 700;">Pro</span>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="color: #1a0e14; font-size: 34px; font-weight: 700; line-height: 1;">[solde compte pro]</span>
+      <span style="color: rgba(26,14,20,0.6); font-size: 13px;">[variation sur la période]</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <span style="color: #1a0e14; font-size: 13px; font-weight: 700; letter-spacing: 0.04em;">BOURSORAMA</span>
+      <span style="color: rgba(26,14,20,0.55); font-size: 13px; letter-spacing: 0.06em;">•••• ????</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":350,"height":200}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

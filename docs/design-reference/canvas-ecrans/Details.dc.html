@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Finelio — Détails</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{margin:0;background:#000;}
+  .fin-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}
+  .fin-row{display:flex;align-items:center;}
+  .fin-btw{display:flex;align-items:center;justify-content:space-between;}
+  .fin-muted{color:#9a938c;}
+  .fin-ink{color:#f6f5f2;}
+</style>
+</helmet>
+<div class="fin-root" style="width: 390px; height: 1060px; box-sizing: border-box; background: #000000; color: #f6f5f2; position: relative; overflow: hidden;">
+
+  <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="fin-row" style="gap: 14px;">
+      <button type="button" aria-label="Retour" style="background: #121212; border: none; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Détails</span>
+    </div>
+
+    <span style="color: #e53f1a; font-size: 32px; font-weight: 700; text-align: center;">50,00&nbsp;€</span>
+
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Titre</span>
+      <input type="text" placeholder="ex. J'ai acheté une bougie" style="background:#121212;border:1px solid #ff802e;border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Compte</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;" class="fin-btw"><span class="fin-ink" style="font-size:15px;">Compte courant</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a938c" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Moyen de paiement</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;" class="fin-btw"><span class="fin-ink" style="font-size:15px;">Carte bancaire</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a938c" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Date</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;"><span class="fin-ink" style="font-size:15px;">25/09/2026</span></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Tags (séparés par une virgule)</span>
+      <input type="text" placeholder="ex. vacances, cadeau" style="background:#121212;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Remarques (facultatif)</span>
+      <textarea placeholder="Une note libre sur cette opération" rows="3" style="background:#121212;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;resize:none;"></textarea>
+    </label>
+    <button type="button" style="background: #ff802e; color: #000; border: none; border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;">Confirmer</button>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1060}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Finelio — Modifier la transaction</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{margin:0;background:#000;}
+  .fin-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}
+  .fin-row{display:flex;align-items:center;}
+  .fin-btw{display:flex;align-items:center;justify-content:space-between;}
+  .fin-muted{color:#9a938c;}
+  .fin-ink{color:#f6f5f2;}
+</style>
+</helmet>
+<div class="fin-root" style="width: 390px; height: 1180px; box-sizing: border-box; background: #000000; color: #f6f5f2; position: relative; overflow: hidden;">
+
+  <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="fin-btw">
+      <span class="fin-ink" style="font-size: 20px; font-weight: 700;">Modifier</span>
+      <button type="button" aria-label="Fermer" style="background: #121212; border: none; border-radius: 999px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="fin-row" style="background:#121212;border-radius:16px;padding:6px;gap:4px;">
+      <div style="flex:1;text-align:center;border-radius:999px;padding:10px;background:rgba(229,63,26,0.15);color:#e53f1a;font-size:14px;font-weight:700;">Dépense</div>
+      <div class="fin-muted" style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;">Gain</div>
+      <div class="fin-muted" style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;">Virement</div>
+    </div>
+
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Titre</span>
+      <input type="text" value="test" style="background:#121212;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Montant (€)</span>
+      <input type="text" value="50" style="background:#121212;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Catégorie</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;" class="fin-btw"><span class="fin-ink" style="font-size:15px;">Shopping</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a938c" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </label>
+    <span style="color: #ff802e; font-size: 13px; text-decoration: underline;">Fractionner en plusieurs catégories</span>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Compte</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;" class="fin-btw"><span class="fin-ink" style="font-size:15px;">Compte courant</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a938c" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Moyen de paiement</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;" class="fin-btw"><span class="fin-ink" style="font-size:15px;">Carte bancaire</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a938c" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Date</span>
+      <div style="background:#121212;border-radius:14px;padding:14px 16px;"><span class="fin-ink" style="font-size:15px;">24/09/2026</span></div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="fin-muted" style="font-size: 13px;">Tags (séparés par une virgule)</span>
+      <input type="text" placeholder="ex. vacances, cadeau" style="background:#121212;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#f6f5f2;font-family:inherit;font-size:15px;box-sizing:border-box;">
+    </label>
+
+    <div class="fin-row" style="gap: 12px; margin-top: 8px;">
+      <button type="button" aria-label="Supprimer" style="background: rgba(229,63,26,0.12); border: none; border-radius: 16px; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53f1a" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>
+      <button type="button" style="flex: 1; background: #ff802e; color: #000; border: none; border-radius: 16px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;">Confirmer</button>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte — Courant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0;background:#000;} .card-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}</style>
+</helmet>
+<div class="card-root" style="width: 350px; height: 200px; box-sizing: border-box; border-radius: 24px; overflow: hidden; position: relative;">
+  <div style="position: absolute; inset: 0; background: linear-gradient(90deg, #0a0a0a 0%, #0a0a0a 54%, #f4f4f2 54%, #f4f4f2 54.6%, #b30014 55%, #e9041e 100%);"></div>
+  <div style="position: relative; z-index: 1; height: 100%; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+    <span style="color: #ffffff; font-size: 17px; font-weight: 700;">Courant</span>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="color: #ffffff; font-size: 34px; font-weight: 700; line-height: 1;">180,94&nbsp;€</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17 17 6"/><path d="M9 6h8v8"/></svg>
+        <span style="color: #ffbb2e; font-size: 13px; font-weight: 600;">+202,59&nbsp;€</span>
+        <span style="color: rgba(255,255,255,0.55); font-size: 13px;">sur 6 mois</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <span style="color: #ffffff; font-size: 13px; font-weight: 700; letter-spacing: 0.04em;">SOCIÉTÉ GÉNÉRALE</span>
+      <span style="color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 0.06em;">•••• 4471</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":350,"height":200}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

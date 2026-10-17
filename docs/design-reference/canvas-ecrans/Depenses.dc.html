@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Finelio — Dépenses</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{margin:0;background:#000;}
+  .fin-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}
+  .fin-row{display:flex;align-items:center;}
+  .fin-card{background:#121212;border-radius:16px;padding:16px;box-sizing:border-box;}
+  .fin-muted{color:#9a938c;}
+  .fin-ink{color:#f6f5f2;}
+</style>
+</helmet>
+<div class="fin-root" style="width: 390px; height: 620px; box-sizing: border-box; background: #000000; color: #f6f5f2; position: relative; overflow: hidden;">
+  <div style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background:
+    radial-gradient(circle at 12% 6%, rgba(255,128,46,0.16), transparent 42%),
+    radial-gradient(circle at 92% 26%, rgba(229,63,26,0.14), transparent 48%),
+    radial-gradient(circle at 55% 92%, rgba(99,25,10,0.20), transparent 52%);"></div>
+
+  <div style="position: relative; z-index: 1; padding: 24px 20px 32px 20px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div class="fin-row" style="gap: 14px;">
+      <button type="button" aria-label="Retour" style="background: #121212; border: none; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div style="display: flex; flex-direction: column;">
+        <span class="fin-muted" style="font-size: 12px;">Compte courant</span>
+        <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Dépenses</span>
+      </div>
+    </div>
+
+    <div class="fin-row fin-card" style="padding: 6px; gap: 4px; background: #121212;">
+      <div class="fin-muted" style="flex: 1; text-align: center; padding: 10px; font-size: 13px; font-weight: 600;">Ce mois</div>
+      <div class="fin-muted" style="flex: 1; text-align: center; padding: 10px; font-size: 13px; font-weight: 600;">3 mois</div>
+      <div class="fin-ink" style="flex: 1; text-align: center; border-radius: 999px; padding: 10px; background: rgba(255,128,46,0.15); color: #ff802e; font-size: 13px; font-weight: 700;">6 mois</div>
+      <div class="fin-muted" style="flex: 1; text-align: center; padding: 10px; font-size: 13px; font-weight: 600;">Mois…</div>
+    </div>
+
+    <div class="fin-card" style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="fin-row" style="justify-content: space-between;">
+        <span class="fin-muted" style="font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;">Dépensé sur 6 mois</span>
+        <div class="fin-row" style="padding: 4px; gap: 4px; background: #1c1613; border-radius: 999px;">
+          <div style="padding: 6px 12px; border-radius: 999px; background:#e53f1a;color:#000;font-size:13px;font-weight:700;">Dépense</div>
+          <div style="padding: 6px 12px; border-radius: 999px; color:#9a938c;font-size:13px;font-weight:600;">Gain</div>
+        </div>
+      </div>
+      <span style="color: #e53f1a; font-size: 32px; font-weight: 700;">2653,68&nbsp;€</span>
+      <div class="fin-row" style="align-items: flex-end; gap: 14px; height: 90px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:6px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">mars</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:88px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">avr.</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:40px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">mai</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:4px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">juin</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:66px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">juil.</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:58px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">août</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;"><div style="width:14px;height:10px;background:#e53f1a;border-radius:5px;"></div><span class="fin-muted" style="font-size:11px;">sept.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":620}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

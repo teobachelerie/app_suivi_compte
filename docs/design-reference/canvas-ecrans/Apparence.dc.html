@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Finelio — Apparence</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{margin:0;background:#000;}
+  .fin-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}
+  .fin-row{display:flex;align-items:center;}
+  .fin-btw{display:flex;align-items:center;justify-content:space-between;}
+  .fin-card{background:#121212;border-radius:16px;padding:16px;box-sizing:border-box;}
+  .fin-muted{color:#9a938c;}
+  .fin-ink{color:#f6f5f2;}
+  .toggle-on{width:44px;height:26px;border-radius:999px;background:#ff802e;position:relative;}
+  .toggle-on i{width:20px;height:20px;border-radius:50%;background:#000;position:absolute;top:3px;right:3px;display:block;}
+  .toggle-off{width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,0.12);position:relative;}
+  .toggle-off i{width:20px;height:20px;border-radius:50%;background:#f6f5f2;position:absolute;top:3px;left:3px;display:block;}
+</style>
+</helmet>
+<div class="fin-root" style="width: 390px; height: 260px; box-sizing: border-box; background: #000000; color: #f6f5f2; position: relative; overflow: hidden;">
+  <div style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background:
+    radial-gradient(circle at 12% 6%, rgba(255,128,46,0.16), transparent 42%),
+    radial-gradient(circle at 92% 26%, rgba(229,63,26,0.14), transparent 48%),
+    radial-gradient(circle at 55% 92%, rgba(99,25,10,0.20), transparent 52%);"></div>
+
+  <div style="position: relative; z-index: 1; padding: 24px 20px 32px 20px; display: flex; flex-direction: column; gap: 18px;">
+
+    <div class="fin-row" style="gap: 14px;">
+      <button type="button" aria-label="Retour" style="background: #121212; border: none; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Apparence</span>
+    </div>
+
+    <div class="fin-card fin-btw">
+      <div class="fin-row" style="gap: 14px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="#f6f5f2" stroke="none"/></svg>
+        <span class="fin-ink" style="font-size: 15px;">Mode sombre</span>
+      </div>
+      <div class="toggle-on"><i></i></div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":260}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

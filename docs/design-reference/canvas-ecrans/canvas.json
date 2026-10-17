@@ -1,0 +1,48 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-09-25T09:00:00Z"},
+  "title": "Finelio",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 1420, "title": "Accueil"},
+    "Card-Courant.dc.html": {"x": 550, "y": 0, "w": 350, "h": 200, "title": "Carte — Courant"},
+    "Card-Pro.dc.html": {"x": 550, "y": 320, "w": 350, "h": 200, "title": "Carte — Pro"},
+    "Card-Patrimoine.dc.html": {"x": 550, "y": 640, "w": 350, "h": 200, "title": "Carte — Patrimoine"},
+    "Activite.dc.html": {"x": 1000, "y": 0, "w": 390, "h": 1500, "title": "Activité"},
+    "Budgets.dc.html": {"x": 1470, "y": 0, "w": 390, "h": 1560, "title": "Budgets"},
+    "Objectifs.dc.html": {"x": 1940, "y": 0, "w": 390, "h": 640, "title": "Objectifs"},
+    "Reglages.dc.html": {"x": 2410, "y": 0, "w": 390, "h": 900, "title": "Réglages"},
+    "Login.dc.html": {"x": 2880, "y": 0, "w": 390, "h": 780, "title": "Connexion"},
+    "Revenus.dc.html": {"x": 3350, "y": 0, "w": 390, "h": 620, "title": "Revenus"},
+    "Depenses.dc.html": {"x": 3820, "y": 0, "w": 390, "h": 620, "title": "Dépenses"},
+    "SimulateurPEA.dc.html": {"x": 4290, "y": 0, "w": 390, "h": 1120, "title": "Simulateur PEA"},
+    "LivretJeune.dc.html": {"x": 4760, "y": 0, "w": 390, "h": 480, "title": "Livret Jeune"},
+    "Abonnements.dc.html": {"x": 5230, "y": 0, "w": 390, "h": 480, "title": "Abonnements"},
+    "Apparence.dc.html": {"x": 5700, "y": 0, "w": 390, "h": 260, "title": "Apparence"},
+    "Affichage.dc.html": {"x": 6170, "y": 0, "w": 390, "h": 260, "title": "Affichage"},
+    "Comptes.dc.html": {"x": 6640, "y": 0, "w": 390, "h": 620, "title": "Comptes"},
+    "Categories.dc.html": {"x": 7110, "y": 0, "w": 390, "h": 1080, "title": "Catégories"},
+    "RaccourciIOS.dc.html": {"x": 7580, "y": 0, "w": 390, "h": 900, "title": "Raccourci iOS"},
+    "Export.dc.html": {"x": 8050, "y": 0, "w": 390, "h": 500, "title": "Export"},
+    "Compte.dc.html": {"x": 8520, "y": 0, "w": 390, "h": 340, "title": "Compte"},
+    "AbonnementPricing.dc.html": {"x": 8990, "y": 0, "w": 390, "h": 1240, "title": "Abonnement (pricing)"},
+    "CategoryPicker-Depenses.dc.html": {"x": 9460, "y": 0, "w": 390, "h": 620, "title": "Choisir catégorie — Dépenses"},
+    "CategoryPicker-Revenus.dc.html": {"x": 9930, "y": 0, "w": 390, "h": 480, "title": "Choisir catégorie — Revenus"},
+    "SubcategoryPicker-Shopping.dc.html": {"x": 10400, "y": 0, "w": 390, "h": 480, "title": "Sous-catégorie — Shopping"},
+    "Montant.dc.html": {"x": 10870, "y": 0, "w": 390, "h": 780, "title": "Montant"},
+    "Details.dc.html": {"x": 11340, "y": 0, "w": 390, "h": 1060, "title": "Détails"},
+    "EditModal.dc.html": {"x": 11810, "y": 0, "w": 390, "h": 1180, "title": "Modifier la transaction"}
+  },
+  "order": ["Main.dc.html", "Card-Courant.dc.html", "Card-Pro.dc.html", "Card-Patrimoine.dc.html", "Activite.dc.html", "Budgets.dc.html", "Objectifs.dc.html", "Reglages.dc.html", "Login.dc.html", "Revenus.dc.html", "Depenses.dc.html", "SimulateurPEA.dc.html", "LivretJeune.dc.html", "Abonnements.dc.html", "Apparence.dc.html", "Affichage.dc.html", "Comptes.dc.html", "Categories.dc.html", "RaccourciIOS.dc.html", "Export.dc.html", "Compte.dc.html", "AbonnementPricing.dc.html", "CategoryPicker-Depenses.dc.html", "CategoryPicker-Revenus.dc.html", "SubcategoryPicker-Shopping.dc.html", "Montant.dc.html", "Details.dc.html", "EditModal.dc.html"],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "Finelio",
+      "namespace": "finelio",
+      "artifact": "https://claude.ai/artifact/PrRVxZ2CrbLuzYHVys8rMD",
+      "version": null,
+      "copiedAt": "2026-09-25T09:00:00Z"
+    }
+  ]
+}

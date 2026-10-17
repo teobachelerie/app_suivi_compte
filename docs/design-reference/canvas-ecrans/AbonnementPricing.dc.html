@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Finelio — Abonnement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{margin:0;background:#000;}
+  .fin-root{font-family:"Inter",system-ui,-apple-system,sans-serif;}
+  .fin-row{display:flex;align-items:center;}
+  .fin-btw{display:flex;align-items:center;justify-content:space-between;}
+  .fin-card{background:#121212;border-radius:16px;padding:16px;box-sizing:border-box;}
+  .fin-muted{color:#9a938c;}
+  .fin-ink{color:#f6f5f2;}
+  .toggle-on{width:44px;height:26px;border-radius:999px;background:#ff802e;position:relative;}
+  .toggle-on i{width:20px;height:20px;border-radius:50%;background:#000;position:absolute;top:3px;right:3px;display:block;}
+  .toggle-off{width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,0.12);position:relative;}
+  .toggle-off i{width:20px;height:20px;border-radius:50%;background:#f6f5f2;position:absolute;top:3px;left:3px;display:block;}
+</style>
+</helmet>
+<div class="fin-root" style="width: 390px; height: 1240px; box-sizing: border-box; background: #000000; color: #f6f5f2; position: relative; overflow: hidden;">
+  <div style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background:
+    radial-gradient(circle at 12% 6%, rgba(255,128,46,0.16), transparent 42%),
+    radial-gradient(circle at 92% 26%, rgba(229,63,26,0.14), transparent 48%),
+    radial-gradient(circle at 55% 92%, rgba(99,25,10,0.20), transparent 52%);"></div>
+
+  <div style="position: relative; z-index: 1; padding: 24px 20px 32px 20px; display: flex; flex-direction: column; gap: 18px;">
+
+    <div class="fin-row" style="gap: 14px;">
+      <button type="button" aria-label="Retour" style="background: #121212; border: none; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6f5f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Abonnement</span>
+    </div>
+
+    <div class="fin-card" style="display: flex; flex-direction: column; gap: 4px;">
+      <span class="fin-muted" style="font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;">Palier actuel</span>
+      <span style="color: #ffbb2e; font-size: 20px; font-weight: 700;">Investisseur</span>
+      <span class="fin-muted" style="font-size: 13px;">Palier accordé manuellement, rien à gérer ici.</span>
+    </div>
+
+    <div class="fin-card" style="border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 4px;">
+      <div class="fin-btw">
+        <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Amateur</span>
+        <span class="fin-ink" style="font-size: 15px; font-weight: 700;">Gratuit</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Budgets actifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">1</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Objectifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">1</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Catégories</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">de base</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Export de l'historique</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">3 derniers mois</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b655f" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg><span style="color:#6b655f;font-size:14px;">Catégories personnalisées</span></div>
+        <span style="color:#6b655f;font-size:14px;font-weight:600;"></span>
+      </div>
+      <div style="margin-top: 8px;"><span class="fin-muted" style="font-size:13px;">Rétrograder via "Gérer mon abonnement" ci-dessus</span></div>
+    </div>
+
+    <div class="fin-card" style="border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 4px;">
+      <div class="fin-btw">
+        <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Confirmé</span>
+        <span class="fin-ink" style="font-size: 15px; font-weight: 700;">4,99 €/mois</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Budgets actifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Illimités</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Objectifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">3</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Catégories</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Toutes (11 familles)</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Export de l'historique</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Complet</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Catégories personnalisées</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;"></span>
+      </div>
+      <div style="margin-top: 8px;"><span class="fin-muted" style="font-size:13px;">Rétrograder via "Gérer mon abonnement" ci-dessus</span></div>
+    </div>
+
+    <div class="fin-card" style="border: 2px solid #ff802e; display: flex; flex-direction: column; gap: 4px;">
+      <div class="fin-btw">
+        <span class="fin-ink" style="font-size: 18px; font-weight: 700;">Investisseur</span>
+        <span class="fin-ink" style="font-size: 15px; font-weight: 700;">8,99 €/mois</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Budgets actifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Illimités</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Objectifs</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Illimités</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Suivi patrimoine complet</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Comptes, PEA, immo</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Export de l'historique</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Complet</span>
+      </div>
+      <div class="fin-btw" style="padding: 8px 0;">
+        <div class="fin-row" style="gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffbb2e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="color:#f6f5f2;font-size:14px;">Prêts</span></div>
+        <span style="color:#f6f5f2;font-size:14px;font-weight:600;">Une fois & long terme</span>
+      </div>
+      <div style="margin-top: 8px;"><span class="fin-muted" style="font-size:13px;">Palier actuel</span></div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "v": 3,
+  "assetGroups": {
+    "Logos": {
+      "files": {
+        "finelio-mark-appstore.png": {
+          "blob": "dbb2aedf7a5a160f8f9289b46c9ae511",
+          "name": "finelio-mark-appstore.png",
+          "size": 363170,
+          "type": "image/png"
+        },
+        "finelio-mark-square.png": {
+          "blob": "0ef501f062ce66a652c59e6ff4cc4e8e",
+          "name": "finelio-mark-square.png",
+          "size": 3068154,
+          "type": "image/png"
+        }
+      },
+      "name": "Logos",
+      "order": [
+        "finelio-mark-square.png",
+        "finelio-mark-appstore.png"
+      ],
+      "tile": "l"
+    }
+  },
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-09-24T09:00:00Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "groups": [
+    "Logos"
+  ],
+  "lastChange": {
+    "at": "2026-09-24T09:00:00Z",
+    "by": "Téo",
+    "note": "Premier système : tokens extraits du logo, cover, pas encore de composants",
+    "via": "chat"
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "Finelio",
+  "sections": {},
+  "title": "Finelio"
+}
