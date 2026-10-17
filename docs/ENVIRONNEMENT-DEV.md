@@ -5,7 +5,7 @@ Décision de Téo (17 octobre 2026) : le développement et les déploiements de 
 ## Ce que tu fais (une seule fois, environ 15 minutes)
 
 1. **Créer le projet.** supabase.com > New project. Nom : `finelio-dev`. Région : la même que la production. Plan gratuit. Note le mot de passe de la base dans ton gestionnaire de mots de passe, pas ailleurs.
-2. **Initialiser la base.** SQL Editor > New query. Colle **tout** le contenu de `supabase/dev/init-base-dev.sql` (520 lignes), puis Run. Succès attendu : « Success. No rows returned ». Une erreur : copie-moi le message, ne relance pas à moitié. Ce fichier est réservé à une base vierge ; ne le colle jamais dans le projet de production.
+2. **Initialiser la base.** SQL Editor > New query. Colle **tout** le contenu de `supabase/dev/init-base-dev.sql`, puis Run. Succès attendu : « Success. No rows returned ». Une erreur : copie-moi le message, ne relance pas à moitié. Ce fichier est réservé à une base vierge ; ne le colle jamais dans le projet de production.
 3. **Faciliter les comptes de test.** Authentication > Providers > Email : désactive « Confirm email » **dans ce projet de développement seulement**. Cela évite d'avoir à confirmer des adresses fictives.
 4. **Récupérer les clés.** Project Settings > API : l'URL du projet, la clé `anon`, la clé `service_role`.
 5. **Les poser dans Vercel, pour Preview uniquement.** Vercel > projet `finelio` > Settings > Environment Variables. Pour chacune des variables ci-dessous, décoche **Production** et **Development**, laisse cochée **Preview** (au besoin limite-la à la branche `refonte-ui`) :
@@ -27,6 +27,10 @@ Décision de Téo (17 octobre 2026) : le développement et les déploiements de 
 ## Retour arrière
 
 Supprimer le projet `finelio-dev` dans Supabase et les variables Preview dans Vercel. La production n'est pas touchée.
+
+## État au 17 octobre 2026
+
+Projet `finelio-dev` créé dans l'organisation TéoBach (région Europe, plan gratuit). Script d'initialisation exécuté avec succès : 9 tables, déclencheur d'inscription et fonction de catégories présents. « Confirm email » désactivé. Variables Preview Vercel : à poser par Téo (étape 5).
 
 ## Notes
 
