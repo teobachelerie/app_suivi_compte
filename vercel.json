@@ -1,8 +1,16 @@
 {
+  "regions": [
+    "dub1"
+  ],
   "crons": [
-    { "path": "/api/cron/subscriptions", "schedule": "0 6 * * *" }
+    {
+      "path": "/api/cron/subscriptions",
+      "schedule": "0 6 * * *"
+    }
   ],
   "functions": {
-    "pages/api/transactions/import.js": { "maxDuration": 30 }
+    "pages/api/transactions/import.js": {
+      "maxDuration": 30
+    }
   }
 }
