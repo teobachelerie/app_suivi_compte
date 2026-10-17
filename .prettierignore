@@ -1,0 +1,8 @@
+.next
+node_modules
+public
+supabase
+docs
+README.md
+package-lock.json
+tools/visual/out

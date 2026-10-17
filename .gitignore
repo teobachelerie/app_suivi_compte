@@ -9,3 +9,4 @@ transactions-*.json
 .mcp.json
 .claude/settings.local.json
 .vercel
+tools/visual/out
