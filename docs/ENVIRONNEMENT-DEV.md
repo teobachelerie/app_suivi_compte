@@ -21,7 +21,7 @@ Décision de Téo (17 octobre 2026) : le développement et les déploiements de 
 ## Comment je sais que ça marche
 
 - Après le premier push de `refonte-ui`, Vercel crée une prévisualisation. Tu t'y inscris avec une adresse fictive. Tu dois voir l'écran d'accueil avec un « Compte courant » vide.
-- Dans le SQL Editor du projet de développement : `select count(*) from categories;` renvoie environ 65 (11 familles et leurs sous-catégories pour ce nouvel utilisateur).
+- Dans le SQL Editor du projet de développement : `select count(*) from categories;` renvoie 71 (11 familles et 60 sous-catégories pour ce nouvel utilisateur).
 - Dans la production : aucun nouvel utilisateur, aucune ligne ajoutée.
 
 ## Retour arrière
