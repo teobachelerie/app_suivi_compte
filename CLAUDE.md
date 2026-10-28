@@ -2,7 +2,7 @@
 
 Finelio (ancien nom : Cap Finances) est un suivi de dépenses à saisie manuelle, utilisé surtout comme PWA sur iPhone. Propriétaire : Téo, francophone. Tout est en français : interface, commentaires de code, messages de commit, échanges.
 
-Contexte complet : `docs/HANDOFF.md`. Feuille de route fonctionnelle (paliers, fonctionnalités prévues) : `docs/SPEC-PRODUIT-V1.md`. Maquettes cibles et design system : `docs/design-reference/`.
+Contexte complet : `docs/HANDOFF.md`. Benchmark UX et décisions de saisie à prendre : `docs/BENCHMARK-UX.md`. Feuille de route fonctionnelle (paliers, fonctionnalités prévues) : `docs/SPEC-PRODUIT-V1.md`. Maquettes cibles et design system : `docs/design-reference/`.
 
 ## Stack et commandes
 
