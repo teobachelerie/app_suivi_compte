@@ -28,11 +28,11 @@ const scenarios = [
   { name: "06-flux-depenses", run: async (p) => { await clickText(p, "DÉPENSES"); } },
   { name: "06b-flux-jour", run: async (p) => { await clickText(p, "DÉPENSES"); await settle(p, 500); const box = await p.getByLabel("Choisir une période dans le graphique").boundingBox(); await p.mouse.click(box.x + box.width * 0.62, box.y + 10); } },
   { name: "07-flux-revenus", run: async (p) => { await clickText(p, "REVENUS"); } },
-  { name: "08-epargne-detail", run: async (p) => { await p.getByText("Livret A").first().click(); } },
+  { name: "08-epargne-detail", run: async (p) => { await p.getByText("ÉPARGNE", { exact: true }).scrollIntoViewIfNeeded(); await p.getByText("Livret A", { exact: true }).last().click(); } },
   { name: "09-objectifs", run: async (p) => { await clickText(p, "Objectifs"); } },
   { name: "10-pea", run: async (p) => { await clickText(p, "Simulateur PEA"); } },
   { name: "11-activite", run: async (p) => { await tab(p, 1); } },
-  { name: "12-activite-filtres", run: async (p) => { await tab(p, 1); await p.locator("input[placeholder^='Rechercher'] ~ button").last().click(); } },
+  { name: "12-activite-filtres", run: async (p) => { await tab(p, 1); await p.locator(".fin-chip", { hasText: "Catégorie" }).first().click(); } },
   { name: "13-budgets", run: async (p) => { await tab(p, 2); } },
   { name: "14-budgets-bas", run: async (p) => { await tab(p, 2); await settle(p, 300); await p.mouse.move(200, 400); await p.evaluate(() => { document.getElementById("__next").scrollTo(0, 99999); }); } },
   { name: "15-abonnements", run: async (p) => { await tab(p, 2); await p.getByText("ABONNEMENTS").first().click(); } },
@@ -44,7 +44,7 @@ const scenarios = [
   { name: "16f-plafond-sortie-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 600); await p.getByRole("button", { name: "Fermer" }).click(); await p.waitForTimeout(90); } },
   { name: "16g-plafond-entree-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await p.waitForTimeout(90); } },
   { name: "17-reglages", run: async (p) => { await tab(p, 3); } },
-  ...["Apparence", "Affichage", "Comptes", "Catégories", "Raccourci iOS", "Export", "Abonnement", "Compte"].map((s, i) => ({
+  ...["Comptes", "Catégories", "Raccourci iOS", "Export", "Abonnement", "Compte"].map((s, i) => ({
     name: `18-reglages-${String(i).padStart(2, "0")}-${s.replace(/[^a-zA-Z]/g, "").toLowerCase()}`,
     run: async (p) => { await tab(p, 3); await settle(p, 300); await clickText(p, s); },
   })),
@@ -61,6 +61,7 @@ const scenarios = [
   { name: "30-edition", run: async (p) => { await openTx(p, "Billet de train"); } },
   { name: "31-edition-fractionnee", run: async (p) => { await openTx(p, "Courses + produits ménagers"); } },
   { name: "33-edition-scroll", run: async (p) => { await openTx(p, "Courses + produits ménagers"); await settle(p, 300); await p.evaluate(() => { document.querySelector(".fin-tx-body").scrollTo(0, 99999); }); } },
+  { name: "34-edition-virement", run: async (p) => { await openTx(p, "Virement PEA"); } },
   { name: "40-suppression-toast", run: async (p) => { await openTx(p, "Billet de train"); await settle(p, 400); await p.getByLabel("Supprimer la transaction").click(); } },
   { name: "50-tour-guide", opts: { onboardingSeen: false }, run: async () => {} },
 ];

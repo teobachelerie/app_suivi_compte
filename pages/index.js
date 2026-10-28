@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
   Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, ArrowUp, ArrowDown,
@@ -17,9 +16,10 @@ import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives"
 import { ListRow } from "../components/ui/ListRow";
 import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, PeriodChips } from "../components/ui/Selectors";
-import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
+import { OptionSheet } from "../components/ui/Sheets";
 import { TransactionSheet } from "../components/TransactionSheet";
 import { BucketChart } from "../components/ui/BucketChart";
+import { Chip } from "../components/ui/Chip";
 import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
@@ -236,16 +236,15 @@ function ExpensesApp({ session }) {
   const [filterAccount, setFilterAccount] = useState("Tous");
   const [activiteFlux, setActiviteFlux] = useState("Tout");
 
-  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
   const [optionSheet, setOptionSheet] = useState(null);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const anyOverlayOpen = showFilterSheet || showAdd || !!editing || !!optionSheet;
+    const anyOverlayOpen = showAdd || !!editing || !!optionSheet;
     document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [showFilterSheet, showAdd, editing, optionSheet]);
+  }, [showAdd, editing, optionSheet]);
   const [newCatName, setNewCatName] = useState("");
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -887,19 +886,14 @@ function ExpensesApp({ session }) {
                 <StatTile label="DÉPENSES" value={fmtEUR(animDepenses)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
 
-              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                <div onClick={() => setShowGoals(true)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", cursor: "pointer" }}>
-                  <Target size={18} color="var(--icon-secondary)" />
-                  <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Objectifs</span>
-                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+              {/* Ordre : transactions récentes d'abord (le plus consulté), puis épargne, puis outils. */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+                  <span style={{ font: "600 20px var(--font-display)", letterSpacing: "var(--tracking-title)" }}>Récent</span>
+                  <span onClick={() => setActiveTab("activite")} style={{ font: "500 15px var(--font-core)", color: "var(--text-tertiary)", cursor: "pointer" }}>Tout</span>
                 </div>
-                <Divider />
-                <div onClick={() => setShowSimulator(true)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", cursor: "pointer" }}>
-                  <TrendingUp size={18} color="var(--icon-secondary)" />
-                  <span style={{ flex: 1, font: "500 14px var(--font-core)" }}>Simulateur PEA</span>
-                  <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Projection à long terme</span>
-                </div>
-              </Card>
+                {renderFlatList(dashboardList, "Aucune dépense pour ces filtres.")}
+              </div>
 
               {savingsAccounts.length > 0 && (
                 <div>
@@ -919,12 +913,21 @@ function ExpensesApp({ session }) {
                 </div>
               )}
 
-              <div>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
-                  <span style={{ font: "600 20px var(--font-display)", letterSpacing: "var(--tracking-title)" }}>Récent</span>
-                  <span onClick={() => setActiveTab("activite")} style={{ font: "500 15px var(--font-core)", color: "var(--text-tertiary)", cursor: "pointer" }}>Tout</span>
-                </div>
-                {renderFlatList(dashboardList, "Aucune dépense pour ces filtres.")}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <Card padding="md" onClick={() => setShowGoals(true)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                  <Target size={18} color="var(--icon-secondary)" style={{ flexShrink: 0 }} />
+                  <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <span style={{ font: "500 14px var(--font-core)" }}>Objectifs</span>
+                    <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{goals.length} en cours</span>
+                  </span>
+                </Card>
+                <Card padding="md" onClick={() => setShowSimulator(true)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                  <TrendingUp size={18} color="var(--icon-secondary)" style={{ flexShrink: 0 }} />
+                  <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <span style={{ font: "500 14px var(--font-core)" }}>Simulateur PEA</span>
+                    <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>Projection</span>
+                  </span>
+                </Card>
               </div>
             </div>
           ) : (
@@ -939,7 +942,7 @@ function ExpensesApp({ session }) {
                   ) : (
                     <span style={{ flex: 1, minWidth: 0, color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{periodLabel(period, summaryType).toUpperCase()}</span>
                   )}
-                  <SegmentedControl options={["Dépense", "Gain"]} value={summaryType} onChange={setSummaryType} style={{ width: 190, flexShrink: 0 }} />
+                  <SegmentedControl options={["Dépenses", "Revenus"]} value={summaryType === "Gain" ? "Revenus" : "Dépenses"} onChange={(v) => { setPressedBucket(null); setSummaryType(v === "Revenus" ? "Gain" : "Dépense"); }} style={{ width: 200, flexShrink: 0 }} />
                 </div>
                 <Amount value={fmtEUR(pressedBucket ? pressedBucket.value : animSummary)} direction={summaryType === "Gain" ? "income" : "expense"} size="xl" showSign={false} />
                 {!pressedBucket && comparison && (() => {
@@ -989,8 +992,23 @@ function ExpensesApp({ session }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", borderRadius: "var(--radius-control)", padding: "12px 16px" }}>
               <Search size={16} color="var(--text-tertiary)" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre ou tag" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
-              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
-              <button onClick={() => setShowFilterSheet(true)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><ChevronDown size={16} color="var(--text-tertiary)" /></button>
+              {searchQuery && <button onClick={() => setSearchQuery("")} aria-label="Effacer la recherche" style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
+            </div>
+            {/* Période et filtres visibles d'emblée : avant, ils étaient cachés derrière une flèche et la
+                période de l'accueil s'appliquait sans être affichée ici. */}
+            <PeriodChips value={period} onChange={changePeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: changePeriod })} />
+            <div className="fin-chip-row" style={{ marginTop: 0 }}>
+              <Chip selected={filterCategory !== "Toutes"} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })}>
+                {filterCategory === "Toutes" ? "Catégorie" : filterCategory}<ChevronDown size={14} aria-hidden="true" />
+              </Chip>
+              {showAccountFilter && (
+                <Chip selected={filterAccount !== "Tous"} onClick={() => setOptionSheet({ title: "Compte", options: ["Tous", ...accountNames], value: filterAccount, onSelect: setFilterAccount })}>
+                  {filterAccount === "Tous" ? "Compte" : filterAccount}<ChevronDown size={14} aria-hidden="true" />
+                </Chip>
+              )}
+              {(filterCategory !== "Toutes" || filterAccount !== "Tous") && (
+                <Chip onClick={() => { setFilterCategory("Toutes"); setFilterAccount("Tous"); }}>Effacer<X size={14} aria-hidden="true" /></Chip>
+              )}
             </div>
             <SegmentedControl options={["Tout", "Sorties", "Entrées"]} value={activiteFlux} onChange={setActiviteFlux} />
             {renderList(allList, "Aucune transaction ne correspond.")}
@@ -1009,29 +1027,8 @@ function ExpensesApp({ session }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <NavBar large title="Budgets" subtitle={periodLabel(period, "Dépense")} />
 
-            <Card padding="md" onClick={() => setShowSubscriptions(true)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", cursor: "pointer" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <RefreshCw size={14} color="var(--icon-secondary)" />
-                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", flex: 1 }}>ABONNEMENTS</span>
-                <ChevronRight size={16} color="var(--grey-3)" />
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                <Amount value={fmtEUR(subscriptions.filter((s) => s.active).reduce((s, x) => s + x.amount, 0))} direction="expense" size="lg" showSign={false} />
-                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{subscriptions.filter((s) => s.active).length} actif{subscriptions.filter((s) => s.active).length > 1 ? "s" : ""} / mois</span>
-              </div>
-              {recurringSuggestions.length > 0 && (
-                <span style={{ font: "500 12px var(--font-core)", color: "var(--accent-orange)" }}>{recurringSuggestions.length} récurrence{recurringSuggestions.length > 1 ? "s" : ""} détectée{recurringSuggestions.length > 1 ? "s" : ""}</span>
-              )}
-            </Card>
-
-            <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE · {periodLabel(period, "Dépense").toUpperCase()} · TOUT LE PATRIMOINE</span>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ font: "600 34px var(--font-display)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>{tauxEpargne === null ? "—" : `${tauxEpargne}%`}</span>
-                <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", textAlign: "right" }}>{fmtEUR(epargnePeriode)} épargnés sur {fmtEUR(revenusGlobalPeriode)} de revenus</span>
-              </div>
-            </Card>
-
+            {/* Ordre voulu (benchmark UX du 28 octobre 2026) : les plafonds d'abord, c'est le budget ;
+                puis où part l'argent ; enfin les raccourcis vers abonnements et taux d'épargne. */}
             <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>PLAFONDS · CE MOIS</span>
@@ -1054,60 +1051,69 @@ function ExpensesApp({ session }) {
               ))}
             </Card>
 
-            <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TOTAL DÉPENSÉ · {periodLabel(period, "Dépense").toUpperCase()}</span>
-              <Amount value={fmtEUR(depensesPeriode)} size="xl" direction="expense" showSign={false} />
-              <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)" }}>{budgetByAccount ? "Répartition réelle par compte" : "Répartition réelle par catégorie"}</span>
+            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{budgetByAccount ? "DÉPENSES PAR COMPTE" : "DÉPENSES PAR CATÉGORIE"}</span>
+                <Amount value={fmtEUR(depensesPeriode)} size="sm" direction="expense" showSign={false} />
+              </div>
+              {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}
+              {activeSpend.length === 0 ? (
+                <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Aucune dépense sur cette période.</span>
+              ) : activeSpend.map((d) => {
+                const hasSubs = !budgetByAccount && d.subs?.length > 0;
+                const isOpen = expandedFamily === spendLabel(d);
+                const icon = budgetByAccount ? null : categoryIconUrl(categories.find((c) => c.name === d.category)?.icon);
+                return (
+                  <div key={spendLabel(d)}>
+                    <div
+                      onClick={hasSubs ? () => { haptic("light"); setExpandedFamily(isOpen ? null : spendLabel(d)); } : undefined}
+                      style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: hasSubs ? "pointer" : "default" }}
+                    >
+                      <span style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid var(--border-token)", background: "var(--surface-raised)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {icon ? <img src={icon} alt="" width={20} height={20} /> : <span style={{ width: 10, height: 10, borderRadius: "50%", background: spendColor(d) }} />}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spendLabel(d)}</span>
+                          <span className="ds-tabular" style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{d.pct.toFixed(0)} %</span>
+                          <Amount value={fmtEUR(d.amount)} size="sm" direction="expense" showSign={false} />
+                        </div>
+                        {/* Part du total : une seule couleur, la longueur suffit à comparer. */}
+                        <div style={{ height: 4, borderRadius: 2, background: "var(--surface-highlight)", overflow: "hidden" }}>
+                          <div style={{ width: `${Math.max(2, d.pct)}%`, height: "100%", borderRadius: 2, background: "var(--red)", opacity: 0.85 }} />
+                        </div>
+                      </div>
+                      {hasSubs ? <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)", flexShrink: 0 }} /> : <span style={{ width: 16, flexShrink: 0 }} />}
+                    </div>
+                    {isOpen && d.subs.map((sub) => (
+                      <div key={sub.category} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 26px 6px 44px" }}>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{sub.category}</span>
+                        <Amount value={fmtEUR(sub.amount)} size="sm" direction="expense" showSign={false} />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </Card>
 
-            {groupBudgetByAccount && <SegmentedControl options={["Catégorie", "Compte"]} value={budgetView === "compte" ? "Compte" : "Catégorie"} onChange={(v) => setBudgetView(v === "Compte" ? "compte" : "categorie")} />}
-
-            {activeSpend.length === 0 ? (
-              <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>Aucune dépense sur cette période.</div>
-            ) : (
-              <>
-                <Card padding="md" style={{ height: 240 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={activeSpend} dataKey="amount" nameKey={budgetByAccount ? "compte" : "category"} cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={2} stroke="none">
-                        {activeSpend.map((d, i) => (
-                          <Cell key={i} fill={spendColor(d)} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(v) => fmtEUR(v)} contentStyle={{ borderRadius: 8, border: "none", fontSize: 12 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Card>
-
-                <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                  {activeSpend.map((d, i) => {
-                    const hasSubs = !budgetByAccount && d.subs?.length > 0;
-                    const isOpen = expandedFamily === spendLabel(d);
-                    return (
-                      <React.Fragment key={spendLabel(d)}>
-                        {i > 0 ? <Divider /> : null}
-                        <div
-                          onClick={hasSubs ? () => setExpandedFamily(isOpen ? null : spendLabel(d)) : undefined}
-                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: hasSubs ? "pointer" : "default" }}
-                        >
-                          <span style={{ width: 11, height: 11, borderRadius: "50%", background: spendColor(d), flexShrink: 0 }} />
-                          <span style={{ flex: 1, fontSize: 14 }}>{spendLabel(d)}</span>
-                          <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{d.pct.toFixed(0)} %</span>
-                          <Amount value={fmtEUR(d.amount)} size="sm" direction="expense" showSign={false} />
-                          {hasSubs && <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)", flexShrink: 0 }} />}
-                        </div>
-                        {isOpen && d.subs.map((s) => (
-                          <div key={s.category} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0 8px 21px" }}>
-                            <span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{s.category}</span>
-                            <Amount value={fmtEUR(s.amount)} size="sm" direction="expense" showSign={false} />
-                          </div>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
-                </Card>
-              </>
-            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+              <Card padding="md" onClick={() => setShowSubscriptions(true)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                  <RefreshCw size={14} color="var(--icon-secondary)" />
+                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", flex: 1 }}>ABONNEMENTS</span>
+                  <ChevronRight size={16} color="var(--grey-3)" />
+                </div>
+                <Amount value={fmtEUR(subscriptions.filter((x) => x.active).reduce((t, x) => t + x.amount, 0))} direction="expense" size="md" showSign={false} />
+                <span style={{ font: "400 12px var(--font-core)", color: recurringSuggestions.length ? "var(--accent-orange)" : "var(--text-tertiary)" }}>
+                  {recurringSuggestions.length ? `${recurringSuggestions.length} à vérifier` : `${subscriptions.filter((x) => x.active).length} par mois`}
+                </span>
+              </Card>
+              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>TAUX D'ÉPARGNE</span>
+                <span className="ds-tabular" style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>{tauxEpargne === null ? "—" : `${tauxEpargne} %`}</span>
+                <span style={{ font: "400 12px var(--font-core)", color: "var(--text-tertiary)" }}>{fmtEUR(epargnePeriode)} mis de côté</span>
+              </Card>
+            </div>
           </div>
           )
         ) : (
@@ -1185,13 +1191,6 @@ function ExpensesApp({ session }) {
           onSave={saveTransaction}
           onDelete={editing ? () => deleteTransaction(editing.id) : undefined}
         />
-      )}
-
-      {showFilterSheet && (
-        <TopSheet title="Filtres" onClose={() => setShowFilterSheet(false)}>
-          <SheetRow label="Catégorie" value={filterCategory} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })} last={!showAccountFilter} />
-          {showAccountFilter && <SheetRow label="Compte" value={filterAccount} onClick={() => setOptionSheet({ title: "Compte", options: ["Tous", ...accountNames], value: filterAccount, onSelect: setFilterAccount })} last />}
-        </TopSheet>
       )}
 
       {optionSheet && (

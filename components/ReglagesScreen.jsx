@@ -105,6 +105,16 @@ function ApiKeysSection() {
   );
 }
 
+function ToggleRow({ Icon, label, checked, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48 }}>
+      <Icon size={18} color="var(--icon-secondary)" style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: 15 }}>{label}</span>
+      <Switch checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+
 function MenuRow({ Icon, title, subtitle, onClick, mkRef }) {
   return (
     <ListRow
@@ -218,32 +228,6 @@ export function ReglagesScreen(props) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <NavBar back title={section} onBack={() => setSection(null)} />
-
-        {section === "Apparence" && (
-          <Card padding="md" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>{isLight ? <Sun size={16} /> : <Moon size={16} />} Mode clair</span>
-            <Switch checked={isLight} onChange={onToggleTheme} />
-          </Card>
-        )}
-
-        {section === "Affichage" && (
-          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-              <span style={{ fontSize: 15 }}>Filtrer l'activité par compte</span>
-              <Switch checked={showAccountFilter} onChange={onToggleShowAccountFilter} />
-            </div>
-            <Divider inset={0} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-              <span style={{ fontSize: 15 }}>Grouper le budget par compte</span>
-              <Switch checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
-            </div>
-            <Divider inset={0} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-              <span style={{ fontSize: 15 }}>Retours haptiques</span>
-              <Switch checked={hapticsOn} onChange={(v) => { setHapticsOn(v); setHapticsEnabled(v); if (v) haptic("light"); }} />
-            </div>
-          </Card>
-        )}
 
         {section === "Comptes" && (
           <>
@@ -538,11 +522,17 @@ export function ReglagesScreen(props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <NavBar large title="Réglages" />
+      {/* Les réglages oui/non se changent ici même : un sous-écran pour un seul interrupteur était une étape de trop. */}
       <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        <MenuRow Icon={Sun} title="Apparence" onClick={() => setSection("Apparence")} />
+        <ToggleRow Icon={isLight ? Sun : Moon} label="Mode clair" checked={isLight} onChange={onToggleTheme} />
         <Divider inset={0} />
-        <MenuRow Icon={SlidersHorizontal} title="Affichage" onClick={() => setSection("Affichage")} />
+        <ToggleRow Icon={SlidersHorizontal} label="Retours haptiques" checked={hapticsOn} onChange={(v) => { setHapticsOn(v); setHapticsEnabled(v); if (v) haptic("light"); }} />
         <Divider inset={0} />
+        <ToggleRow Icon={Wallet} label="Filtrer l'activité par compte" checked={showAccountFilter} onChange={onToggleShowAccountFilter} />
+        <Divider inset={0} />
+        <ToggleRow Icon={Tag} label="Grouper le budget par compte" checked={groupBudgetByAccount} onChange={onToggleGroupBudgetByAccount} />
+      </Card>
+      <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         <MenuRow Icon={Wallet} title="Comptes" onClick={() => setSection("Comptes")} mkRef={getMenuRef?.("Comptes")} />
         <Divider inset={0} />
         <MenuRow Icon={Tag} title="Catégories" onClick={() => setSection("Catégories")} mkRef={getMenuRef?.("Catégories")} />

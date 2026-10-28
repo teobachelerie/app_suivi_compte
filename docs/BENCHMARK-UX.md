@@ -111,6 +111,15 @@ Dépense courante : montant → catégorie → Enregistrer. **3 gestes au lieu d
 
 Contraintes respectées : contrat des Raccourcis iOS intact (aucun changement d'API), `BottomSheet` et `PickerField` existants réutilisés (fin des `<select>` natifs), champs en 16 px, pas d'emoji.
 
+### Livré le 28 octobre 2026 (lot « friction »)
+- Graphique Dépenses/Revenus : chaque jour touchable sur toute la hauteur, glisser pour passer d'un jour à l'autre.
+- Accueil : transactions récentes juste sous Revenus/Dépenses, puis épargne, puis Objectifs et Simulateur en deux tuiles.
+- Activité : période et filtres (catégorie, compte) visibles, bouton « Effacer ».
+- Budgets : plafonds en premier, dépenses par catégorie en liste avec icône et barre de part (camembert retiré), abonnements et taux d'épargne en tuiles.
+- Réglages : interrupteurs directement sur la page (sous-écrans Apparence et Affichage supprimés).
+- « Gain » remplacé par « Revenus » sur l'écran des flux.
+- Non fait : chiffre « Reste ce mois-ci » (la carte affiche déjà le net de la période), libellés de la barre d'onglets (réglage iOS fragile, à tester sur iPhone).
+
 ### P1 : clarifier l'accueil et la navigation
 - Un chiffre principal en haut de l'accueil pour le compte actif : **« Reste ce mois-ci »** (revenus − dépenses de la période), avec une barre si un plafond global existe.
 - Libellés sous **toutes** les icônes de la barre d'onglets (Accueil, Activité, Budgets, Réglages).
