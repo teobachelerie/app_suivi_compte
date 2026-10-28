@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { BarChart, Bar, ResponsiveContainer, XAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import {
   Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, ArrowUp, ArrowDown,
@@ -11,7 +11,7 @@ import { RECOVERY_LINK, LINK_ERROR } from "../lib/authLink";
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES, BANK_PRESETS } from "../lib/constants";
-import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, tickInterval, fmtBucketLabel, inPeriod, categoryColor, paletteColor, categoryIconUrl } from "../lib/format";
+import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, fmtBucketLabel, inPeriod, categoryColor, paletteColor, categoryIconUrl } from "../lib/format";
 
 import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
@@ -19,6 +19,7 @@ import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, PeriodChips } from "../components/ui/Selectors";
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
 import { TransactionSheet } from "../components/TransactionSheet";
+import { BucketChart } from "../components/ui/BucketChart";
 import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
@@ -523,14 +524,6 @@ function ExpensesApp({ session }) {
     return pressedTransactions;
   }, [pressedTransactions, bucketSortMode]);
 
-  function handleBarClick(state) {
-    if (state && state.activePayload && state.activePayload[0]) {
-      const clicked = state.activePayload[0].payload;
-      // Toucher la même barre une deuxième fois désélectionne et revient au total de la période.
-      setPressedBucket((prev) => (prev && prev.dateKey === clicked.dateKey ? null : clicked));
-    }
-  }
-
   function groupByDate(list) {
     const sorted = [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
     const map = [];
@@ -968,18 +961,12 @@ function ExpensesApp({ session }) {
                     </div>
                   );
                 })()}
-                <div style={{ height: 110, marginTop: 8 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                      onClick={handleBarClick}
-                    >
-                      <XAxis dataKey="name" tick={{ fill: "var(--grey-4)", fontSize: 10 }} axisLine={false} tickLine={false} interval={tickInterval(chartData.length)} />
-                      <Bar dataKey="value" fill={summaryType === "Gain" ? "var(--green)" : "var(--red)"} radius={[4, 4, 4, 4]} maxBarSize={18} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div style={{ marginTop: 8 }}>
+                  <BucketChart data={chartData} selectedKey={pressedBucket?.dateKey || null} onSelect={setPressedBucket} color={summaryType === "Gain" ? "var(--green)" : "var(--red)"} />
                 </div>
+                {!pressedBucket && chartData.length > 1 ? (
+                  <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", textAlign: "center" }}>Touche ou glisse sur le graphique pour voir le détail</span>
+                ) : null}
               </Card>
 
               {pressedBucket && (

@@ -26,6 +26,7 @@ const scenarios = [
   { name: "04-accueil-pro", run: async (p) => { await clickText(p, "pro"); } },
   { name: "05-accueil-periode", run: async (p) => { await clickText(p, "Mois…"); } },
   { name: "06-flux-depenses", run: async (p) => { await clickText(p, "DÉPENSES"); } },
+  { name: "06b-flux-jour", run: async (p) => { await clickText(p, "DÉPENSES"); await settle(p, 500); const box = await p.getByLabel("Choisir une période dans le graphique").boundingBox(); await p.mouse.click(box.x + box.width * 0.62, box.y + 10); } },
   { name: "07-flux-revenus", run: async (p) => { await clickText(p, "REVENUS"); } },
   { name: "08-epargne-detail", run: async (p) => { await p.getByText("Livret A").first().click(); } },
   { name: "09-objectifs", run: async (p) => { await clickText(p, "Objectifs"); } },
