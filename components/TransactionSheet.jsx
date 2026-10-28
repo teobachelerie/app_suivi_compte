@@ -216,7 +216,8 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
   }, [transactions]);
 
   const [type, setType] = useState(tx?.type || "Dépense");
-  const [category, setCategory] = useState(() => tx?.category || recentByType[tx?.type || "Dépense"][0] || null);
+  // Un virement n'a pas de catégorie : rien à préremplir (sans ce garde-fou, ouvrir un virement plantait).
+  const [category, setCategory] = useState(() => tx?.category || recentByType[tx?.type]?.[0] || (tx ? null : recentByType["Dépense"][0]) || null);
   const [categoryTouched, setCategoryTouched] = useState(editing);
   const [title, setTitle] = useState(tx?.title || "");
   const [compte, setCompte] = useState(tx?.compte || firstAccount);
@@ -262,7 +263,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
     if (next === "Virement") return;
     // La catégorie doit rester cohérente avec le type : un revenu ne garde pas « Courses ».
     if (!category || isIncomeCategory(tax, category) !== (next === "Gain")) {
-      setCategory(recentByType[next][0] || (next === "Gain" ? "Revenus" : null));
+      setCategory(recentByType[next]?.[0] || (next === "Gain" ? "Revenus" : null));
       setCategoryTouched(false);
     }
     if (next !== "Dépense") setSplitMode(false);
