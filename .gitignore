@@ -1,5 +1,7 @@
 node_modules
 .next
+# Dépendances hors iCloud (le Bureau est synchronisé et iCloud évacue les fichiers) : node_modules est un lien vers ce dossier
+node_modules.nosync
 .env.local
 
 # Données personnelles et scripts destructifs : ne jamais committer

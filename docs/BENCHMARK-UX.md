@@ -67,7 +67,7 @@ Parcours actuel : **catégorie → montant → détails → confirmer**, soit 3 
 | Compte et Moyen de paiement sont des `<select>` natifs gris avec flèches système, qui jurent avec le reste | Détails | Haute |
 | Tags « séparés par une virgule » : saisie libre, sujette aux fautes, sans suggestion | Détails | Moyenne |
 | Le virement est caché derrière un lien souligné en bas de la grille de catégories | Catégories | Haute |
-| Logement et Famille s'affichent sans icône sur la capture, alors que leurs fichiers SVG existent : possible artefact de capture, **à vérifier sur iPhone** | Catégories | À confirmer |
+| Logement et Famille s'affichaient sans icône sur une capture : artefact de capture (icônes présentes sur les captures du 28 octobre en thème clair) | Catégories | Écarté |
 | Le placeholder du titre (« ex. J'ai acheté une bougie ») n'aide pas | Détails | Basse |
 | L'erreur « Le montant doit être supérieur à zéro » s'affiche après coup au lieu de griser le bouton | Montant | Basse |
 
@@ -95,7 +95,7 @@ Parcours actuel : **catégorie → montant → détails → confirmer**, soit 3 
 
 ## Recommandations, par impact
 
-### P0 : nouvelle saisie en un écran (**décision de Téo requise**, s'écarte des maquettes `Montant` / `Details`)
+### P0 : nouvelle saisie en un écran (**validée par Téo le 28 octobre 2026, livrée** : `components/TransactionSheet.jsx`)
 
 Proposition :
 
@@ -126,7 +126,6 @@ Contraintes respectées : contrat des Raccourcis iOS intact (aucun changement d'
 - Vue calendrier (déjà dans `SPEC-PRODUIT-V1.md`).
 
 ### Petits correctifs immédiats (sans décision)
-- Vérifier sur iPhone l'affichage des icônes Logement et Famille (vides sur la capture, fichiers présents).
 - Placeholder du titre : « Courses, Restaurant… ».
 - Montant de l'édition au format français (virgule).
 

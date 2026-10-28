@@ -5,7 +5,7 @@ Tu reprends le développement de Finelio, une app de suivi de dépenses utilisé
 1. `CLAUDE.md` : règles et invariants (chargé automatiquement).
 2. `docs/HANDOFF.md` : contexte complet, infrastructure invisible depuis le code, décisions de Téo, dette technique connue, liste de ce qui n'a jamais été vérifié.
 3. `docs/design-reference/` : design system, 28 écrans cibles en HTML (`canvas-ecrans/`), maquettes PNG (`maquettes/`).
-4. Le code : `pages/index.js`, `components/AddTransactionWizard.jsx`, `components/TransactionModal.jsx`, `components/ui/`, `styles/globals.css`, `lib/`.
+4. Le code : `pages/index.js`, `components/TransactionSheet.jsx`, `components/ui/`, `styles/globals.css`, `lib/`.
 
 ## Mission
 

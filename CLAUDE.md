@@ -56,6 +56,8 @@ Références : `docs/design-reference/design-system/README.md` et les maquettes.
 
 `components/ui/` : `Button`, `TextField`, `PickerField` (remplace `<select>`), `Chip`, `BottomSheet` (entrée, sortie, glissé pour fermer, clavier iOS). Leur style vit dans `styles/globals.css` (classes `.fin-*`). Champs en 16 px minimum (sinon Safari iOS zoome). Les anciens `Sheet`, `TopSheet`, `OptionSheet`, `Field` de `Sheets.jsx` sont à migrer, pas à étendre.
 
+Saisie d'une transaction : `components/TransactionSheet.jsx`, un seul écran pour l'ajout et l'édition (décision de Téo du 28 octobre 2026, remplace le parcours en 3 étapes des maquettes `Montant` / `Details`). Catégorie préremplie avec la dernière utilisée, compte prérempli avec la carte active de l'accueil, titre facultatif (par défaut le nom de la catégorie).
+
 ## Conventions de code
 
 - Commentaires en français, qui expliquent le pourquoi. Les noms de variables restent en français ou en anglais selon l'existant du fichier.

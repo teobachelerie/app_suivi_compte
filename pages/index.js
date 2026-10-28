@@ -18,8 +18,7 @@ import { ListRow } from "../components/ui/ListRow";
 import { NavBar, TabBar } from "../components/ui/Navigation";
 import { StatTile, SegmentedControl, PeriodChips } from "../components/ui/Selectors";
 import { TopSheet, SheetRow, OptionSheet } from "../components/ui/Sheets";
-import { TransactionModal } from "../components/TransactionModal";
-import { AddTransactionWizard } from "../components/AddTransactionWizard";
+import { TransactionSheet } from "../components/TransactionSheet";
 import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
@@ -1182,11 +1181,23 @@ function ExpensesApp({ session }) {
         />
       )}
 
-      {showAdd && (
-        <AddTransactionWizard categories={categories} accounts={accounts} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => setShowAdd(false)} onSave={saveTransaction} />
-      )}
-      {editing && (
-        <TransactionModal tx={editing} categories={categoryNames} accounts={accountNames} categoryRules={categoryRules} saving={saving} defaultPayment={defaultPayment} defaultAccount={defaultAccount} onClose={() => setEditing(null)} onSave={saveTransaction} onDelete={() => deleteTransaction(editing.id)} openOptions={setOptionSheet} />
+      {(showAdd || editing) && (
+        // Un seul écran pour l'ajout et l'édition. Le compte proposé par défaut est celui de la carte
+        // affichée sur l'accueil (sauf Patrimoine, qui regroupe plusieurs comptes).
+        <TransactionSheet
+          key={editing?.id || "new"}
+          tx={editing}
+          categories={categories}
+          accounts={accounts}
+          transactions={transactions}
+          categoryRules={categoryRules}
+          saving={saving}
+          defaultPayment={defaultPayment}
+          defaultAccount={filterAccount !== "Tous" ? filterAccount : defaultAccount}
+          onClose={() => { setShowAdd(false); setEditing(null); }}
+          onSave={saveTransaction}
+          onDelete={editing ? () => deleteTransaction(editing.id) : undefined}
+        />
       )}
 
       {showFilterSheet && (

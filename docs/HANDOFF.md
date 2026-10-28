@@ -60,8 +60,8 @@ pages/
   _app.js, _document.js    Styles globaux ; balises PWA iOS et script de thème.
   api/                     Routes serveur (voir tableau ci-dessous).
 components/
-  AddTransactionWizard     Ajout : type, famille, sous-catégorie, montant (calculatrice), détails.
-  TransactionModal         Édition d'une transaction : ancien formulaire, distinct de l'assistant d'ajout.
+  TransactionSheet         Ajout ET édition en un seul écran (depuis le 28 octobre 2026) : montant et pavé,
+                           pastilles catégorie/compte/date, « Plus d'options ». Remplace AddTransactionWizard et TransactionModal.
   AccountCardStack         Pile de cartes de comptes + SavingsCard ; styles de 10 banques.
   GoalsScreen, SubscriptionsScreen, PeaSimulatorScreen, ReglagesScreen (561 lignes)
   AuthScreen, ResetPasswordScreen, Onboarding, Coachmark (visite guidée)
@@ -164,7 +164,7 @@ Ordre pour recréer une base vierge : `schema.sql`, puis `migration-002` à `017
 
 1. `pages/index.js` : 1219 lignes, 50 `useState`, logique, écrans et feuilles mélangés. Premier candidat au découpage (hooks de données, un fichier par onglet).
 2. 437 blocs `style={{ }}` en ligne. Pas de composants de base cohérents pour boutons, champs, feuilles. Tokens hérités en double (65 usages de `--elev-*`).
-3. **Deux interfaces de saisie** : `AddTransactionWizard` (ajout) et `TransactionModal` (édition, ancien formulaire). Incohérentes entre elles et avec les maquettes.
+3. ~~Deux interfaces de saisie~~ : résolu le 28 octobre 2026, `TransactionSheet` sert à l'ajout et à l'édition (voir `docs/BENCHMARK-UX.md`).
 4. Aucun test automatisé durable, aucune configuration ESLint, aucune CI. Les contrôles faits jusqu'ici (build, lint externe, tests jsdom ponctuels) n'ont pas été conservés dans le dépôt.
 5. `GET /api/transactions` renvoie tout l'historique sans pagination, rechargé toutes les 2 minutes quand l'app est visible et au retour au premier plan. Le coût croît avec les données.
 6. Préférences utiles stockées en `localStorage` (compte par défaut, comptes principaux, thème) alors que Safari peut les effacer.

@@ -14,6 +14,8 @@ const tab = (page, i) => page.locator("nav button").nth(i).click();
 const openTx = async (p, t) => { await tab(p, 1); await settle(p, 400); await p.getByText(t, { exact: true }).first().click(); };
 const add = (page) => page.locator('button[aria-label="Ajouter une opération"]').click();
 const clickText = (page, t, opts) => page.getByText(t, { exact: true, ...opts }).first().click();
+// Tape une suite de touches sur le pavé de la saisie (chiffres, virgule, opérateurs).
+const keys = async (page, seq) => { for (const k of seq.replace("-", "−").replace("*", "×").replace("/", "÷")) await page.locator(`.fin-keypad button[aria-label="${k}"]`).click(); };
 
 // Chaque scénario : { name, opts?, run(page) }. La capture est prise à la fin de run().
 const scenarios = [
@@ -45,19 +47,20 @@ const scenarios = [
     name: `18-reglages-${String(i).padStart(2, "0")}-${s.replace(/[^a-zA-Z]/g, "").toLowerCase()}`,
     run: async (p) => { await tab(p, 3); await settle(p, 300); await clickText(p, s); },
   })),
-  { name: "20-ajout-categories", run: async (p) => { await add(p); } },
-  { name: "21-ajout-sous-categories", run: async (p) => { await add(p); await clickText(p, "Alimentation"); } },
-  { name: "22-ajout-revenus", run: async (p) => { await add(p); await clickText(p, "Revenus"); } },
-  { name: "23-ajout-montant", run: async (p) => { await add(p); await clickText(p, "Alimentation"); await clickText(p, "Courses"); await clickText(p, "4"); await clickText(p, "2"); await clickText(p, ","); await clickText(p, "5"); } },
-  { name: "24-ajout-details", run: async (p) => { await add(p); await clickText(p, "Alimentation"); await clickText(p, "Courses"); await clickText(p, "4"); await clickText(p, "2"); await clickText(p, "Suivant"); } },
-  { name: "25-ajout-details-clavier", run: async (p) => { await add(p); await clickText(p, "Alimentation"); await clickText(p, "Courses"); await clickText(p, "4"); await clickText(p, "Suivant"); await p.getByPlaceholder(/bougie/).fill("Courses du soir"); } },
-  { name: "26-ajout-virement", run: async (p) => { await add(p); await clickText(p, "Ou faire un virement entre mes comptes"); await clickText(p, "5"); await clickText(p, "Suivant"); } },
-  { name: "27-ajout-erreur", run: async (p) => { await add(p); await clickText(p, "Alimentation"); await clickText(p, "Courses"); await clickText(p, "Suivant"); } },
+  { name: "20-ajout-ouverture", run: async (p) => { await add(p); } },
+  { name: "21-ajout-montant", run: async (p) => { await add(p); await keys(p, "42,5"); } },
+  { name: "22-ajout-categories", run: async (p) => { await add(p); await keys(p, "12"); await p.locator(".fin-pill").first().click(); } },
+  { name: "23-ajout-sous-categories", run: async (p) => { await add(p); await p.locator(".fin-pill").first().click(); await settle(p, 400); await p.locator(".fin-sheet-panel .fin-cat-tile", { hasText: "Alimentation" }).first().click(); } },
+  { name: "24-ajout-titre-clavier", run: async (p) => { await add(p); await keys(p, "12"); await p.getByLabel("Titre", { exact: true }).fill("Courses du soir"); } },
+  { name: "25-ajout-plus-options", run: async (p) => { await add(p); await keys(p, "25"); await clickText(p, "Plus d'options"); } },
+  { name: "26-ajout-virement", run: async (p) => { await add(p); await p.locator(".fin-tx-head button", { hasText: "Virement" }).click(); await keys(p, "50"); } },
+  { name: "27-ajout-revenu", run: async (p) => { await add(p); await p.locator(".fin-tx-head button", { hasText: "Revenu" }).click(); await keys(p, "450"); } },
+  { name: "28-ajout-date", run: async (p) => { await add(p); await p.locator(".fin-pill", { hasText: "Aujourd'hui" }).click(); } },
+  { name: "29-ajout-calcul", run: async (p) => { await add(p); await keys(p, "12+8"); } },
   { name: "30-edition", run: async (p) => { await openTx(p, "Billet de train"); } },
   { name: "31-edition-fractionnee", run: async (p) => { await openTx(p, "Courses + produits ménagers"); } },
-  { name: "32-edition-categorie", run: async (p) => { await openTx(p, "Billet de train"); await settle(p, 300); await p.getByText("Billets (avion, train)").last().click(); } },
-  { name: "33-edition-scroll", run: async (p) => { await openTx(p, "Billet de train"); await settle(p, 300); await p.evaluate(() => { document.querySelector(".sheet-panel").scrollTo(0, 99999); }); } },
-  { name: "40-suppression-toast", run: async (p) => { await openTx(p, "Billet de train"); await settle(p, 400); await p.locator("button:has(svg[class*='trash'])").first().click(); } },
+  { name: "33-edition-scroll", run: async (p) => { await openTx(p, "Courses + produits ménagers"); await settle(p, 300); await p.evaluate(() => { document.querySelector(".fin-tx-body").scrollTo(0, 99999); }); } },
+  { name: "40-suppression-toast", run: async (p) => { await openTx(p, "Billet de train"); await settle(p, 400); await p.getByLabel("Supprimer la transaction").click(); } },
   { name: "50-tour-guide", opts: { onboardingSeen: false }, run: async () => {} },
 ];
 
