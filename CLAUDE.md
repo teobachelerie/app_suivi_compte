@@ -48,7 +48,7 @@ Références : `docs/design-reference/design-system/README.md` et les maquettes.
 - Ne jamais différencier dépense et élément cliquable par la couleur seule (rouge et orange sont proches) : doubler d'un signe, d'une icône ou d'un texte.
 - Aucun emoji dans l'interface. Les icônes de catégories sont des SVG Fluent Emoji (`public/category-icons/`, nom de fichier dans `categories.icon`) posés sur une pastille.
 - Noms de catégories : un seul nom court, jamais deux noms accolés (« Stationnement », pas « Parking / Péage »). Une icône propre à chaque catégorie (migration 018). Icône introuvable : repli sur la famille puis sur `label_color.svg` (`categoryIcon` dans `lib/format.js`).
-- Écrans secondaires : `NavBar back` reste collé en haut au défilement. Les feuilles du bas (`BottomSheet`) sont rendues dans `document.body` (portail).
+- Écrans secondaires : seule la flèche de `NavBar back` flotte (position fixe, `.fin-back-floating`) ; le titre défile, aucune bande derrière. Les feuilles du bas (`BottomSheet`) sont rendues dans `document.body` (portail).
 - Police Inter, chiffres tabulaires (`.ds-tabular`) pour tous les montants.
 - Élévation par bordure fine (`--border-token`). Plus d'ombres néomorphiques. Les anciens tokens (`--elev-*`, `--surface-raised/inset/highlight/base`) sont des alias de compatibilité vers ce rendu plat.
 - Cartes de comptes : couleurs de banque réelles, jamais de logo.

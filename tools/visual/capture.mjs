@@ -44,6 +44,8 @@ const scenarios = [
   { name: "16f-plafond-sortie-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await settle(p, 600); await p.getByRole("button", { name: "Fermer" }).click(); await p.waitForTimeout(90); } },
   { name: "16g-plafond-entree-milieu", wait: 0, run: async (p) => { await tab(p, 2); await clickText(p, "+ Ajouter"); await p.waitForTimeout(90); } },
   { name: "17-reglages", run: async (p) => { await tab(p, 3); } },
+  { name: "17c-fleche-haut", run: async (p) => { await tab(p, 3); await settle(p, 300); await clickText(p, "Catégories"); } },
+  { name: "06c-flux-defile", run: async (p) => { await clickText(p, "DÉPENSES"); await settle(p, 400); const box = await p.getByLabel("Choisir une période dans le graphique").boundingBox(); await p.mouse.click(box.x + box.width * 0.62, box.y + 10); await settle(p, 300); await p.mouse.move(200, 400); await p.evaluate(() => { document.getElementById("__next").scrollTo(0, 300); }); } },
   { name: "17b-entete-collant", run: async (p) => { await tab(p, 3); await settle(p, 300); await clickText(p, "Catégories"); await settle(p, 400); await p.mouse.move(200, 400); await p.evaluate(() => { document.getElementById("__next").scrollTo(0, 700); }); } },
   ...["Comptes", "Catégories", "Raccourci iOS", "Export", "Abonnement", "Compte"].map((s, i) => ({
     name: `18-reglages-${String(i).padStart(2, "0")}-${s.replace(/[^a-zA-Z]/g, "").toLowerCase()}`,

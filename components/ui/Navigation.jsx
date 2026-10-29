@@ -1,14 +1,18 @@
 import { ArrowLeft } from "lucide-react";
 
-// Avec un bouton retour, l'en-tête reste collé en haut pendant le défilement : la flèche est
-// toujours à portée de pouce, plus besoin de remonter (styles/globals.css, .fin-navbar--sticky).
+// Avec un bouton retour, seule la flèche reste à l'écran pendant le défilement (position fixe, à
+// l'endroit exact où elle est en haut de page) : le titre défile normalement et aucune bande ne
+// masque le contenu. Une case vide de même taille garde le titre à sa place. Voir .fin-back-floating.
 export function NavBar({ title, subtitle, back = false, onBack, action, large = false, style }) {
   return (
-    <header className={back ? "fin-navbar--sticky" : undefined} style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
+    <header style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
       {back ? (
-        <button onClick={onBack} aria-label="Retour" style={{ width: 36, height: 36, border: "none", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <ArrowLeft size={16} color="var(--icon-primary)" />
-        </button>
+        <>
+          <span aria-hidden="true" style={{ width: 36, height: 36, flexShrink: 0 }} />
+          <button type="button" className="fin-back-floating" onClick={onBack} aria-label="Retour">
+            <ArrowLeft size={16} color="var(--icon-primary)" />
+          </button>
+        </>
       ) : null}
       <div style={{ flex: 1, minWidth: 0, textAlign: large || back ? "left" : "center" }}>
         {subtitle ? <div style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-core)", fontSize: "var(--size-footnote)", fontWeight: "var(--weight-medium)" }}>{subtitle}</div> : null}
