@@ -3,6 +3,7 @@ import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Up
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, EditableRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
+import { Button } from "./ui/Button";
 import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESETS, TIER_LIMITS } from "../lib/constants";
 import { api } from "../lib/api";
@@ -49,58 +50,79 @@ function ApiKeysSection() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // Trois étapes numérotées, dans l'ordre où on les fait vraiment : sans clé, le raccourci
+  // installé ne sert à rien, donc la clé vient en premier.
   return (
-    <div>
-      <span style={sectionLabelStyle}>RACCOURCIS IOS</span>
-      <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>
-        1. Installe les deux raccourcis ci-dessous. 2. Crée ta clé plus bas. 3. Ouvre chaque raccourci installé, touche son tout premier bloc et colle ta clé à la place du texte factice.
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: 16 }}>
-        <a href={SHORTCUT_URL_DEPENSE} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", textDecoration: "none", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
-          <Download size={18} color="var(--icon-primary)" />
-          <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Installer "Ajouter une dépense"</span>
-        </a>
-        <a href={SHORTCUT_URL_REVENU} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", textDecoration: "none", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)" }}>
-          <Download size={18} color="var(--icon-primary)" />
-          <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Installer "Ajouter un revenu"</span>
-        </a>
-      </div>
-
-      {justCreated && (
-        <Card padding="md" depth="inset" style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Clé "{justCreated.label}" créée : copie-la maintenant, elle ne sera plus jamais affichée.</span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <code style={{ flex: 1, fontSize: 12, background: "var(--surface-raised)", padding: "8px 10px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "nowrap" }}>{justCreated.token}</code>
-            <button onClick={handleCopy} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-sm)", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-              {copied ? <Check size={15} /> : <Copy size={15} />}
-            </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <div>
+        <StepTitle n={1}>Crée ta clé personnelle</StepTitle>
+        {justCreated ? (
+          <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Copie-la maintenant : elle ne sera plus jamais affichée.</span>
+            <code style={{ fontSize: 12, background: "var(--surface-inset)", padding: "10px 12px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "nowrap" }}>{justCreated.token}</code>
+            <Button block onClick={handleCopy}>{copied ? <><Check size={16} aria-hidden="true" /> Copiée</> : <><Copy size={16} aria-hidden="true" /> Copier la clé</>}</Button>
+          </Card>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input style={fieldInputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nom de l'appareil (facultatif)" aria-label="Nom de la clé" />
+            <Button loading={creating} onClick={handleCreate} style={{ flexShrink: 0 }}>Créer</Button>
           </div>
-        </Card>
-      )}
-
-      <Card padding="md" style={{ marginBottom: 12 }}>
-        {keys === null && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Chargement…</div>}
-        {keys?.length === 0 && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Aucune clé pour l'instant.</div>}
-        {keys?.map((k, i) => (
-          <React.Fragment key={k.id}>
-            {i > 0 ? <Divider /> : null}
-            <ListRow
-              Icon={Key}
-              title={k.label || "Sans nom"}
-              subtitle={k.last_used_at ? `Dernière utilisation : ${new Date(k.last_used_at).toLocaleDateString("fr-FR")}` : "Jamais utilisée"}
-              trailing={<button onClick={() => handleDelete(k.id)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>}
-            />
-          </React.Fragment>
-        ))}
-      </Card>
-
-      {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 8 }}>{error}</div>}
-
-      <div style={{ display: "flex", gap: 8 }}>
-        <input style={fieldInputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nom (ex. iPhone)" />
-        <button onClick={handleCreate} disabled={creating || !label.trim()} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)", opacity: creating || !label.trim() ? 0.6 : 1 }}>Créer</button>
+        )}
       </div>
+
+      <div>
+        <StepTitle n={2}>Installe les raccourcis</StepTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <a href={SHORTCUT_URL_DEPENSE} target="_blank" rel="noopener noreferrer" style={shortcutLinkStyle}>
+            <Download size={18} color="var(--icon-primary)" />
+            <span style={{ flex: 1, color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Ajouter une dépense</span>
+            <ChevronRight size={16} color="var(--text-tertiary)" />
+          </a>
+          <a href={SHORTCUT_URL_REVENU} target="_blank" rel="noopener noreferrer" style={shortcutLinkStyle}>
+            <Download size={18} color="var(--icon-primary)" />
+            <span style={{ flex: 1, color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>Ajouter un revenu</span>
+            <ChevronRight size={16} color="var(--text-tertiary)" />
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <StepTitle n={3}>Colle ta clé dans chaque raccourci</StepTitle>
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>
+          Dans l'app Raccourcis, touche « … » sur le raccourci, puis le tout premier bloc : remplace le texte factice par ta clé.
+        </div>
+      </div>
+
+      <div>
+        <span style={sectionLabelStyle}>TES CLÉS</span>
+        <Card padding="md">
+          {keys === null && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Chargement…</div>}
+          {keys?.length === 0 && <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Aucune clé pour l'instant.</div>}
+          {keys?.map((k, i) => (
+            <React.Fragment key={k.id}>
+              {i > 0 ? <Divider /> : null}
+              <ListRow
+                Icon={Key}
+                title={k.label || "Sans nom"}
+                subtitle={k.last_used_at ? `Dernière utilisation : ${new Date(k.last_used_at).toLocaleDateString("fr-FR")}` : "Jamais utilisée"}
+                trailing={<button type="button" aria-label={`Supprimer la clé ${k.label || "sans nom"}`} onClick={() => handleDelete(k.id)} style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer" }}><Trash2 size={16} color="var(--red)" /></button>}
+              />
+            </React.Fragment>
+          ))}
+        </Card>
+        {error && <div style={{ color: "var(--red)", fontSize: 13, marginTop: 8 }}>{error}</div>}
+      </div>
+    </div>
+  );
+}
+
+const shortcutLinkStyle = { display: "flex", alignItems: "center", gap: "var(--space-3)", textDecoration: "none", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", border: "1px solid var(--border-token)" };
+
+function StepTitle({ n, children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "var(--space-3)" }}>
+      <span aria-hidden="true" style={{ width: 24, height: 24, flexShrink: 0, borderRadius: "50%", background: "var(--accent-orange)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
+      <span style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 600 }}>{`Étape ${n} · `}{children}</span>
     </div>
   );
 }
@@ -273,7 +295,7 @@ export function ReglagesScreen(props) {
           <>
             <div>
               <span style={sectionLabelStyle}>CATÉGORIES</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touchez une famille pour voir ses sous-catégories. Touchez un nom ou l'icône crayon pour le renommer.</div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touche une famille pour voir ses sous-catégories, ou le crayon pour la renommer.</div>
               <Card padding="md" style={{ marginBottom: 12 }}>
                 {categories.filter((c) => !c.parent_id).map((fam, i) => {
                   const children = categories.filter((c) => c.parent_id === fam.id);
@@ -336,16 +358,16 @@ export function ReglagesScreen(props) {
 
         {section === "Raccourci iOS" && (
           <>
+            <ApiKeysSection />
             <div>
               <span style={sectionLabelStyle}>VALEURS PAR DÉFAUT</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Utilisées à chaque nouvelle dépense, modifiables au cas par cas.</div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Utilisées quand le raccourci ne précise rien, modifiables à chaque saisie.</div>
               <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 <ListRow title="Moyen de paiement" subtitle={null} onClick={() => openOptions({ title: "Moyen de paiement par défaut", options: DEFAULT_PAYMENTS, value: defaultPayment, onSelect: onChangeDefaultPayment })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultPayment}<ChevronRight size={16} /></span>} />
                 <Divider inset={0} />
-                <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accountNames, value: defaultAccount, onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount}<ChevronRight size={16} /></span>} />
+                <ListRow title="Compte" onClick={() => openOptions({ title: "Compte par défaut", options: accountNames, value: defaultAccount || accountNames[0], onSelect: onChangeDefaultAccount })} trailing={<span style={{ color: "var(--text-tertiary)", fontSize: 15, display: "flex", alignItems: "center", gap: 4 }}>{defaultAccount || accountNames[0] || "Aucun"}<ChevronRight size={16} /></span>} />
               </Card>
             </div>
-            <ApiKeysSection />
           </>
         )}
 

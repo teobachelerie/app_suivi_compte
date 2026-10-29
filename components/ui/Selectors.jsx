@@ -1,15 +1,20 @@
+import { ChevronRight } from "lucide-react";
 import { Amount } from "./Primitives";
 
+// Tuile chiffrée. Cliquable : rendue en <button> avec un chevron, pour qu'on devine qu'elle
+// ouvre le détail (avant, rien ne l'indiquait).
 export function StatTile({ label, value, direction, Icon, onClick, style }) {
   const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--icon-secondary)";
+  const Tag = onClick ? "button" : "div";
   return (
-    <div onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", cursor: onClick ? "pointer" : "default", ...style }}>
-      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+    <Tag type={onClick ? "button" : undefined} onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", padding: "var(--space-4)", border: "none", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", color: "inherit", font: "inherit", textAlign: "left", cursor: onClick ? "pointer" : "default", WebkitTapHighlightColor: "transparent", ...style }}>
+      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
         {Icon ? <Icon size={14} color={color} /> : null}
-        <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{label}</span>
+        <span style={{ flex: 1, color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{label}</span>
+        {onClick ? <ChevronRight size={16} color="var(--text-tertiary)" aria-hidden="true" /> : null}
       </span>
       <Amount value={value} direction={direction} size="lg" showSign={false} />
-    </div>
+    </Tag>
   );
 }
 
@@ -63,7 +68,7 @@ export function PeriodChips({ value, onChange, onOpenMore }) {
       {chips.map((c) => (
         <button key={c.value} type="button" onClick={() => onChange(c.value)} style={cran(value === c.value)}>{c.label}</button>
       ))}
-      <button type="button" onClick={onOpenMore} style={cran(isMore)}>{isMore ? value : "Mois…"}</button>
+      <button type="button" onClick={onOpenMore} aria-label={isMore ? undefined : "Autre période"} style={cran(isMore)}>{isMore ? value : "Autre…"}</button>
     </div>
   );
 }

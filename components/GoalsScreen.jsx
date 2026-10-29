@@ -1,46 +1,57 @@
 import { useState, useEffect } from "react";
-import { Target, ChevronDown, Trash2, Check } from "lucide-react";
+import { Target, Trash2, Check } from "lucide-react";
 import { Card, Divider, Amount, ProgressBar } from "./ui/Primitives";
 import { ListRow } from "./ui/ListRow";
 import { NavBar } from "./ui/Navigation";
-import { Sheet, Field, fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
+import { BottomSheet } from "./ui/BottomSheet";
+import { Button } from "./ui/Button";
+import { TextField } from "./ui/TextField";
+import { PickerField } from "./ui/PickerField";
 import { fmtEUR, requiredMonthly } from "../lib/format";
 import { haptic } from "../lib/haptics";
 
-function GoalForm({ goal, accounts, onClose, onSave, onDelete, openOptions, saving }) {
+function GoalForm({ goal, accounts, onClose, onSave, onDelete, saving }) {
   const [title, setTitle] = useState(goal?.title || "");
-  const [targetAmount, setTargetAmount] = useState(goal?.targetAmount != null ? String(goal.targetAmount) : "");
+  const [targetAmount, setTargetAmount] = useState(goal?.targetAmount != null ? String(goal.targetAmount).replace(".", ",") : "");
   const [targetDate, setTargetDate] = useState(goal?.targetDate || "");
   const [compte, setCompte] = useState(goal?.compte || accounts[0] || "");
-  const [error, setError] = useState("");
+
+  // Même règle que la saisie d'une transaction : le bouton reste grisé et une seule raison
+  // s'affiche dessous, plutôt qu'une erreur après coup.
+  const amt = parseFloat(String(targetAmount).replace(/\s/g, "").replace(",", "."));
+  let blocker = null;
+  if (!title.trim()) blocker = "Donne un nom à l'objectif";
+  else if (!(amt > 0)) blocker = "Indique le montant à atteindre";
+  else if (!targetDate) blocker = "Choisis une date cible";
 
   function handleSave() {
-    const amt = parseFloat(String(targetAmount).replace(",", "."));
-    if (!title.trim()) { setError("Indique un titre."); return; }
-    if (!amt || amt <= 0) { setError("Indique un montant cible valide."); return; }
-    if (!targetDate) { setError("Indique une date cible."); return; }
+    if (blocker || saving) return;
     onSave({ id: goal?.id, title: title.trim(), targetAmount: amt, targetDate, compte });
   }
 
   return (
-    <Sheet
+    <BottomSheet
       title={goal ? "Modifier l'objectif" : "Nouvel objectif"}
       onClose={onClose}
       footer={
         <>
-          {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 10 }}>{error}</div>}
-          <div style={{ display: "flex", gap: 10 }}>
-            {onDelete && <button onClick={onDelete} disabled={saving} style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={18} color="var(--red)" /></button>}
-            <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "14px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.6 : 1, boxShadow: "var(--elev-raised-sm)" }}>{saving ? "Enregistrement…" : "Confirmer"}</button>
+          <div style={{ display: "flex", gap: "var(--space-3)" }}>
+            {onDelete && (
+              <Button variant="danger" icon onClick={onDelete} disabled={saving} aria-label="Supprimer l'objectif">
+                <Trash2 size={20} aria-hidden="true" />
+              </Button>
+            )}
+            <Button block loading={saving} disabled={!!blocker} onClick={handleSave}>{goal ? "Enregistrer" : "Créer l'objectif"}</Button>
           </div>
+          <div className="fin-tx-hint" aria-live="polite">{blocker || " "}</div>
         </>
       }
     >
-      <Field label="Titre"><input style={fieldInputStyle} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex. Épargne fin de BTS" /></Field>
-      <Field label="Montant cible (€)"><input style={fieldInputStyle} value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} inputMode="decimal" placeholder="0.00" /></Field>
-      <Field label="Date cible"><input style={fieldInputStyle} type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} /></Field>
-      <Field label="Compte"><button style={fieldPickerStyle} onClick={() => openOptions({ title: "Compte", options: accounts, value: compte, onSelect: setCompte })}>{compte}<ChevronDown size={16} color="var(--text-tertiary)" /></button></Field>
-    </Sheet>
+      <TextField label="Nom" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex. Voyage au Japon" />
+      <TextField label="Montant à atteindre" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} inputMode="decimal" placeholder="ex. 3 000" suffix="€" />
+      <TextField label="Date cible" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+      {accounts.length > 1 ? <PickerField label="Compte" value={compte} options={accounts} onChange={setCompte} /> : null}
+    </BottomSheet>
   );
 }
 
@@ -107,7 +118,7 @@ function GoalProgress({ goal, pct, reached, monthly }) {
 
 // `goals` doit déjà contenir currentBalance par objectif (calculé dans pages/index.js à partir des
 // transactions, car GoalsScreen ne connaît pas l'historique des transactions lui-même).
-export function GoalsScreen({ goals, accounts, onBack, onCreate, onUpdate, onDelete, openOptions, saving }) {
+export function GoalsScreen({ goals, accounts, onBack, onCreate, onUpdate, onDelete, saving }) {
   const [editing, setEditing] = useState(null);
 
   return (
@@ -150,7 +161,6 @@ export function GoalsScreen({ goals, accounts, onBack, onCreate, onUpdate, onDel
           goal={editing.id ? editing : null}
           accounts={accounts}
           saving={saving}
-          openOptions={openOptions}
           onClose={() => setEditing(null)}
           onSave={(g) => { (editing.id ? onUpdate(editing.id, g) : onCreate(g)).then(() => setEditing(null)); }}
           onDelete={editing.id ? () => onDelete(editing.id).then(() => setEditing(null)) : null}

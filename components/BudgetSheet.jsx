@@ -7,9 +7,9 @@ import { PickerField } from "./ui/PickerField";
 
 // Feuille de création / modification d'un plafond mensuel. `budget` = plafond existant (la
 // catégorie est alors figée, seul le montant change) ou null pour un nouveau plafond, auquel cas
-// seules les familles qui n'en ont pas encore (`availableFamilies`) sont proposées.
+// seules les familles qui n'en ont pas encore (`availableFamilies`, { value, icon }) sont proposées.
 export function BudgetSheet({ budget, availableFamilies, onClose, onSave, onDelete, saving }) {
-  const [category, setCategory] = useState(budget?.category || availableFamilies[0] || "");
+  const [category, setCategory] = useState(budget?.category || availableFamilies[0]?.value || "");
   const [limit, setLimit] = useState(budget ? String(budget.monthlyLimit) : "");
   const [errors, setErrors] = useState({});
   const nothingToAdd = !budget && availableFamilies.length === 0;

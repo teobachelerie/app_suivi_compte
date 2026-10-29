@@ -882,7 +882,7 @@ function ExpensesApp({ session }) {
               accounts={accountNames}
               onBack={() => setShowGoals(false)}
               onCreate={createGoalHandler} onUpdate={updateGoalHandler} onDelete={deleteGoalHandler}
-              openOptions={setOptionSheet} saving={savingGoal}
+              saving={savingGoal}
             />
           ) : showSimulator ? (
             <PeaSimulatorScreen onBack={() => setShowSimulator(false)} />
@@ -1037,7 +1037,7 @@ function ExpensesApp({ session }) {
               defaultPayment={defaultPayment} defaultAccount={defaultAccount}
               onBack={() => setShowSubscriptions(false)}
               onCreate={createSubscription} onUpdate={updateSubscriptionHandler} onDelete={deleteSubscriptionHandler}
-              openOptions={setOptionSheet} saving={savingSub}
+              saving={savingSub}
               suggestions={recurringSuggestions} onAddSuggestion={addRecurringSuggestion} onDismissSuggestion={dismissRecurring}
             />
           ) : (
@@ -1241,13 +1241,13 @@ function ExpensesApp({ session }) {
       )}
 
       {optionSheet && (
-        <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => { optionSheet.onSelect(v); setOptionSheet(null); }} onClose={() => setOptionSheet(null)} />
+        <OptionSheet title={optionSheet.title} options={optionSheet.options} value={optionSheet.value} onSelect={(v) => optionSheet.onSelect(v)} onClose={() => setOptionSheet(null)} />
       )}
 
       {budgetEditing && (
         <BudgetSheet
           budget={budgetEditing.id ? budgetEditing : null}
-          availableFamilies={budgetFamilies.filter((f) => !budgets.some((b) => b.category === f))}
+          availableFamilies={budgetFamilies.filter((f) => !budgets.some((b) => b.category === f)).map((f) => ({ value: f, icon: categoryIconFor(f) }))}
           saving={savingBudget}
           onClose={() => setBudgetEditing(null)}
           onSave={saveBudget}

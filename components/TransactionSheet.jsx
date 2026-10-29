@@ -228,6 +228,9 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
   const [splits, setSplits] = useState(tx?.splits?.length ? tx.splits.map((s) => ({ category: s.category, amount: String(s.amount).replace(".", ",") })) : []);
   const [showMore, setShowMore] = useState(!!(tx?.notes || tx?.tags?.length || tx?.splits?.length));
   const [typing, setTyping] = useState(false); // un champ texte a le focus : le clavier iOS remplace le pavé
+  // Déplier les détails replie le pavé : sinon tags et remarques passaient dessous, hors de vue.
+  // Toucher le montant le rouvre.
+  const [keypadOpen, setKeypadOpen] = useState(!showMore);
   const [sheet, setSheet] = useState(null); // { kind: "category" | "compte" | "destination" | "date", splitIndex? }
   const [closing, setClosing] = useState(false);
   const calc = useCalculator(tx?.amount || 0);
@@ -336,7 +339,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
     else calc.digit(k);
   }
 
-  const showKeypad = !typing;
+  const showKeypad = !typing && keypadOpen;
   const amountColor = type === "Gain" ? "var(--green)" : type === "Dépense" ? "var(--red)" : "var(--text-primary)";
   const sign = type === "Gain" ? "+" : type === "Dépense" ? "−" : "";
   const recents = recentByType[type === "Gain" ? "Gain" : "Dépense"] || [];
@@ -357,8 +360,8 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
       </div>
 
       <div className="fin-tx-body">
-        <button type="button" className="fin-tx-amount" onClick={() => document.activeElement?.blur()} aria-label={`Montant : ${fmtEUR(amount)}`}>
-          <span className="fin-tx-amount__expr">{calc.expression || " "}</span>
+        <button type="button" className="fin-tx-amount" onClick={() => { document.activeElement?.blur(); setKeypadOpen(true); }} aria-label={`Montant : ${fmtEUR(amount)}${showKeypad ? "" : ", toucher pour modifier"}`}>
+          <span className="fin-tx-amount__expr">{calc.expression || (showKeypad ? " " : "Touche pour modifier")}</span>
           <span className="fin-tx-amount__value ds-tabular" style={{ color: amount > 0 ? amountColor : "var(--text-tertiary)" }}>
             {amount > 0 && sign ? <span aria-hidden="true">{sign}</span> : null}{calc.pending ? String(amount).replace(".", ",") : calc.display}&nbsp;€
           </span>
@@ -397,7 +400,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
           </div>
         ) : null}
 
-        <button type="button" className="fin-link-more" aria-expanded={showMore} onClick={() => setShowMore((v) => !v)}>
+        <button type="button" className="fin-link-more" aria-expanded={showMore} onClick={() => { setKeypadOpen(showMore); setShowMore(!showMore); }}>
           {showMore ? "Masquer les détails" : isVirement ? "Ajouter une note ou des tags" : `Détails : ${[payment, tags.length ? `${tags.length} tag${tags.length > 1 ? "s" : ""}` : null, notes.trim() ? "note" : null, splitMode ? "répartie" : null].filter(Boolean).join(", ")}`}
           <ChevronDown size={16} aria-hidden="true" style={{ transform: showMore ? "rotate(180deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)" }} />
         </button>

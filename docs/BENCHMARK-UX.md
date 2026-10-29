@@ -120,6 +120,18 @@ Contraintes respectées : contrat des Raccourcis iOS intact (aucun changement d'
 - « Gain » remplacé par « Revenus » sur l'écran des flux.
 - Non fait : chiffre « Reste ce mois-ci » (la carte affiche déjà le net de la période), libellés de la barre d'onglets (réglage iOS fragile, à tester sur iPhone).
 
+### Livré le 29 octobre 2026 (lot « réparage UX »)
+- Toutes les listes de choix (Période, valeurs par défaut, règles) s'ouvrent en feuille du bas : fin des fenêtres qui tombaient du haut.
+- « Mois… » devient « Autre… » sur le sélecteur de période.
+- Tuiles Revenus et Dépenses de l'accueil : chevron, pour montrer qu'elles ouvrent le détail.
+- Formulaires Objectif et Abonnement refaits avec les primitives (champs 16 px, sélecteurs au pouce, bouton grisé avec la raison dessous, comme la saisie).
+- Champs hérités (connexion, réglages, simulateur PEA) en 16 px : plus de zoom Safari au focus.
+- Raccourci iOS : trois étapes numérotées dans l'ordre réel (clé, installation, collage), clé sans nom obligatoire, gros bouton « Copier la clé », compte par défaut jamais vide.
+- Saisie : déplier les détails replie le pavé (« Touche pour modifier » sur le montant) ; tags et remarques ne passent plus dessous.
+- Cartes de comptes : variation sur pastille sombre, lisible sur la carte Patrimoine en thème clair.
+- Plafond : icônes de catégories dans la liste.
+- Non fait : libellés de la barre d'onglets (réglage iOS fragile, à tester sur iPhone).
+
 ### P1 : clarifier l'accueil et la navigation
 - Un chiffre principal en haut de l'accueil pour le compte actif : **« Reste ce mois-ci »** (revenus − dépenses de la période), avec une barre si un plafond global existe.
 - Libellés sous **toutes** les icônes de la barre d'onglets (Accueil, Activité, Budgets, Réglages).
