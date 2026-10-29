@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 // Feuille du bas : entrée et sortie animées (tokens de durée), fermeture par le fond, la croix,
@@ -32,7 +33,8 @@ const KEYBOARD_MIN_INSET = 80;
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 0.6; // px par ms
 
-export function BottomSheet({ title, onClose, footer, zIndex = 50, children }) {
+// `tall` : la feuille prend presque tout l'écran (listes longues, ex. choix de catégorie).
+export function BottomSheet({ title, onClose, footer, zIndex = 50, tall = false, children }) {
   const rootRef = useRef(null);
   const panelRef = useRef(null);
   const scrimRef = useRef(null);
@@ -148,11 +150,14 @@ export function BottomSheet({ title, onClose, footer, zIndex = 50, children }) {
     }
   }
 
-  return (
+  // Rendue à la racine du document : à l'intérieur d'un parent animé (transformé), iOS laissait
+  // une traînée floue en haut de l'écran après la fermeture.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <SheetCloseContext.Provider value={requestClose}>
       <div ref={rootRef} className={`fin-sheet-root${closing ? " is-closing" : ""}`} style={{ zIndex }} onAnimationEnd={handleAnimationEnd}>
         <div ref={scrimRef} className="fin-sheet-scrim" onClick={requestClose} />
-        <div ref={panelRef} className="fin-sheet-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
+        <div ref={panelRef} className={`fin-sheet-panel${tall ? " fin-sheet-panel--tall" : ""}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
           <div className="fin-sheet-head" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
             <div className="fin-sheet-grabber" />
             <div className="fin-sheet-title">
@@ -166,6 +171,7 @@ export function BottomSheet({ title, onClose, footer, zIndex = 50, children }) {
           {footer ? <div className="fin-sheet-foot">{footer}</div> : null}
         </div>
       </div>
-    </SheetCloseContext.Provider>
+    </SheetCloseContext.Provider>,
+    document.body,
   );
 }

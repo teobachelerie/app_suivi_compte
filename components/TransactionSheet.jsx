@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, CalendarDays, ChevronDown, ChevronLeft, Delete, Plus, Trash2, Wallet, X } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronDown, Delete, Plus, Search, Trash2, Wallet, X } from "lucide-react";
 import { BottomSheet, useSheetClose } from "./ui/BottomSheet";
 import { Button } from "./ui/Button";
 import { Chip } from "./ui/Chip";
-import { categoryIconUrl, fmtEUR, todayInParis, toLocalISODate } from "../lib/format";
+import { categoryIcon, categoryIconUrl, fmtEUR, todayInParis, toLocalISODate } from "../lib/format";
 import { DEFAULT_PAYMENTS, MONTHS_SHORT_FR } from "../lib/constants";
 import { haptic } from "../lib/haptics";
 
@@ -93,7 +93,7 @@ function useTaxonomy(categories) {
       if (!c) return null;
       return c.parent_id ? byId.get(c.parent_id)?.name || c.name : c.name;
     };
-    const iconOf = (name) => categoryIconUrl(byName.get(String(name || "").toLowerCase())?.icon);
+    const iconOf = (name) => categoryIcon(categories, name);
     return { families, familyOf, iconOf };
   }, [categories]);
 }
@@ -109,54 +109,51 @@ function CategoryTile({ icon, label, selected, onClick }) {
   );
 }
 
-// Grille des catégories : familles, puis sous-catégories de la famille touchée (la famille elle-même
-// reste choisissable en tête, sous son nom simple). Les revenus n'ont qu'une famille : on montre
-// directement ses sous-catégories.
+// Choix de la catégorie en un seul défilement : recherche, récentes, puis chaque famille en section
+// avec ses sous-catégories visibles d'emblée (plus d'étape « famille puis sous-catégorie »). La
+// famille reste choisissable en tête de sa section, sous son nom simple. Pour un revenu, seule la
+// famille Revenus s'affiche.
 function CategoryGrid({ tax, type, value, recents, onPick }) {
   const close = useSheetClose();
-  const [family, setFamily] = useState(null);
+  const [query, setQuery] = useState("");
   const pick = (name) => { haptic("light"); onPick(name); close?.(); };
+  const q = query.trim().toLowerCase();
+  const matches = (name) => !q || name.toLowerCase().includes(q);
 
-  if (type === "Gain") {
-    const rev = tax.families.get("Revenus");
-    return (
-      <div className="fin-cat-grid">
-        {rev ? <CategoryTile icon={categoryIconUrl(rev.icon)} label="Revenus" selected={value === "Revenus"} onClick={() => pick("Revenus")} /> : null}
-        {(rev?.subs || []).map((c) => <CategoryTile key={c.id} icon={categoryIconUrl(c.icon)} label={c.name} selected={value === c.name} onClick={() => pick(c.name)} />)}
-      </div>
-    );
-  }
+  const familyNames = [...tax.families.keys()].filter((n) => (type === "Gain" ? n === "Revenus" : n !== "Revenus"));
+  const sections = familyNames
+    .map((name) => {
+      const f = tax.families.get(name);
+      const items = [{ name, icon: tax.iconOf(name) }, ...f.subs.map((c) => ({ name: c.name, icon: tax.iconOf(c.name) }))];
+      // Une recherche sur le nom de la famille garde toute la section.
+      return { name, items: matches(name) ? items : items.filter((it) => matches(it.name)) };
+    })
+    .filter((sec) => sec.items.length);
+  const recentItems = q ? [] : recents.map((name) => ({ name, icon: tax.iconOf(name) }));
 
-  if (family) {
-    const f = tax.families.get(family);
-    return (
-      <>
-        <button type="button" className="fin-link-back" onClick={() => setFamily(null)}>
-          <ChevronLeft size={18} aria-hidden="true" /> Toutes les catégories
-        </button>
-        <div className="fin-cat-grid">
-          <CategoryTile icon={categoryIconUrl(f.icon)} label={family} selected={value === family} onClick={() => pick(family)} />
-          {f.subs.map((c) => <CategoryTile key={c.id} icon={categoryIconUrl(c.icon)} label={c.name} selected={value === c.name} onClick={() => pick(c.name)} />)}
-        </div>
-      </>
-    );
-  }
-
-  const familyNames = [...tax.families.keys()].filter((n) => n !== "Revenus");
   return (
     <>
-      {recents.length ? (
-        <>
-          <div className="fin-section-label">Récentes</div>
-          <div className="fin-cat-grid" style={{ marginBottom: "var(--space-4)" }}>
-            {recents.map((name) => <CategoryTile key={name} icon={tax.iconOf(name)} label={name} selected={value === name} onClick={() => pick(name)} />)}
-          </div>
-          <div className="fin-section-label">Toutes</div>
-        </>
-      ) : null}
-      <div className="fin-cat-grid">
-        {familyNames.map((name) => <CategoryTile key={name} icon={categoryIconUrl(tax.families.get(name).icon)} label={name} onClick={() => setFamily(name)} />)}
+      <div className="fin-cat-search">
+        <Search size={17} aria-hidden="true" />
+        <input className="fin-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une catégorie" aria-label="Rechercher une catégorie" enterKeyHint="search" />
       </div>
+      {recentItems.length ? (
+        <section>
+          <div className="fin-section-label">Récentes</div>
+          <div className="fin-cat-grid">
+            {recentItems.map((it) => <CategoryTile key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
+          </div>
+        </section>
+      ) : null}
+      {sections.map((sec) => (
+        <section key={sec.name}>
+          <div className="fin-section-label">{sec.name}</div>
+          <div className="fin-cat-grid">
+            {sec.items.map((it) => <CategoryTile key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
+          </div>
+        </section>
+      ))}
+      {!sections.length ? <p className="fin-help" style={{ textAlign: "center", marginTop: "var(--space-6)" }}>Aucune catégorie ne correspond.</p> : null}
     </>
   );
 }
@@ -401,7 +398,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
         ) : null}
 
         <button type="button" className="fin-link-more" aria-expanded={showMore} onClick={() => setShowMore((v) => !v)}>
-          {showMore ? "Moins d'options" : "Plus d'options"}
+          {showMore ? "Masquer les détails" : isVirement ? "Ajouter une note ou des tags" : `Détails : ${[payment, tags.length ? `${tags.length} tag${tags.length > 1 ? "s" : ""}` : null, notes.trim() ? "note" : null, splitMode ? "répartie" : null].filter(Boolean).join(", ")}`}
           <ChevronDown size={16} aria-hidden="true" style={{ transform: showMore ? "rotate(180deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)" }} />
         </button>
 
@@ -490,7 +487,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
       </div>
 
       {sheet?.kind === "category" ? (
-        <BottomSheet title="Catégorie" zIndex={120} onClose={() => setSheet(null)}>
+        <BottomSheet title="Catégorie" tall zIndex={120} onClose={() => setSheet(null)}>
           <CategoryGrid
             tax={tax}
             type={type}

@@ -1,8 +1,10 @@
 import { ArrowLeft } from "lucide-react";
 
+// Avec un bouton retour, l'en-tête reste collé en haut pendant le défilement : la flèche est
+// toujours à portée de pouce, plus besoin de remonter (styles/globals.css, .fin-navbar--sticky).
 export function NavBar({ title, subtitle, back = false, onBack, action, large = false, style }) {
   return (
-    <header style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
+    <header className={back ? "fin-navbar--sticky" : undefined} style={{ display: "flex", alignItems: large ? "flex-end" : "center", gap: "var(--space-3)", minHeight: 56, padding: large ? "var(--space-2) 0 var(--space-2)" : "var(--space-2) 0", ...style }}>
       {back ? (
         <button onClick={onBack} aria-label="Retour" style={{ width: 36, height: 36, border: "none", borderRadius: "var(--radius-sm)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <ArrowLeft size={16} color="var(--icon-primary)" />

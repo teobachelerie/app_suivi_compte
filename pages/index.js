@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
-  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp,
+  Search, Settings, Plus, X, ShoppingBag, ChevronDown, ChevronRight, RefreshCw, Target, TrendingUp, SlidersHorizontal,
   Home as HomeIcon, List, PieChart as PieChartIcon, ArrowDownLeft, ArrowUpRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 
@@ -10,7 +10,7 @@ import { RECOVERY_LINK, LINK_ERROR } from "../lib/authLink";
 import { api } from "../lib/api";
 import { supabaseClient } from "../lib/supabaseClient";
 import { CATEGORY_ICON, PERIODS, DASHBOARD_LIMIT, LEGACY_CORE_NAMES, BANK_PRESETS } from "../lib/constants";
-import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, fmtBucketLabel, inPeriod, categoryColor, paletteColor, categoryIconUrl } from "../lib/format";
+import { fmtEUR, fmtDateHeader, fmtTodayHeader, periodLabel, buildChart, fmtBucketLabel, inPeriod, categoryColor, paletteColor, categoryIconUrl, categoryIcon } from "../lib/format";
 
 import { Card, Divider, Amount, ProgressBar } from "../components/ui/Primitives";
 import { ListRow } from "../components/ui/ListRow";
@@ -20,6 +20,16 @@ import { OptionSheet } from "../components/ui/Sheets";
 import { TransactionSheet } from "../components/TransactionSheet";
 import { BucketChart } from "../components/ui/BucketChart";
 import { Chip } from "../components/ui/Chip";
+import { BottomSheet } from "../components/ui/BottomSheet";
+import { Button } from "../components/ui/Button";
+import { PickerField } from "../components/ui/PickerField";
+
+const ACTIVITE_SORTS = [
+  { value: "recent", label: "Plus récentes" },
+  { value: "ancien", label: "Plus anciennes" },
+  { value: "montant-desc", label: "Montant le plus élevé" },
+  { value: "montant-asc", label: "Montant le plus faible" },
+];
 import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
@@ -81,8 +91,7 @@ function ExpensesApp({ session }) {
   // Icône réelle (SVG) de la catégorie si la taxonomie en fournit une pour ce nom — sinon null,
   // et l'icône Lucide générique prend le relais (catégories historiques, sans icône dédiée).
   function categoryIconFor(name) {
-    const cat = categories.find((c) => c.name === name);
-    return cat?.icon ? categoryIconUrl(cat.icon) : null;
+    return categoryIcon(categories, name);
   }
 
   function touchesAccount(t, accountName) {
@@ -234,6 +243,8 @@ function ExpensesApp({ session }) {
   const [pressedBucket, setPressedBucket] = useState(null);
   const [filterCategory, setFilterCategory] = useState("Toutes");
   const [filterAccount, setFilterAccount] = useState("Tous");
+  const [activiteSort, setActiviteSort] = useState("recent");
+  const [showActiviteFilters, setShowActiviteFilters] = useState(false);
   const [activiteFlux, setActiviteFlux] = useState("Tout");
 
   const [showAdd, setShowAdd] = useState(false);
@@ -241,10 +252,10 @@ function ExpensesApp({ session }) {
   const [optionSheet, setOptionSheet] = useState(null);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const anyOverlayOpen = showAdd || !!editing || !!optionSheet;
+    const anyOverlayOpen = showActiviteFilters || showAdd || !!editing || !!optionSheet;
     document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [showAdd, editing, optionSheet]);
+  }, [showActiviteFilters, showAdd, editing, optionSheet]);
   const [newCatName, setNewCatName] = useState("");
   const [newAccName, setNewAccName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -540,6 +551,22 @@ function ExpensesApp({ session }) {
     return true;
   }), [fullyFiltered, activiteFlux]);
   const allList = useMemo(() => groupByDate(activiteFiltered), [activiteFiltered]);
+  // Tri de l'Activité : par date (groupé par jour, par défaut) ou liste à plat triée.
+  const activiteSorted = useMemo(() => {
+    const list = [...activiteFiltered];
+    if (activiteSort === "ancien") return list.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+    if (activiteSort === "montant-desc") return list.sort((a, b) => b.amount - a.amount);
+    if (activiteSort === "montant-asc") return list.sort((a, b) => a.amount - b.amount);
+    return list;
+  }, [activiteFiltered, activiteSort]);
+  const activiteFilterCount = (filterCategory !== "Toutes" ? 1 : 0) + (filterAccount !== "Tous" ? 1 : 0) + (activiteFlux !== "Tout" ? 1 : 0) + (activiteSort !== "recent" ? 1 : 0);
+  const activiteSummary = [
+    periodLabel(period, "Dépense").replace(/^Dépensé /, "").replace(/^./, (c) => c.toUpperCase()),
+    filterCategory !== "Toutes" ? filterCategory : null,
+    filterAccount !== "Tous" ? filterAccount : null,
+    activiteFlux === "Sorties" ? "Dépenses" : activiteFlux === "Entrées" ? "Revenus" : null,
+    ACTIVITE_SORTS.find((o) => o.value === activiteSort && o.value !== "recent")?.label || null,
+  ].filter(Boolean).join(" · ");
 
   async function saveTransaction(tx) {
     setSaving(true);
@@ -994,24 +1021,14 @@ function ExpensesApp({ session }) {
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher par titre ou tag" style={{ flex: 1, background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 15, outline: "none", fontFamily: "var(--font-core)" }} />
               {searchQuery && <button onClick={() => setSearchQuery("")} aria-label="Effacer la recherche" style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
             </div>
-            {/* Période et filtres visibles d'emblée : avant, ils étaient cachés derrière une flèche et la
-                période de l'accueil s'appliquait sans être affichée ici. */}
-            <PeriodChips value={period} onChange={changePeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: changePeriod })} />
-            <div className="fin-chip-row" style={{ marginTop: 0 }}>
-              <Chip selected={filterCategory !== "Toutes"} onClick={() => setOptionSheet({ title: "Catégorie", options: ["Toutes", ...categoryNames], value: filterCategory, onSelect: setFilterCategory })}>
-                {filterCategory === "Toutes" ? "Catégorie" : filterCategory}<ChevronDown size={14} aria-hidden="true" />
-              </Chip>
-              {showAccountFilter && (
-                <Chip selected={filterAccount !== "Tous"} onClick={() => setOptionSheet({ title: "Compte", options: ["Tous", ...accountNames], value: filterAccount, onSelect: setFilterAccount })}>
-                  {filterAccount === "Tous" ? "Compte" : filterAccount}<ChevronDown size={14} aria-hidden="true" />
-                </Chip>
-              )}
-              {(filterCategory !== "Toutes" || filterAccount !== "Tous") && (
-                <Chip onClick={() => { setFilterCategory("Toutes"); setFilterAccount("Tous"); }}>Effacer<X size={14} aria-hidden="true" /></Chip>
-              )}
+            {/* Un seul point d'entrée pour filtrer et trier ; le résumé dit ce qui s'applique. */}
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <button type="button" className="fin-chip" aria-pressed={activiteFilterCount > 0} onClick={() => setShowActiviteFilters(true)} style={{ minHeight: 40, flexShrink: 0 }}>
+                <SlidersHorizontal size={15} aria-hidden="true" /> Filtrer et trier{activiteFilterCount > 0 ? ` · ${activiteFilterCount}` : ""}
+              </button>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activiteSummary}</span>
             </div>
-            <SegmentedControl options={["Tout", "Sorties", "Entrées"]} value={activiteFlux} onChange={setActiviteFlux} />
-            {renderList(allList, "Aucune transaction ne correspond.")}
+            {activiteSort === "recent" ? renderList(allList, "Aucune transaction ne correspond.") : renderFlatList(activiteSorted, "Aucune transaction ne correspond.")}
           </div>
         ) : activeTab === "budgets" ? (
           showSubscriptions ? (
@@ -1062,7 +1079,7 @@ function ExpensesApp({ session }) {
               ) : activeSpend.map((d) => {
                 const hasSubs = !budgetByAccount && d.subs?.length > 0;
                 const isOpen = expandedFamily === spendLabel(d);
-                const icon = budgetByAccount ? null : categoryIconUrl(categories.find((c) => c.name === d.category)?.icon);
+                const icon = budgetByAccount ? null : categoryIcon(categories, d.category);
                 return (
                   <div key={spendLabel(d)}>
                     <div
@@ -1191,6 +1208,36 @@ function ExpensesApp({ session }) {
           onSave={saveTransaction}
           onDelete={editing ? () => deleteTransaction(editing.id) : undefined}
         />
+      )}
+
+      {showActiviteFilters && (
+        <BottomSheet
+          title="Filtrer et trier"
+          zIndex={60}
+          onClose={() => setShowActiviteFilters(false)}
+          footer={
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
+              <Button variant="secondary" onClick={() => { setFilterCategory("Toutes"); setFilterAccount("Tous"); setActiviteFlux("Tout"); setActiviteSort("recent"); }} disabled={activiteFilterCount === 0}>Réinitialiser</Button>
+              <Button block onClick={() => setShowActiviteFilters(false)}>Voir {activiteFiltered.length} opération{activiteFiltered.length > 1 ? "s" : ""}</Button>
+            </div>
+          }
+        >
+          <div className="fin-section-label" style={{ marginTop: 0 }}>Période</div>
+          <div className="fin-chip-row" style={{ flexWrap: "wrap" }}>
+            {PERIODS.map((p) => <Chip key={p} selected={period === p} onClick={() => changePeriod(p)}>{p}</Chip>)}
+          </div>
+          <div className="fin-section-label">Trier par</div>
+          <div className="fin-chip-row" style={{ flexWrap: "wrap" }}>
+            {ACTIVITE_SORTS.map((o) => <Chip key={o.value} selected={activiteSort === o.value} onClick={() => setActiviteSort(o.value)}>{o.label}</Chip>)}
+          </div>
+          <div className="fin-section-label">Type</div>
+          <div className="fin-chip-row" style={{ flexWrap: "wrap" }}>
+            {[["Tout", "Tout"], ["Sorties", "Dépenses"], ["Entrées", "Revenus"]].map(([v, l]) => <Chip key={v} selected={activiteFlux === v} onClick={() => setActiviteFlux(v)}>{l}</Chip>)}
+          </div>
+          <div style={{ height: "var(--space-4)" }} />
+          <PickerField label="Catégorie" value={filterCategory} options={["Toutes", ...categoryNames]} onChange={setFilterCategory} zIndex={70} />
+          {showAccountFilter ? <PickerField label="Compte" value={filterAccount} options={["Tous", ...accountNames]} onChange={setFilterAccount} zIndex={70} /> : null}
+        </BottomSheet>
       )}
 
       {optionSheet && (
