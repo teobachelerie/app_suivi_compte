@@ -1,17 +1,124 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Upload, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
-import { ListRow, EditableRow } from "./ui/ListRow";
+import { ListRow, ManagedRow, AddRow } from "./ui/ListRow";
+import { BottomSheet, useSheetClose } from "./ui/BottomSheet";
+import { TextField } from "./ui/TextField";
+import { BankBadge } from "./AccountCardStack";
 import { NavBar } from "./ui/Navigation";
 import { Button } from "./ui/Button";
-import { fieldInputStyle, fieldPickerStyle } from "./ui/Sheets";
+import { fieldInputStyle } from "./ui/Sheets";
 import { DEFAULT_PAYMENTS, SHORTCUT_URL_DEPENSE, SHORTCUT_URL_REVENU, BANK_PRESETS, TIER_LIMITS } from "../lib/constants";
 import { api } from "../lib/api";
 import { transactionsToCSV, downloadFile } from "../lib/export";
-import { categoryColor } from "../lib/format";
+import { categoryColor, categoryIcon } from "../lib/format";
+import { supabaseClient } from "../lib/supabaseClient";
+import { describeAuthError } from "../lib/authErrors";
 import { haptic, isHapticsEnabled, setHapticsEnabled } from "../lib/haptics";
 
 const sectionLabelStyle = { color: "var(--text-tertiary)", font: "var(--text-caption-font)", display: "block", marginBottom: "var(--space-3)" };
+
+// Teintes proposées pour les catégories : assez saturées pour se distinguer, assez douces pour
+// rester lisibles en thème sombre comme clair. Aucune ne reprend l'orange de marque.
+const CATEGORY_PALETTE = ["#E5484D", "#F76B15", "#FFB224", "#E2C044", "#8DB600", "#46A758", "#12A594", "#00A2C7", "#3E63DD", "#6E56CF", "#AB4ABA", "#D6409F"];
+
+function BankOptions({ value, onSelect }) {
+  const close = useSheetClose();
+  const options = [{ id: null, name: "Aucune banque" }, ...BANK_PRESETS];
+  return (
+    <div role="listbox">
+      {options.map((b) => (
+        <button key={b.id || "none"} type="button" role="option" aria-selected={value === b.id} className="fin-option" onClick={() => { onSelect(b.id); close?.(); }}>
+          {b.id ? <BankBadge bankId={b.id} bankPresets={BANK_PRESETS} /> : <span className="fin-mrow__ghost" />}
+          <span style={{ flex: 1, minWidth: 0 }}>{b.name}</span>
+          {value === b.id ? <Check size={18} color="var(--accent-orange)" aria-hidden="true" /> : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ColorOptions({ value, onSelect }) {
+  const close = useSheetClose();
+  const current = String(value || "").toLowerCase();
+  return (
+    <>
+      <div className="fin-palette">
+        {CATEGORY_PALETTE.map((c) => (
+          <button key={c} type="button" aria-label={`Couleur ${c}`} aria-pressed={current === c.toLowerCase()} style={{ background: c }} onClick={() => { onSelect(c); close?.(); }} />
+        ))}
+      </div>
+      <label className="fin-option" style={{ position: "relative" }}>
+        <span style={{ width: 24, height: 24, borderRadius: "50%", background: value, border: "1px solid var(--border-token)", flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>Autre couleur…</span>
+        <input type="color" value={value} onChange={(e) => onSelect(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+      </label>
+    </>
+  );
+}
+
+function SheetCancel({ disabled }) {
+  const close = useSheetClose();
+  return <Button variant="ghost" block disabled={disabled} onClick={() => close?.()}>Annuler</Button>;
+}
+
+function ConfirmButtons({ confirmLabel, onConfirm }) {
+  const close = useSheetClose();
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      <Button variant="danger" block onClick={() => { onConfirm(); close?.(); }}><Trash2 size={18} aria-hidden="true" /> {confirmLabel}</Button>
+      <SheetCancel />
+    </div>
+  );
+}
+
+// Changement du mot de passe, connecté : nouveau mot de passe saisi deux fois (une faute de frappe
+// bloquerait la prochaine connexion). Lien par email en secours, pour qui préfère passer par là.
+function PasswordSheet({ email, onClose }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState("");
+  const blocker = password.length < 6 ? "Au moins 6 caractères" : password !== confirm ? "Les deux mots de passe doivent être identiques" : "";
+
+  async function save() {
+    setBusy(true); setError("");
+    try {
+      const { error: err } = await supabaseClient.auth.updateUser({ password });
+      if (err) throw err;
+      setDone("Mot de passe changé. Il servira dès ta prochaine connexion.");
+      setPassword(""); setConfirm("");
+    } catch (e) { setError(describeAuthError(e).text); } finally { setBusy(false); }
+  }
+  async function sendLink() {
+    setBusy(true); setError("");
+    try {
+      const { error: err } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+      if (err) throw err;
+      setDone(`Lien envoyé à ${email}. Ouvre-le sur cet iPhone pour choisir un nouveau mot de passe.`);
+    } catch (e) { setError(describeAuthError(e).text); } finally { setBusy(false); }
+  }
+
+  return (
+    <BottomSheet
+      title="Changer le mot de passe"
+      onClose={onClose}
+      footer={
+        <>
+          {error ? <div className="fin-error" role="alert" style={{ marginTop: 0, marginBottom: "var(--space-3)" }}>{error}</div> : null}
+          <Button variant="primary" block loading={busy} disabled={Boolean(blocker)} onClick={save}>Enregistrer</Button>
+          {blocker && (password || confirm) ? <div className="fin-tx-hint">{blocker}</div> : null}
+        </>
+      }
+    >
+      {done ? <div role="status" style={{ marginBottom: "var(--space-4)", color: "var(--accent-amber)", fontSize: 15, fontWeight: 600 }}>{done}</div> : null}
+      <TextField label="Nouveau mot de passe" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <TextField label="Confirme-le" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+      <Button variant="ghost" block disabled={busy} onClick={sendLink}>Recevoir plutôt un lien par email</Button>
+    </BottomSheet>
+  );
+}
 
 function ApiKeysSection() {
   const [keys, setKeys] = useState(null); // null = pas encore chargé
@@ -170,28 +277,29 @@ export function ReglagesScreen(props) {
   const [newRuleKeyword, setNewRuleKeyword] = useState("");
   const [newRuleCategory, setNewRuleCategory] = useState(categories[0]?.name || "");
   const categoryNames = categories.map((c) => c.name);
-
-  function BankPicker({ account }) {
-    const preset = BANK_PRESETS.find((b) => b.id === account.bank_id);
+  const [bankSheetFor, setBankSheetFor] = useState(null); // compte dont on choisit la banque
+  const [colorSheetFor, setColorSheetFor] = useState(null); // catégorie dont on choisit la couleur
+  const [pendingDelete, setPendingDelete] = useState(null); // { kind, id, name } en attente de confirmation
+  const [passwordSheet, setPasswordSheet] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const bankName = (id) => BANK_PRESETS.find((b) => b.id === id)?.name || "Choisir la banque";
+  // Icône de la catégorie sur une pastille teintée de sa couleur, avec un point de la couleur pure :
+  // la couleur se lit sans gros rond criard, et toucher l'icône ouvre le choix de couleur.
+  const CategorySwatch = ({ category }) => {
+    const color = categoryColor(categories, category.name);
     return (
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          openOptions({
-            title: "Banque",
-            options: ["Aucune (par défaut)", ...BANK_PRESETS.map((b) => b.name)],
-            value: preset?.name || "Aucune (par défaut)",
-            onSelect: (name) => {
-              const chosen = BANK_PRESETS.find((b) => b.name === name);
-              onChangeAccountBank(account.id, chosen?.id || null);
-            },
-          });
-        }}
-        aria-label="Banque"
-        style={{ width: 22, height: 22, borderRadius: "50%", border: "none", cursor: "pointer", background: preset?.primary || "var(--surface-inset)", boxShadow: preset ? "var(--elev-raised-sm)" : "var(--elev-inset-sm)", flexShrink: 0 }}
-      />
+        type="button"
+        className="fin-cat-swatch"
+        aria-label={`Couleur de ${category.name}`}
+        onClick={() => setColorSheetFor(category)}
+        style={{ "--swatch": color, background: `color-mix(in srgb, ${color} 22%, var(--surface-highlight))` }}
+      >
+        <img src={categoryIcon(categories, category.name)} alt="" width={20} height={20} />
+      </button>
     );
-  }
+  };
+
   const exportableTransactions = (() => {
     if (!plan?.limits.exportMonths) return transactions;
     const cutoff = new Date();
@@ -255,38 +363,39 @@ export function ReglagesScreen(props) {
           <>
             <div>
               <span style={sectionLabelStyle}>COMPTES PRINCIPAUX</span>
-              <Card padding="md" style={{ marginBottom: 12 }}>
-                {coreAccounts.map((a, i) => (
-                  <React.Fragment key={a.id}>
-                    {i > 0 ? <Divider /> : null}
-                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} extra={<BankPicker account={a} />} />
-                  </React.Fragment>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Les deux cartes de l'accueil. Touche la carte pour choisir la banque.</div>
+              <Card padding="sm">
+                {coreAccounts.map((a) => (
+                  <ManagedRow
+                    key={a.id}
+                    leading={<button type="button" className="fin-mrow__icon" style={{ width: 44 }} aria-label={`Banque de ${a.name}`} onClick={() => setBankSheetFor(a)}><BankBadge bankId={a.bank_id} bankPresets={BANK_PRESETS} /></button>}
+                    name={a.name}
+                    subtitle={bankName(a.bank_id)}
+                    onClick={() => setBankSheetFor(a)}
+                    onRename={(newName) => onRenameAccount(a.id, newName)}
+                    onDelete={() => setPendingDelete({ kind: "compte", id: a.id, name: a.name })}
+                  />
                 ))}
               </Card>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau compte" />
-                <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-              </div>
             </div>
 
             <div>
               <span style={sectionLabelStyle}>ÉPARGNE</span>
               <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Livrets et comptes d'épargne, affichés à part sur le tableau de bord.</div>
-              <Card padding="md" style={{ marginBottom: 12 }}>
-                {savingsAccounts.length === 0 && (
-                  <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucun livret pour l'instant.</div>
-                )}
-                {savingsAccounts.map((a, i) => (
-                  <React.Fragment key={a.id}>
-                    {i > 0 ? <Divider /> : null}
-                    <EditableRow name={a.name} onRename={(newName) => onRenameAccount(a.id, newName)} onDelete={() => onDeleteAccount(a.id)} extra={<BankPicker account={a} />} />
-                  </React.Fragment>
+              <Card padding="sm">
+                {savingsAccounts.map((a) => (
+                  <ManagedRow
+                    key={a.id}
+                    leading={<button type="button" className="fin-mrow__icon" style={{ width: 44 }} aria-label={`Banque de ${a.name}`} onClick={() => setBankSheetFor(a)}><BankBadge bankId={a.bank_id} bankPresets={BANK_PRESETS} /></button>}
+                    name={a.name}
+                    subtitle={bankName(a.bank_id)}
+                    onClick={() => setBankSheetFor(a)}
+                    onRename={(newName) => onRenameAccount(a.id, newName)}
+                    onDelete={() => setPendingDelete({ kind: "compte", id: a.id, name: a.name })}
+                  />
                 ))}
+                <AddRow placeholder="Nouveau livret" leading={<span className="fin-mrow__icon" style={{ width: 44 }}><span className="fin-mrow__ghost">+</span></span>} onAdd={(name) => onAddAccount(name)} />
               </Card>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input style={fieldInputStyle} value={newAccName} onChange={(e) => setNewAccName(e.target.value)} placeholder="Nouveau livret (ex. Livret A)" />
-                <button onClick={onAddAccount} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-              </div>
             </div>
           </>
         )}
@@ -295,63 +404,63 @@ export function ReglagesScreen(props) {
           <>
             <div>
               <span style={sectionLabelStyle}>CATÉGORIES</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touche une famille pour voir ses sous-catégories, ou le crayon pour la renommer.</div>
-              <Card padding="md" style={{ marginBottom: 12 }}>
-                {categories.filter((c) => !c.parent_id).map((fam, i) => {
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Touche une famille pour voir ses sous-catégories, et son icône pour changer de couleur.</div>
+              <Card padding="sm">
+                {categories.filter((c) => !c.parent_id).map((fam) => {
                   const children = categories.filter((c) => c.parent_id === fam.id);
                   const isOpen = expandedCatFamily === fam.id;
                   return (
                     <React.Fragment key={fam.id}>
-                      {i > 0 ? <Divider /> : null}
-                      <EditableRow
-                        name={fam.name} onRename={(newName) => onRenameCategory(fam.id, newName)} onDelete={() => onDeleteCategory(fam.id)}
-                        color={categoryColor(categories, fam.name)} onColorChange={(v) => onChangeCategoryColor(fam.id, v)}
-                        extra={children.length > 0 ? (
-                          <button onClick={(e) => { e.stopPropagation(); setExpandedCatFamily(isOpen ? null : fam.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
-                            <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)" }} />
-                          </button>
-                        ) : null}
+                      <ManagedRow
+                        leading={<CategorySwatch category={fam} />}
+                        name={fam.name}
+                        subtitle={children.length > 0 ? `${children.length} sous-catégorie${children.length > 1 ? "s" : ""}` : null}
+                        onClick={children.length > 0 ? () => setExpandedCatFamily(isOpen ? null : fam.id) : undefined}
+                        trailingExtra={children.length > 0 ? <ChevronRight size={16} color="var(--grey-3)" aria-hidden="true" style={{ flexShrink: 0, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)" }} /> : null}
+                        onRename={(newName) => onRenameCategory(fam.id, newName)}
+                        onDelete={() => setPendingDelete({ kind: "catégorie", id: fam.id, name: fam.name })}
                       />
                       {isOpen && children.map((c) => (
-                        <div key={c.id} style={{ paddingLeft: 21 }}>
-                          <EditableRow name={c.name} onRename={(newName) => onRenameCategory(c.id, newName)} onDelete={() => onDeleteCategory(c.id)} color={categoryColor(categories, c.name)} onColorChange={(v) => onChangeCategoryColor(c.id, v)} />
-                        </div>
+                        <ManagedRow
+                          key={c.id}
+                          indent={20}
+                          leading={<CategorySwatch category={c} />}
+                          name={c.name}
+                          onRename={(newName) => onRenameCategory(c.id, newName)}
+                          onDelete={() => setPendingDelete({ kind: "catégorie", id: c.id, name: c.name })}
+                        />
                       ))}
                     </React.Fragment>
                   );
                 })}
+                <AddRow placeholder="Nouvelle catégorie" leading={<span className="fin-mrow__ghost fin-mrow__ghost--square">+</span>} onAdd={(name) => onAddCategory(name)} />
               </Card>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input style={fieldInputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nouvelle catégorie" />
-                <button onClick={onAddCategory} style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}>Ajouter</button>
-              </div>
             </div>
 
             <div>
-              <span style={sectionLabelStyle}>RÈGLES DE CATÉGORISATION AUTOMATIQUE</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Si le titre d'une dépense contient ce mot, la catégorie se pré-remplit toute seule.</div>
-              <Card padding="md" style={{ marginBottom: 12 }}>
-                {(categoryRules || []).length === 0 && <div style={{ padding: "4px 0", fontSize: 13, color: "var(--text-tertiary)" }}>Aucune règle pour l'instant.</div>}
-                {(categoryRules || []).map((r, i) => (
-                  <React.Fragment key={r.id}>
-                    {i > 0 ? <Divider /> : null}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
-                      <span style={{ fontSize: 14 }}>"{r.keyword}" → {r.category}</span>
-                      <button onClick={() => onDeleteCategoryRule(r.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Trash2 size={15} color="var(--red)" /></button>
-                    </div>
-                  </React.Fragment>
+              <span style={sectionLabelStyle}>CATÉGORISATION AUTOMATIQUE</span>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Si le titre d'une dépense contient ce mot, la catégorie se remplit toute seule.</div>
+              <Card padding="sm">
+                {(categoryRules || []).map((r) => (
+                  <div key={r.id} className="fin-mrow">
+                    <span className="fin-mrow__main" style={{ cursor: "default" }}>
+                      <span className="fin-mrow__title">« {r.keyword} »</span>
+                      <span className="fin-mrow__sub">→ {r.category}</span>
+                    </span>
+                    <button type="button" className="fin-mrow__icon" aria-label={`Supprimer la règle ${r.keyword}`} onClick={() => onDeleteCategoryRule(r.id)}><Trash2 size={17} color="var(--red)" /></button>
+                  </div>
                 ))}
+                <AddRow
+                  placeholder="Mot-clé (ex. Netflix)"
+                  leading={<span className="fin-mrow__ghost fin-mrow__ghost--square">+</span>}
+                  extra={
+                    <button type="button" className="fin-chip" style={{ maxWidth: 110, flexShrink: 0 }} onMouseDown={(e) => e.preventDefault()} onClick={() => openOptions({ title: "Catégorie", options: categoryNames, value: newRuleCategory, onSelect: setNewRuleCategory })}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{newRuleCategory}</span>
+                    </button>
+                  }
+                  onAdd={(keyword) => onCreateCategoryRule({ keyword, category: newRuleCategory })}
+                />
               </Card>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input style={{ ...fieldInputStyle, flex: 1 }} value={newRuleKeyword} onChange={(e) => setNewRuleKeyword(e.target.value)} placeholder="Mot-clé (ex. Netflix)" />
-                <button style={fieldPickerStyle} onClick={() => openOptions({ title: "Catégorie", options: categoryNames, value: newRuleCategory, onSelect: setNewRuleCategory })}>{newRuleCategory}</button>
-                <button
-                  onClick={() => { if (newRuleKeyword.trim()) { onCreateCategoryRule({ keyword: newRuleKeyword.trim(), category: newRuleCategory }); setNewRuleKeyword(""); } }}
-                  style={{ background: "var(--accent-bg)", color: "var(--accent-text)", border: "none", borderRadius: "var(--radius-control)", padding: "0 18px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--elev-raised-sm)" }}
-                >
-                  Ajouter
-                </button>
-              </div>
             </div>
           </>
         )}
@@ -503,40 +612,109 @@ export function ReglagesScreen(props) {
 
         {section === "Compte" && (
           <>
-            <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>{userEmail}</span>
-              <button onClick={onSignOut} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "12px 0", cursor: "pointer" }}>
-                <LogOut size={16} /> Déconnexion
-              </button>
+            <Card padding="sm">
+              <div className="fin-mrow">
+                <span className="fin-mrow__main" style={{ cursor: "default" }}>
+                  <span className="fin-mrow__sub">Connecté avec</span>
+                  <span className="fin-mrow__title">{userEmail}</span>
+                </span>
+              </div>
+              <div className="fin-mrow">
+                <button type="button" className="fin-mrow__main" onClick={() => setPasswordSheet(true)}>
+                  <span className="fin-mrow__title">Changer le mot de passe</span>
+                </button>
+                <ChevronRight size={16} color="var(--grey-3)" aria-hidden="true" />
+              </div>
+              <div className="fin-mrow">
+                <button type="button" className="fin-mrow__main" onClick={onSignOut}>
+                  <span className="fin-mrow__title" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><LogOut size={16} aria-hidden="true" /> Se déconnecter</span>
+                </button>
+              </div>
             </Card>
 
             <div>
-              <span style={{ ...sectionLabelStyle, marginTop: "var(--space-4)" }}>ZONE DE DANGER</span>
-              <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {deleteError && <div style={{ color: "var(--red)", fontSize: 13 }}>{deleteError}</div>}
-                {!confirmingDelete ? (
-                  <button onClick={() => setConfirmingDelete(true)} style={{ background: "transparent", border: "none", color: "var(--red)", fontSize: 15, fontWeight: 600, padding: "8px 0", cursor: "pointer", textAlign: "left" }}>
-                    Supprimer mon compte
+              <span style={sectionLabelStyle}>ZONE DE DANGER</span>
+              <Card padding="sm">
+                <div className="fin-mrow">
+                  <button type="button" className="fin-mrow__main" onClick={() => { setDeleteError(""); setDeleteConfirmText(""); setConfirmingDelete(true); }}>
+                    <span className="fin-mrow__title" style={{ color: "var(--red)", display: "inline-flex", alignItems: "center", gap: 8 }}><Trash2 size={16} aria-hidden="true" /> Supprimer mon compte</span>
+                    <span className="fin-mrow__sub">Efface toutes tes données, après confirmation</span>
                   </button>
-                ) : (
-                  <>
-                    <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                      Toutes tes transactions, comptes, catégories, objectifs et abonnements suivis seront supprimés définitivement. Ton abonnement Stripe actif, s'il y en a un, sera annulé immédiatement. C'est irréversible.
-                    </span>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button onClick={() => setConfirmingDelete(false)} disabled={deleting} style={{ flex: 1, background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", border: "none", borderRadius: "var(--radius-control)", padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--text-primary)" }}>
-                        Annuler
-                      </button>
-                      <button onClick={confirmDeleteAccount} disabled={deleting} style={{ flex: 1, background: "var(--red)", color: "#FFFFFF", border: "none", borderRadius: "var(--radius-control)", padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
-                        {deleting ? "Suppression…" : "Confirmer la suppression"}
-                      </button>
-                    </div>
-                  </>
-                )}
+                </div>
               </Card>
             </div>
           </>
         )}
+
+        {bankSheetFor && (
+          <BottomSheet title={`Banque · ${bankSheetFor.name}`} onClose={() => setBankSheetFor(null)}>
+            <BankOptions
+              value={bankSheetFor.bank_id || null}
+              onSelect={(id) => onChangeAccountBank(bankSheetFor.id, id)}
+            />
+          </BottomSheet>
+        )}
+
+        {colorSheetFor && (
+          <BottomSheet title={`Couleur · ${colorSheetFor.name}`} onClose={() => setColorSheetFor(null)}>
+            <ColorOptions
+              value={categoryColor(categories, colorSheetFor.name)}
+              onSelect={(c) => onChangeCategoryColor(colorSheetFor.id, c)}
+            />
+          </BottomSheet>
+        )}
+
+        {pendingDelete && (
+          <BottomSheet
+            title={`Supprimer « ${pendingDelete.name} » ?`}
+            onClose={() => setPendingDelete(null)}
+            footer={
+              <ConfirmButtons
+                confirmLabel={`Supprimer ${pendingDelete.kind === "compte" ? "le compte" : "la catégorie"}`}
+                onConfirm={() => (pendingDelete.kind === "compte" ? onDeleteAccount(pendingDelete.id) : onDeleteCategory(pendingDelete.id))}
+              />
+            }
+          >
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.5 }}>
+              {pendingDelete.kind === "compte"
+                ? "Le compte disparaît de tes listes. Les raccourcis iOS qui l'utilisent par son nom ne le trouveront plus."
+                : "La catégorie disparaît de tes listes. Les raccourcis iOS qui l'utilisent par son nom ne la trouveront plus."}
+            </p>
+          </BottomSheet>
+        )}
+
+        {confirmingDelete && (
+          <BottomSheet
+            title="Supprimer ton compte ?"
+            onClose={() => !deleting && setConfirmingDelete(false)}
+            footer={
+              <>
+                {deleteError ? <div className="fin-error" role="alert" style={{ marginTop: 0, marginBottom: "var(--space-3)" }}>{deleteError}</div> : null}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  <Button variant="danger" block loading={deleting} disabled={deleteConfirmText.trim().toUpperCase() !== "SUPPRIMER"} onClick={confirmDeleteAccount}>
+                    <Trash2 size={18} aria-hidden="true" /> Supprimer définitivement
+                  </Button>
+                  <SheetCancel disabled={deleting} />
+                </div>
+              </>
+            }
+          >
+            <p style={{ margin: "0 0 var(--space-4)", color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.5 }}>
+              Toutes tes transactions, comptes, catégories, objectifs et abonnements suivis seront effacés. Ton abonnement payant, s'il y en a un, sera annulé. C'est irréversible.
+            </p>
+            <TextField
+              label="Pour confirmer, écris SUPPRIMER"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </BottomSheet>
+        )}
+
+        {passwordSheet && <PasswordSheet email={userEmail} onClose={() => setPasswordSheet(false)} />}
       </div>
     );
   }

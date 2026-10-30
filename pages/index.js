@@ -30,7 +30,7 @@ const ACTIVITE_SORTS = [
   { value: "montant-desc", label: "Montant le plus élevé" },
   { value: "montant-asc", label: "Montant le plus faible" },
 ];
-import { AccountCardStack, SavingsCard } from "../components/AccountCardStack";
+import { AccountCardStack, SavingsCard, BankBadge } from "../components/AccountCardStack";
 import { GoalsScreen } from "../components/GoalsScreen";
 import { PeaSimulatorScreen } from "../components/PeaSimulatorScreen";
 import { ReglagesScreen } from "../components/ReglagesScreen";
@@ -759,8 +759,8 @@ function ExpensesApp({ session }) {
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)));
     try { await api(`/api/categories/${id}`, { method: "PATCH", body: { color } }); } catch (e) { setError(e.message); }
   }
-  async function addCategory() {
-    const name = newCatName.trim();
+  async function addCategory(nameArg) {
+    const name = (typeof nameArg === "string" ? nameArg : newCatName).trim();
     if (!name || categories.some((c) => c.name === name)) return;
     const next = [...categories, { name }];
     setCategories(next);
@@ -789,8 +789,8 @@ function ExpensesApp({ session }) {
     setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, bank_id: bankId } : a)));
     try { await api(`/api/accounts/${id}`, { method: "PATCH", body: { bankId } }); } catch (e) { setError(e.message); }
   }
-  async function addAccount() {
-    const name = newAccName.trim();
+  async function addAccount(nameArg) {
+    const name = (typeof nameArg === "string" ? nameArg : newAccName).trim();
     if (!name || accounts.some((a) => a.name === name)) return;
     const next = [...accounts, { name }];
     setAccounts(next);
@@ -804,16 +804,16 @@ function ExpensesApp({ session }) {
   function renderList(groups, emptyText) {
     if (groups.length === 0) return <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "40px 0", fontSize: 14 }}>{emptyText}</div>;
     return groups.map(([date, txs]) => (
-      <div key={date} style={{ marginBottom: 20 }}>
-        <div style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: 8 }}>{fmtDateHeader(date)}</div>
-        <Card padding="md">
+      <div key={date} style={{ marginBottom: "var(--space-4)" }}>
+        <div style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", marginBottom: 6 }}>{fmtDateHeader(date)}</div>
+        <Card padding="var(--space-1) var(--space-4)">
           {txs.map((t, i) => {
             const Icon = t.type === "Virement" ? RefreshCw : CATEGORY_ICON[t.category] || ShoppingBag;
             const direction = t.type === "Virement" ? "neutral" : t.type === "Gain" ? "income" : "expense";
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+                <ListRow dense Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
               </React.Fragment>
             );
           })}
@@ -825,14 +825,14 @@ function ExpensesApp({ session }) {
   function renderFlatList(list, emptyText) {
     if (list.length === 0) return <div style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "24px 0", fontSize: 14 }}>{emptyText}</div>;
     return (
-      <Card padding="md">
+      <Card padding="var(--space-1) var(--space-4)">
         {list.map((t, i) => {
           const Icon = t.type === "Virement" ? RefreshCw : CATEGORY_ICON[t.category] || ShoppingBag;
           const direction = t.type === "Virement" ? "neutral" : t.type === "Gain" ? "income" : "expense";
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} />} />
+              <ListRow dense Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
             </React.Fragment>
           );
         })}
@@ -1086,9 +1086,16 @@ function ExpensesApp({ session }) {
                       onClick={hasSubs ? () => { haptic("light"); setExpandedFamily(isOpen ? null : spendLabel(d)); } : undefined}
                       style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: hasSubs ? "pointer" : "default" }}
                     >
-                      <span style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid var(--border-token)", background: "var(--surface-raised)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {icon ? <img src={icon} alt="" width={20} height={20} /> : <span style={{ width: 10, height: 10, borderRadius: "50%", background: spendColor(d) }} />}
-                      </span>
+                      {budgetByAccount ? (
+                        // Un compte se reconnaît à sa carte (couleurs de sa banque), pas à un rond de couleur.
+                        <span style={{ width: 40, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                          <BankBadge bankId={accounts.find((a) => a.name === spendLabel(d))?.bank_id} bankPresets={BANK_PRESETS} />
+                        </span>
+                      ) : (
+                        <span style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid var(--border-token)", background: "var(--surface-raised)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {icon ? <img src={icon} alt="" width={20} height={20} /> : <span style={{ width: 10, height: 10, borderRadius: "50%", background: spendColor(d) }} />}
+                        </span>
+                      )}
                       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                           <span style={{ flex: 1, minWidth: 0, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spendLabel(d)}</span>

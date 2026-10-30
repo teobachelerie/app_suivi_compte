@@ -210,3 +210,26 @@ export function SavingsCard({ name, balance, bankId, bankPresets, onClick }) {
     </div>
   );
 }
+
+// Mini-carte bancaire : la carte du compte en réduction (mêmes couleurs de banque, jamais de
+// logo), pour représenter un compte dans une liste. Sans banque choisie : contour pointillé, qui
+// invite à en choisir une. Le nom de la banque s'écrit à côté, en sous-titre.
+export function BankBadge({ bankId, bankPresets, width = 40 }) {
+  const height = Math.round(width * 0.64); // proportions d'une carte bancaire
+  const hasBank = Boolean(bankId && bankPresets.some((b) => b.id === bankId));
+  const style = hasBank ? styleForAccountCard({ key: bankId, bankId }, bankPresets, "dark") : null;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "relative", display: "inline-block", flexShrink: 0, width, height, borderRadius: Math.round(width / 8),
+        background: style ? style.background : "transparent",
+        border: style ? "1px solid rgba(255,255,255,0.12)" : "1.5px dashed var(--grey-3)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Puce de carte : suffit à lire « carte bancaire » sans aucun logo. */}
+      {style ? <span style={{ position: "absolute", left: Math.round(width * 0.14), top: Math.round(height * 0.34), width: Math.round(width * 0.2), height: Math.round(height * 0.3), borderRadius: 2, background: "linear-gradient(135deg, #f3d48a, #b8913a)", opacity: 0.9 }} /> : null}
+    </span>
+  );
+}
