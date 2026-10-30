@@ -10,7 +10,8 @@
     "format": "prettier --check .",
     "format:write": "prettier --write",
     "capture": "node tools/visual/capture.mjs",
-    "test:sheet": "node tools/visual/sheet-test.mjs"
+    "test:sheet": "node tools/visual/sheet-test.mjs",
+    "test:core": "node tools/visual/core-test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

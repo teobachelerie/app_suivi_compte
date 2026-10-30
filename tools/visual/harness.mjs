@@ -14,7 +14,7 @@ export async function launch() {
   return webkit.launch();
 }
 
-export async function newPage(browser, { theme = "dark", size = "390x844", authed = true, onboardingSeen = true, apiDelay = 0, reducedMotion = "no-preference" } = {}) {
+export async function newPage(browser, { theme = "dark", size = "390x844", authed = true, onboardingSeen = true, apiDelay = 0, reducedMotion = "no-preference", prepare } = {}) {
   const [width, height] = SIZES[size];
   const ctx = await browser.newContext({
     ...devices["iPhone 14"], viewport: { width, height }, deviceScaleFactor: 2, locale: "fr-FR", timezoneId: "Europe/Paris", reducedMotion,
@@ -56,6 +56,7 @@ export async function newPage(browser, { theme = "dark", size = "390x844", authe
     budgets: structuredClone(F.BUDGETS), rules: structuredClone(F.RULES), plan: { ...F.PLAN, onboardingSeen }, keys: structuredClone(F.API_KEYS),
   };
   page.state = state;
+  prepare?.(state); // permet à un test de modifier les données simulées avant le premier chargement
   let nextId = 1000;
   await page.route("**/127.0.0.1:54321/**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await page.route("**/api/**", async (route) => {

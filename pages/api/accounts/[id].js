@@ -1,5 +1,5 @@
 import { getUserId } from "../../../lib/db";
-import { updateAccountBank } from "../../../lib/meta";
+import { updateAccountBank, updateAccountCore } from "../../../lib/meta";
 
 export default async function handler(req, res) {
   const userId = await getUserId(req);
@@ -7,8 +7,10 @@ export default async function handler(req, res) {
   const { id } = req.query;
   try {
     if (req.method === "PATCH") {
-      const { bankId } = req.body;
-      await updateAccountBank(userId, id, bankId);
+      const { bankId, isCore } = req.body || {};
+      // Chaque champ est facultatif : seuls ceux présents dans la requête sont modifiés.
+      if (bankId !== undefined) await updateAccountBank(userId, id, bankId);
+      if (isCore !== undefined) await updateAccountCore(userId, id, isCore);
       return res.status(200).json({ ok: true });
     }
     res.setHeader("Allow", ["PATCH"]);

@@ -219,8 +219,15 @@ function ExpensesApp({ session }) {
   const [coreAccountIds, setCoreAccountIds] = useState([]);
   const coreAccountIdsRef = useRef([]);
   useEffect(() => { coreAccountIdsRef.current = coreAccountIds; }, [coreAccountIds]);
+  // Source de vérité : accounts.is_core en base (migration 019), car Safari peut effacer le
+  // localStorage d'une PWA. Si aucun compte n'est encore marqué, on reprend l'ancien choix
+  // (localStorage, puis noms historiques, puis les deux premiers) et on l'enregistre une fois.
+  const coreSyncedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined" || accounts.length === 0) return;
+    const fromServer = accounts.filter((a) => a.is_core).map((a) => a.id);
+    if (fromServer.length > 0) { setCoreAccountIds(fromServer); return; }
+
     let ids = [];
     try {
       const saved = JSON.parse(window.localStorage.getItem("expenses-core-account-ids") || "[]");
@@ -230,8 +237,15 @@ function ExpensesApp({ session }) {
       ids = accounts.filter((a) => LEGACY_CORE_NAMES.includes(a.name)).map((a) => a.id);
       if (ids.length === 0) ids = accounts.slice(0, 2).map((a) => a.id); // filet de sécurité si les noms ont déjà divergé
     }
-    window.localStorage.setItem("expenses-core-account-ids", JSON.stringify(ids));
     setCoreAccountIds(ids);
+
+    // La colonne n'existe que si la migration 019 a été exécutée : sans elle, rien à enregistrer.
+    const serverKnowsCore = accounts.some((a) => "is_core" in a);
+    if (!serverKnowsCore || coreSyncedRef.current) return;
+    coreSyncedRef.current = true;
+    Promise.all(ids.map((id) => api(`/api/accounts/${id}`, { method: "PATCH", body: { isCore: true } })))
+      .then(() => setAccounts((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, is_core: true } : a))))
+      .catch(() => { coreSyncedRef.current = false; }); // réessayé au prochain chargement
   }, [accounts]);
 
   const [activeTab, setActiveTab] = useState("apercu");
@@ -777,7 +791,7 @@ function ExpensesApp({ session }) {
   }
   async function renameAccount(id, newName) {
     const old = accounts.find((a) => a.id === id);
-    const next = accounts.map((a) => (a.id === id ? { id: a.id, name: newName, bank_id: a.bank_id } : a));
+    const next = accounts.map((a) => (a.id === id ? { ...a, name: newName } : a));
     setAccounts(next);
     try {
       await saveOptions("Compte", next);
