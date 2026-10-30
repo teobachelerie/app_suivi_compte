@@ -237,6 +237,7 @@ function ExpensesApp({ session }) {
       ids = accounts.filter((a) => LEGACY_CORE_NAMES.includes(a.name)).map((a) => a.id);
       if (ids.length === 0) ids = accounts.slice(0, 2).map((a) => a.id); // filet de sécurité si les noms ont déjà divergé
     }
+    try { window.localStorage.setItem("expenses-core-account-ids", JSON.stringify(ids)); } catch {} // utile tant que la migration 019 n'est pas passée
     setCoreAccountIds(ids);
 
     // La colonne n'existe que si la migration 019 a été exécutée : sans elle, rien à enregistrer.
@@ -803,14 +804,30 @@ function ExpensesApp({ session }) {
     setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, bank_id: bankId } : a)));
     try { await api(`/api/accounts/${id}`, { method: "PATCH", body: { bankId } }); } catch (e) { setError(e.message); }
   }
-  async function addAccount(nameArg) {
+  // `core` : le compte rejoint les cartes de l'accueil (comptes principaux) au lieu de l'épargne.
+  async function addAccount(nameArg, { core = false } = {}) {
     const name = (typeof nameArg === "string" ? nameArg : newAccName).trim();
     if (!name || accounts.some((a) => a.name === name)) return;
-    const next = [...accounts, { name }];
+    const serverKnowsCore = accounts.some((a) => "is_core" in a);
+    // Sans la colonne is_core (migration 019 pas encore exécutée), ne pas marquer le compte en
+    // local : l'effet des comptes principaux ne verrait plus que lui.
+    const next = [...accounts, core && serverKnowsCore ? { name, is_core: true } : { name }];
     setAccounts(next);
     setNewAccName("");
     try {
       await saveOptions("Compte", next);
+      if (core) {
+        const meta = await api("/api/meta");
+        const created = meta.accounts.find((a) => a.name === name);
+        if (created && serverKnowsCore) {
+          await api(`/api/accounts/${created.id}`, { method: "PATCH", body: { isCore: true } });
+        } else if (created) {
+          // Avant la migration : le choix reste mémorisé sur l'appareil, comme auparavant.
+          const ids = [...coreAccountIdsRef.current, created.id];
+          try { window.localStorage.setItem("expenses-core-account-ids", JSON.stringify(ids)); } catch {}
+          setCoreAccountIds(ids);
+        }
+      }
       await loadAll({ silent: true }); // récupère l'id assigné au nouveau compte
     } catch (e) { setError(e.message); }
   }

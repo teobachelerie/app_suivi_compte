@@ -282,6 +282,21 @@ export function ReglagesScreen(props) {
   const [pendingDelete, setPendingDelete] = useState(null); // { kind, id, name } en attente de confirmation
   const [passwordSheet, setPasswordSheet] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  // Le palier limite le nombre total de comptes (principaux et livrets confondus, comme côté
+  // serveur). Limite atteinte : plus de ligne d'ajout, mais une ligne qui l'explique et mène aux paliers.
+  const accountLimit = plan?.limits?.accounts ?? null;
+  const accountCount = coreAccounts.length + savingsAccounts.length;
+  const canAddAccount = accountLimit === null || accountCount < accountLimit;
+  const AccountLimitRow = () => (
+    <div className="fin-mrow">
+      <span className="fin-mrow__icon" style={{ width: 44 }}><Award size={18} color="var(--accent-orange)" aria-hidden="true" /></span>
+      <button type="button" className="fin-mrow__main" onClick={() => setSection("Abonnement")}>
+        <span className="fin-mrow__title">{accountLimit} compte{accountLimit > 1 ? "s" : ""} maximum</span>
+        <span className="fin-mrow__sub">Palier {plan?.limits?.label} · voir les paliers pour en ajouter</span>
+      </button>
+      <ChevronRight size={16} color="var(--grey-3)" aria-hidden="true" />
+    </div>
+  );
   const bankName = (id) => BANK_PRESETS.find((b) => b.id === id)?.name || "Choisir la banque";
   // Icône de la catégorie sur une pastille teintée de sa couleur, avec un point de la couleur pure :
   // la couleur se lit sans gros rond criard, et toucher l'icône ouvre le choix de couleur.
@@ -363,7 +378,7 @@ export function ReglagesScreen(props) {
           <>
             <div>
               <span style={sectionLabelStyle}>COMPTES PRINCIPAUX</span>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Les deux cartes de l'accueil. Touche la carte pour choisir la banque.</div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 10 }}>Les cartes de l'accueil. Touche la carte pour choisir la banque.</div>
               <Card padding="sm">
                 {coreAccounts.map((a) => (
                   <ManagedRow
@@ -376,6 +391,9 @@ export function ReglagesScreen(props) {
                     onDelete={() => setPendingDelete({ kind: "compte", id: a.id, name: a.name })}
                   />
                 ))}
+                {canAddAccount
+                  ? <AddRow placeholder="Nouveau compte" leading={<span className="fin-mrow__icon" style={{ width: 44 }}><span className="fin-mrow__ghost">+</span></span>} onAdd={(name) => onAddAccount(name, { core: true })} />
+                  : <AccountLimitRow />}
               </Card>
             </div>
 
@@ -394,7 +412,9 @@ export function ReglagesScreen(props) {
                     onDelete={() => setPendingDelete({ kind: "compte", id: a.id, name: a.name })}
                   />
                 ))}
-                <AddRow placeholder="Nouveau livret" leading={<span className="fin-mrow__icon" style={{ width: 44 }}><span className="fin-mrow__ghost">+</span></span>} onAdd={(name) => onAddAccount(name)} />
+                {canAddAccount
+                  ? <AddRow placeholder="Nouveau livret" leading={<span className="fin-mrow__icon" style={{ width: 44 }}><span className="fin-mrow__ghost">+</span></span>} onAdd={(name) => onAddAccount(name)} />
+                  : <AccountLimitRow />}
               </Card>
             </div>
           </>

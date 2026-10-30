@@ -72,6 +72,20 @@ export async function newPage(browser, { theme = "dark", size = "390x844", authe
     if (p.startsWith("/api/transactions/") && m === "PATCH") { const id = p.split("/").pop(); const i = state.txs.findIndex((t) => t.id === id); state.txs[i] = { ...state.txs[i], ...body }; return json(state.txs[i]); }
     if (p.startsWith("/api/transactions/") && m === "DELETE") { const id = p.split("/").pop(); state.txs = state.txs.filter((t) => t.id !== id); return json({ ok: true }); }
     if (p === "/api/meta" && m === "GET") return json(state.meta);
+    // Même logique que updateSelectOptions : un id garde la ligne (renommée), sans id elle est créée.
+    if (p === "/api/meta" && m === "PATCH" && body?.property === "Compte") {
+      state.meta.accounts = body.options.map((o) => {
+        const prev = state.meta.accounts.find((a) => a.id === o.id);
+        return prev ? { ...prev, name: o.name } : { id: `acc-n${nextId++}`, name: o.name, bank_id: null, ...("is_core" in (state.meta.accounts[0] || {}) ? { is_core: false } : {}) };
+      });
+      return json({ ok: true });
+    }
+    if (p.startsWith("/api/accounts/") && m === "PATCH") {
+      const a = state.meta.accounts.find((x) => x.id === p.split("/").pop());
+      if (a && body.isCore !== undefined) a.is_core = body.isCore;
+      if (a && body.bankId !== undefined) a.bank_id = body.bankId;
+      return json({ ok: true });
+    }
     if (p === "/api/subscriptions") return json(state.subs);
     if (p === "/api/goals") return json(state.goals);
     if (p === "/api/budgets") return json(state.budgets);

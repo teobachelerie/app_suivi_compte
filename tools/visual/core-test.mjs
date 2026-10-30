@@ -43,6 +43,34 @@ async function run(prepare) {
   check("base : aucune écriture", patches.length === 0, String(patches.length));
 }
 
+{ // Ajout d'un compte principal depuis la ligne vide : il est créé puis marqué principal.
+  const patches = [];
+  const page = await newPage(browser, { prepare: (s) => { s.meta.accounts.forEach((a) => { a.is_core = a.id === "acc-1" || a.id === "acc-2"; }); } });
+  page.on("request", (r) => { if (r.method() === "PATCH" && r.url().includes("/api/accounts/")) patches.push({ url: r.url(), body: r.postData() }); });
+  await settle(page, 1200);
+  await page.locator("nav button").nth(3).click(); await settle(page, 400);
+  await page.getByText("Comptes", { exact: true }).first().click(); await settle(page, 500);
+  await page.getByText("Nouveau compte", { exact: true }).click();
+  await page.keyboard.type("Compte joint");
+  await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await settle(page, 1200);
+  const text = await page.evaluate(() => document.body.innerText);
+  const core = text.slice(text.indexOf("COMPTES PRINCIPAUX"), text.indexOf("ÉPARGNE"));
+  check("ajout : le nouveau compte est marqué principal", patches.length === 1 && JSON.parse(patches[0].body).isCore === true, String(patches.length));
+  check("ajout : il apparaît sous les comptes principaux", core.includes("Compte joint"), core.replace(/\s+/g, " "));
+  await page.close();
+}
+{ // Palier atteint (4 comptes sur 4) : plus de ligne d'ajout, une ligne qui explique la limite.
+  const page = await newPage(browser, { prepare: (s) => { s.plan = { ...s.plan, limits: { ...s.plan.limits, accounts: 4, label: "Confirmé" } }; } });
+  await settle(page, 1200);
+  await page.locator("nav button").nth(3).click(); await settle(page, 400);
+  await page.getByText("Comptes", { exact: true }).first().click(); await settle(page, 500);
+  const text = await page.evaluate(() => document.body.innerText);
+  check("palier atteint : aucune ligne d'ajout", !text.includes("Nouveau compte") && !text.includes("Nouveau livret"));
+  check("palier atteint : la limite est expliquée", text.includes("4 comptes maximum"));
+  await page.close();
+}
+
 await browser.close();
 server.kill();
 for (const r of results) console.log(`${r.ok ? "OK  " : "ÉCHEC"} ${r.name}${r.detail ? " (" + r.detail + ")" : ""}`);
