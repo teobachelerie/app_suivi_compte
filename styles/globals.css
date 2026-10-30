@@ -460,8 +460,17 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   .fin-tx-root { animation: fin-sheet-in var(--duration-slow) var(--ease-out) backwards; }
   .fin-tx-root.is-closing { animation: fin-sheet-out var(--duration-base) var(--ease-standard) both; }
-  .fin-key:active, .fin-pill:active:not(:disabled), .fin-cat-tile:active { transform: scale(0.96); transition: transform var(--duration-micro) var(--ease-standard); }
+  /* Retour à l'appui : immédiat à l'enfoncement (100 ms), relâchement animé (transition posée sur
+     l'état de repos, sinon l'élément revient d'un coup). */
+  .fin-key, .fin-pill, .fin-cat-tile, .fin-icon-btn, .fin-back-floating, .fin-chip, .fin-sheet-close, .fin-pressable {
+    transition: transform var(--duration-micro) var(--ease-out), background var(--duration-micro) var(--ease-standard),
+      opacity var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard),
+      border-color var(--duration-micro) var(--ease-standard);
+  }
+  .fin-key:active, .fin-pill:active:not(:disabled), .fin-cat-tile:active, .fin-icon-btn:active, .fin-back-floating:active, .fin-chip:active { transform: scale(0.96); transition-duration: 100ms; }
+  .fin-pressable:active { transform: scale(0.98); transition-duration: 100ms; }
   .fin-key:active { background: var(--surface-highlight); }
+  .fin-sheet-close:active, .fin-seg button:active { opacity: 0.55; }
   @keyframes fin-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes fin-sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
   @keyframes fin-scrim-in { from { opacity: 0; } to { opacity: 1; } }
@@ -478,4 +487,14 @@ body {
   .fin-btn--primary:active:not(:disabled) { filter: brightness(0.94); }
   .fin-option:active { opacity: 0.55; }
   .fin-spinner { animation: fin-spin 700ms linear infinite; }
+}
+
+/* Animations réduites : pas de glissement, mais un fondu court pour que la feuille ne surgisse
+   pas d'un coup (équivalent non vestibulaire). Le retour à l'appui passe par l'opacité. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fin-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .fin-sheet-panel, .fin-sheet-scrim, .fin-tx-root { animation: fin-fade-in var(--duration-micro) linear both; }
+  .fin-sheet-root.is-dragged .fin-sheet-panel { animation: none; }
+  .fin-btn:active:not(:disabled), .fin-key:active, .fin-pill:active, .fin-cat-tile:active, .fin-icon-btn:active,
+  .fin-back-floating:active, .fin-chip:active, .fin-pressable:active, .fin-option:active, .fin-sheet-close:active { opacity: 0.6; }
 }

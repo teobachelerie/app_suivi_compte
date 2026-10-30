@@ -11,6 +11,7 @@ export const ListRow = forwardRef(function ListRow({ Icon, iconImage, iconColor,
       onPointerDown={() => interactive && setPressed(true)}
       onPointerUp={() => setPressed(false)}
       onPointerLeave={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)} // iOS annule le pointeur quand le doigt fait défiler : la ligne ne doit pas rester grisée
       style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", minHeight: "var(--hit-min)", padding: "var(--space-3) 0", borderRadius: "var(--radius-sm)", opacity: pressed ? 0.55 : 1, cursor: interactive ? "pointer" : "default", transition: "opacity var(--duration-micro) var(--ease-standard)", ...style }}
     >
       {iconImage ? (

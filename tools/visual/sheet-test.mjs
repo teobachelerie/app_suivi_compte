@@ -78,11 +78,11 @@ async function drag(page, dy) {
   await page.waitForTimeout(500);
   check("glissé de 200 px : la feuille se ferme", (await present(page)) === 0);
 }
-{ // réduction des animations : fermeture immédiate, aucune animation CSS sur le panneau
+{ // réduction des animations : fermeture immédiate ; à l'entrée, un simple fondu (aucun glissement)
   const page = await newPage(browser, { reducedMotion: "reduce" });
   await open(page);
   const anim = await page.locator(".fin-sheet-panel").evaluate((el) => getComputedStyle(el).animationName);
-  check("reduced-motion : aucune animation d'entrée", anim === "none", anim);
+  check("reduced-motion : entrée en fondu, sans glissement", anim === "fin-fade-in", anim);
   await page.getByRole("button", { name: "Fermer" }).click();
   await page.waitForTimeout(50);
   check("reduced-motion : fermeture immédiate", (await present(page)) === 0);

@@ -7,7 +7,7 @@ export function StatTile({ label, value, direction, Icon, onClick, style }) {
   const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--icon-secondary)";
   const Tag = onClick ? "button" : "div";
   return (
-    <Tag type={onClick ? "button" : undefined} onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", padding: "var(--space-4)", border: "none", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", color: "inherit", font: "inherit", textAlign: "left", cursor: onClick ? "pointer" : "default", WebkitTapHighlightColor: "transparent", ...style }}>
+    <Tag type={onClick ? "button" : undefined} className={onClick ? "fin-pressable" : undefined} onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", padding: "var(--space-4)", border: "none", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", color: "inherit", font: "inherit", textAlign: "left", cursor: onClick ? "pointer" : "default", WebkitTapHighlightColor: "transparent", ...style }}>
       <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
         {Icon ? <Icon size={14} color={color} /> : null}
         <span style={{ flex: 1, color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>{label}</span>
