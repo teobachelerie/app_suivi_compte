@@ -9,7 +9,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Finelio" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#E9E6E2" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -18,7 +18,7 @@ export default function Document() {
       <body>
         <script
           dangerouslySetInnerHTML={{
-            __html: `var d=document.documentElement;try{d.setAttribute("data-theme",localStorage.getItem("expenses-theme")==="light"?"light":"dark");}catch(e){d.setAttribute("data-theme","dark");}`,
+            __html: `var d=document.documentElement;try{d.setAttribute("data-theme",localStorage.getItem("expenses-theme")==="dark"?"dark":"light");}catch(e){d.setAttribute("data-theme","light");}`,
           }}
         />
         <Main />

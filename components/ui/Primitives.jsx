@@ -36,10 +36,13 @@ export function Amount({ value, direction = "neutral", size = "md", showSign = t
     sm: { size: "var(--size-subhead)", tracking: "var(--tracking-body)" },
   };
   const s = SIZES[size] || SIZES.md;
-  const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--text-primary)";
+  // D.A : dépense en encre, revenu en dégradé signature orange. Le signe (− / +) double toujours la
+  // couleur. Les gros chiffres passent en Inter Black, les montants de liste restent en gras lisible.
+  const big = size === "balance" || size === "xl" || size === "lg";
+  const color = direction === "expense" ? "var(--expense)" : direction === "income" ? "var(--income)" : "var(--text-primary)";
   const sign = !showSign || direction === "neutral" ? "" : direction === "expense" ? "−" : "+";
   return (
-    <span className="ds-tabular" style={{ color, fontFamily: "var(--font-numeric)", fontSize: s.size, fontWeight: "var(--weight-semibold)", letterSpacing: s.tracking, lineHeight: "var(--leading-tight)", whiteSpace: "nowrap", ...style }}>
+    <span className={`ds-tabular${direction === "income" ? " fin-grad-text" : ""}`} style={{ color, fontFamily: "var(--font-numeric)", fontSize: s.size, fontWeight: big ? "var(--weight-black)" : "var(--weight-bold)", letterSpacing: big ? "-0.035em" : s.tracking, lineHeight: "var(--leading-tight)", whiteSpace: "nowrap", ...style }}>
       {sign}{value}
     </span>
   );
@@ -81,7 +84,7 @@ export function Switch({ checked, onChange }) {
 
 export function ProgressBar({ value = 0, tone = "neutral", height = 8 }) {
   const pct = Math.max(0, Math.min(100, value));
-  const fill = tone === "expense" ? "var(--red)" : tone === "income" ? "var(--green)" : "var(--accent-bg)";
+  const fill = tone === "danger" ? "var(--red)" : tone === "expense" ? "var(--expense)" : tone === "income" ? "var(--grad-signature)" : "var(--accent-bg)";
   return (
     <div style={{ height, borderRadius: "var(--radius-round)", background: "var(--surface-inset)", boxShadow: "var(--elev-inset-sm)", overflow: "hidden" }}>
       <div style={{ width: pct + "%", height: "100%", borderRadius: "var(--radius-round)", background: fill, transition: "width var(--duration-slow) var(--ease-out)" }} />

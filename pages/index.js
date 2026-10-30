@@ -153,7 +153,9 @@ function ExpensesApp({ session }) {
     await api("/api/account/delete", { method: "POST" });
     await supabaseClient.auth.signOut();
   }
-  const [themeMode, setThemeMode] = useState("dark");
+  // D.A v3 : thème clair par défaut, sombre en option (Réglages). Même règle que le script de
+  // démarrage de _document.js, pour éviter un éclair au premier rendu.
+  const [themeMode, setThemeMode] = useState("light");
   useEffect(() => {
     const saved = typeof window !== "undefined" && window.localStorage.getItem("expenses-theme");
     if (saved === "light" || saved === "dark") setThemeMode(saved);
@@ -165,7 +167,7 @@ function ExpensesApp({ session }) {
       return next;
     });
   }
-  const BG_COLORS = { light: "#FBF6F2", dark: "#000000" };
+  const BG_COLORS = { light: "#E9E6E2", dark: "#161412" };
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.setAttribute("data-theme", themeMode === "dark" ? "dark" : "light");
@@ -879,15 +881,8 @@ function ExpensesApp({ session }) {
 
   return (
     <div style={{ background: "var(--surface-base)", minHeight: "100dvh", color: "var(--text-primary)", fontFamily: "var(--font-core)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)", position: "relative" }}>
-      {themeMode === "dark" && !showAdd && !editing && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 12% 6%, rgba(255,128,46,0.38), transparent 48%), " +
-            "radial-gradient(circle at 92% 26%, rgba(229,63,26,0.34), transparent 54%), " +
-            "radial-gradient(circle at 55% 92%, rgba(99,25,10,0.45), transparent 58%)",
-        }} />
-      )}
+      {/* Fond D.A (grille + ombres de fenêtre), dans les deux thèmes. */}
+      <div className="fin-backdrop" aria-hidden="true" />
       <div style={{ maxWidth: 420, margin: "0 auto", padding: "calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter-screen) 0", position: "relative", zIndex: 1 }}>
 
         {error && (
@@ -1023,7 +1018,7 @@ function ExpensesApp({ session }) {
                   );
                 })()}
                 <div style={{ marginTop: 8 }}>
-                  <BucketChart data={chartData} selectedKey={pressedBucket?.dateKey || null} onSelect={setPressedBucket} color={summaryType === "Gain" ? "var(--green)" : "var(--red)"} />
+                  <BucketChart data={chartData} selectedKey={pressedBucket?.dateKey || null} onSelect={setPressedBucket} color={summaryType === "Gain" ? "var(--income)" : "var(--expense)"} />
                 </div>
                 {!pressedBucket && chartData.length > 1 ? (
                   <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", textAlign: "center" }}>Touche ou glisse sur le graphique pour voir le détail</span>
@@ -1091,7 +1086,8 @@ function ExpensesApp({ session }) {
                     <span style={{ flex: 1, minWidth: 0, fontSize: 14 }}>{b.category}</span>
                     <span className="ds-tabular" style={{ fontSize: 13, color: "var(--text-secondary)" }}>{fmtEUR(b.spent)} / {fmtEUR(b.monthlyLimit)}</span>
                   </div>
-                  <ProgressBar value={Math.min(100, b.pct)} tone={b.state === "over" ? "expense" : b.state === "warning" ? "neutral" : "income"} />
+                  {/* Plafond : encre tant que tout va bien, orange à l'approche, rouge une fois dépassé (doublé du texte « Dépassé de »). */}
+                  <ProgressBar value={Math.min(100, b.pct)} tone={b.state === "over" ? "danger" : b.state === "warning" ? "income" : "expense"} />
                   <span style={{ fontSize: 12, color: b.state === "over" ? "var(--red)" : "var(--text-tertiary)" }}>
                     {b.state === "over" ? `Dépassé de ${fmtEUR(-b.remaining)}` : `Il reste ${fmtEUR(b.remaining)}`}
                   </span>
@@ -1135,7 +1131,7 @@ function ExpensesApp({ session }) {
                         </div>
                         {/* Part du total : une seule couleur, la longueur suffit à comparer. */}
                         <div style={{ height: 4, borderRadius: 2, background: "var(--surface-highlight)", overflow: "hidden" }}>
-                          <div style={{ width: `${Math.max(2, d.pct)}%`, height: "100%", borderRadius: 2, background: "var(--red)", opacity: 0.85 }} />
+                          <div style={{ width: `${Math.max(2, d.pct)}%`, height: "100%", borderRadius: 2, background: "var(--expense)", opacity: 0.85 }} />
                         </div>
                       </div>
                       {hasSubs ? <ChevronRight size={16} color="var(--grey-3)" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform var(--duration-micro) var(--ease-standard)", flexShrink: 0 }} /> : <span style={{ width: 16, flexShrink: 0 }} />}
@@ -1209,9 +1205,11 @@ function ExpensesApp({ session }) {
             ref={tourRef("addButton")}
             onClick={() => { haptic("light"); setShowAdd(true); }}
             aria-label="Ajouter une opération"
-            style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "#FFFFFF", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+            className="fin-pressable"
+            style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "var(--accent-bg)", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, WebkitTapHighlightColor: "transparent" }}
           >
-            <Plus size={24} color="#0A0A0A" />
+            {/* Pilule encre de la D.A : l'action principale, jamais d'orange plein. */}
+            <Plus size={24} color="var(--accent-text)" strokeWidth={2.5} />
           </button>
         }
       />

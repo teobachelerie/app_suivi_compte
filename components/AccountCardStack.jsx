@@ -65,27 +65,20 @@ const CARD_STYLES = {
   },
 };
 
-// Patrimoine n'est pas une banque : un halo de marque Finelio, plus chaud et plus riche que le
-// reste de l'app pour bien se distinguer dans la pile — décliné clair/sombre puisque ce n'est pas
-// une couleur de banque figée.
-const PATRIMOINE_STYLE_DARK = {
+// Patrimoine n'est pas une banque : carte encre de la D.A (jamais d'orange en fond plein), le solde
+// porte le dégradé signature. Identique dans les deux thèmes, comme les cartes de banque.
+const PATRIMOINE_STYLE = {
   background:
-    "radial-gradient(circle at 18% 12%, rgba(255,160,80,0.95), transparent 50%), " +
-    "radial-gradient(circle at 90% 35%, rgba(235,95,40,0.9), transparent 58%), " +
-    "radial-gradient(circle at 50% 105%, rgba(180,70,25,1), transparent 68%), #3d2210",
-  text: "#f6f5f2",
-  textMuted: "rgba(246,245,242,0.6)",
+    "linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px) 0 0 / 40px 40px, " +
+    "linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px) 0 0 / 40px 40px, " +
+    "linear-gradient(160deg, #3A3430 0%, #2B2724 55%, #221E1B 100%)",
+  text: "#F2EFEA",
+  textMuted: "rgba(242,239,234,0.6)",
   bankLabel: "FINELIO",
+  gradientBalance: true,
 };
-const PATRIMOINE_STYLE_LIGHT = {
-  background:
-    "radial-gradient(circle at 18% 12%, rgba(255,190,130,0.95), transparent 50%), " +
-    "radial-gradient(circle at 90% 35%, rgba(255,140,80,0.85), transparent 58%), " +
-    "radial-gradient(circle at 50% 105%, rgba(230,110,50,0.9), transparent 68%), #FBDCC0",
-  text: "#3d2210",
-  textMuted: "rgba(61,34,16,0.65)",
-  bankLabel: "FINELIO",
-};
+const PATRIMOINE_STYLE_DARK = PATRIMOINE_STYLE;
+const PATRIMOINE_STYLE_LIGHT = PATRIMOINE_STYLE;
 
 // Repli pour une banque non prévue par la maquette (n'importe quel autre préréglage choisi dans
 // Réglages) : un dégradé simple à partir de sa couleur, texte clair par défaut — reste correct
@@ -114,7 +107,7 @@ const OFFSET = 56;
 function CardFace({ style, name, isFront, frontContent }) {
   return (
     <div style={{ position: "relative", height: "100%", boxSizing: "border-box", padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-      <span style={{ color: style.text, fontSize: 17, fontWeight: 700 }}>{name}</span>
+      <span style={{ color: style.text, fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>{name}</span>
       {isFront && frontContent}
     </div>
   );
@@ -170,12 +163,22 @@ export function AccountCardStack({ accounts, active, onSelect, bankPresets, bala
               frontContent={
                 <>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ color: style.text, fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{balanceValue}</span>
+                    {/* Inter Black serré ; sur la carte encre, le solde prend le dégradé signature, éclairci
+                        pour rester lisible sur fond sombre. */}
+                    <span
+                      className="ds-tabular"
+                      style={{
+                        color: style.text, fontSize: 36, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1,
+                        ...(style.gradientBalance ? { background: "linear-gradient(180deg, #F6A866 0%, #EE7B26 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" } : null),
+                      }}
+                    >
+                      {balanceValue}
+                    </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {/* Pastille sombre derrière la variation : l'ambre et le rouge restaient illisibles sur les
                           cartes claires (Patrimoine pêche en thème clair, cartes de banque rouges). */}
-                      <span style={{ padding: "1px 6px", borderRadius: "var(--radius-round)", background: "rgba(0, 0, 0, 0.5)", whiteSpace: "nowrap", color: variationDirection === "up" ? "var(--accent-amber)" : "#ff9a80", fontSize: 13, fontWeight: 600 }}>{variationText}</span>
-                      <span style={{ color: style.textMuted, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{balanceLabel}</span>
+                      <span style={{ padding: "1px 6px", borderRadius: "var(--radius-round)", background: "rgba(0, 0, 0, 0.5)", whiteSpace: "nowrap", color: variationDirection === "up" ? "#F6A866" : "#F2EFEA", fontSize: 13, fontWeight: 700 }}>{variationText}</span>
+                      <span style={{ color: style.textMuted, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{balanceLabel}</span>
                     </div>
                   </div>
                   {style.bankLabel && (

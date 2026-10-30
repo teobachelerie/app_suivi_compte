@@ -1,22 +1,32 @@
-/* ============ Finelio Design System — tokens (thème sombre, palette de marque) ============ */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+/* ============ Finelio Design System — tokens (D.A Téo Bach v3 : base claire, un accent) ============ */
+/* Inter jusqu'au Black (titres, chiffres) ; EB Garamond italique pour les mots forts (Apple Garamond,
+   celle de la D.A, n'est pas distribuable sur le web : EB Garamond en est l'équivalent libre). */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=EB+Garamond:ital,wght@1,400;1,700&display=swap");
 
 :root {
-  /* ===== Palette de marque Finelio — thème clair (par défaut) ===== */
-  --surface-0: #FBF6F2;
-  --surface-1: #FFFFFF;
-  --surface-2: #F3EAE2;
-  --border-token: #EFE6DE;
-  --ink: #1E1712;
-  --ink-muted: #8A8078;
-  --accent-red: #e53f1a;
-  --accent-orange: #ff802e;
-  --accent-amber: #ffbb2e;
-  --accent-amber-text: #B8790A;
-  --accent-red-deep: #63190a;
-  /* texte posé sur un fond accent-* (bouton, puce colorée) : toujours sombre, quel que soit le
-     thème — ne jamais lier ceci à surface-0, qui lui change de couleur entre clair et sombre. */
+  /* ===== D.A v3 — thème clair (par défaut) =====
+     60 % fond, 25 % papier, 10 % encre, 5 % orange. L'orange sert aux chiffres et aux mots forts,
+     jamais de fond plein. Le jaune est réservé à AUDIT (pas utilisé dans l'app). */
+  --surface-0: #E9E6E2;   /* fond */
+  --surface-1: #F2EFEA;   /* papier : cartes, feuilles */
+  --surface-2: #E3DFD9;   /* papier enfoncé : état choisi, champ en lecture seule */
+  --border-token: #DAD5CE;
+  --ink: #2B2724;          /* encre : textes, pilules */
+  --ink-muted: #8C8580;    /* gris chaud : sous-lignes, labels */
+  --accent-red: #C8372D;   /* erreurs, suppressions, plafonds dépassés — plus les dépenses */
+  --accent-orange: #B8541F; /* orange brûlé : lisible en texte sur papier (contraste ≥ 4,5) */
+  --accent-orange-bright: #EE7B26;
+  --accent-orange-deep: #B8541F;
+  --accent-amber: var(--accent-orange); /* l'ambre des revenus est remplacé par l'orange */
+  --accent-amber-text: var(--accent-orange);
+  --accent-red-deep: #7A2318;
+  /* Dégradé signature : linéaire vertical, orange en haut, brûlé en bas (gros chiffres, mots forts). */
+  --grad-signature: linear-gradient(180deg, var(--accent-orange-bright) 0%, var(--accent-orange-deep) 100%);
+  /* texte posé sur un fond orange (rare : pastilles) : toujours sombre. */
   --on-accent: #14100c;
+  --font-serif: "EB Garamond", "Apple Garamond", Garamond, Georgia, serif;
+  --weight-black: 900;
+  --weight-heavy: 800;
 
   /* neutrals (conservés pour compatibilité, alignés sur la nouvelle palette) */
   --white: var(--ink);
@@ -28,25 +38,28 @@
   --grey-5: var(--ink-muted);
   --black: var(--surface-0);
 
-  /* semantic financial accents — dépense = rouge, revenu = ambre (pas vert) */
+  /* sens financier : dépense = encre (avec « − »), revenu = orange (avec « + »). --red ne sert plus
+     qu'aux erreurs ; --green (nom historique) désigne le revenu. */
   --red: var(--accent-red);
-  --green: var(--accent-amber-text);
+  --green: var(--accent-orange);
+  --expense: var(--ink);
+  --income: var(--accent-orange);
 
   /* surfaces */
   --surface-base: var(--surface-0);
   --surface-raised: var(--surface-1);
   --surface-highlight: var(--surface-2);
   --surface-inset: var(--surface-1);
-  --surface-scrim: rgba(30, 23, 18, 0.35);
-  --surface-danger: rgba(229, 63, 26, 0.10);
+  --surface-scrim: rgba(43, 39, 36, 0.38);
+  --surface-danger: rgba(200, 55, 45, 0.10);
 
   /* text — règle stricte : jamais de texte clair sur un fond accent-*, toujours --on-accent dessus */
   --text-primary: var(--ink);
-  --text-secondary: #55493F;
+  --text-secondary: #5A534D;
   --text-tertiary: var(--ink-muted);
   --text-inverse: var(--surface-0);
-  --text-expense: var(--accent-red);
-  --text-income: var(--accent-amber-text);
+  --text-expense: var(--expense);
+  --text-income: var(--income);
 
   /* icons */
   --icon-primary: var(--ink);
@@ -62,9 +75,9 @@
   --dark-source: transparent;
   --dark-source-strong: transparent;
 
-  /* accent de marque principal (CTA, boutons primaires) — toujours --on-accent dessus */
-  --accent-bg: var(--accent-orange);
-  --accent-text: var(--on-accent);
+  /* boutons d'action et puces choisies : pilule encre, texte blanc (jamais d'orange en fond plein) */
+  --accent-bg: var(--ink);
+  --accent-text: #FFFFFF;
 
   /* typography — Inter en premier, comme spécifié par le système de marque */
   --font-core: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
@@ -104,7 +117,7 @@
   --text-title-font: var(--weight-semibold) var(--size-title-2)/var(--leading-snug) var(--font-display);
   --text-headline-font: var(--weight-semibold) var(--size-headline)/var(--leading-normal) var(--font-core);
   --text-body-font: var(--weight-regular) var(--size-body)/var(--leading-relaxed) var(--font-core);
-  --text-caption-font: var(--weight-medium) var(--size-caption)/var(--leading-normal) var(--font-core);
+  --text-caption-font: var(--weight-bold) var(--size-caption)/var(--leading-normal) var(--font-core);
 
   /* spacing */
   --space-1: 4px;
@@ -134,9 +147,10 @@
   /* élévation — design plat : plus d'ombre douce, les surfaces se distinguent par leur couleur
      (surface-0/1/2) et une bordure fine, pas par un relief neumorphique */
   --elev-flat: none;
+  /* Cartes papier de la D.A : bordure fine + ombre douce portée vers le bas. */
   --elev-raised-sm: 0 0 0 1px var(--border-token);
-  --elev-raised: 0 0 0 1px var(--border-token);
-  --elev-raised-lg: 0 0 0 1px var(--border-token);
+  --elev-raised: 0 0 0 1px var(--border-token), 0 10px 24px -16px rgba(43, 39, 36, 0.35);
+  --elev-raised-lg: 0 0 0 1px var(--border-token), 0 14px 32px -16px rgba(43, 39, 36, 0.45);
   --elev-inset-sm: inset 0 0 0 1px var(--border-token);
   --elev-inset: inset 0 0 0 1px var(--border-token);
   --elev-press: inset 0 0 0 1px var(--border-token);
@@ -152,29 +166,29 @@
   --press-scale: 0.985;
 }
 
-/* Thème sombre = seul thème pour l'instant (identique à :root) — le bouton clair/sombre dans
-   Apparence reste fonctionnel sans erreur, mais ne change plus rien visuellement tant qu'un vrai
-   thème clair n'est pas redessiné avec la nouvelle palette de marque. */
+/* Thème sombre (option) : la même D.A en nuit — encre profonde au lieu du fond, papier sombre pour
+   les cartes, pilules papier. Pas de halo orange (abandonné par la D.A v3). */
 [data-theme="dark"] {
-  --surface-0: #000000;
-  --surface-1: #121212;
-  --surface-2: #1c1613;
-  --border-token: #2a2420;
-  --ink: #f6f5f2;
-  --ink-muted: #9a938c;
+  --surface-0: #161412;
+  --surface-1: #211E1B;
+  --surface-2: #2B2724;
+  --border-token: #36312C;
+  --ink: #F2EFEA;
+  --ink-muted: #9C948C;
+  --accent-orange: #EE7B26;
+  --accent-red: #E5574A;
 
   --surface-base: var(--surface-0);
   --surface-raised: var(--surface-1);
   --surface-highlight: var(--surface-2);
   --surface-inset: var(--surface-1);
   --surface-scrim: rgba(0, 0, 0, 0.6);
-  --surface-danger: rgba(229, 63, 26, 0.15);
+  --surface-danger: rgba(229, 87, 74, 0.15);
 
   --text-primary: var(--ink);
-  --text-secondary: #c4beb8;
+  --text-secondary: #C9C2BA;
   --text-tertiary: var(--ink-muted);
   --text-inverse: var(--surface-0);
-  --text-income: var(--accent-amber);
 
   --icon-primary: var(--ink);
   --icon-secondary: var(--ink-muted);
@@ -182,16 +196,13 @@
   --separator: var(--border-token);
   --hairline: var(--border-token);
 
-  --light-source: transparent;
-  --light-source-strong: transparent;
-  --dark-source: transparent;
-  --dark-source-strong: transparent;
-
   --red: var(--accent-red);
-  --green: var(--accent-amber);
+  --green: var(--accent-orange);
+  --expense: var(--ink);
+  --income: var(--accent-orange);
 
-  --accent-bg: var(--accent-orange);
-  --accent-text: var(--on-accent);
+  --accent-bg: var(--ink);
+  --accent-text: #2B2724;
 }
 
 html {
@@ -243,20 +254,46 @@ body {
 
 /* ===== Écrans de chargement, notification, célébration ===== */
 
-/* Halo de marque : n'apparaît qu'en thème sombre, piloté uniquement par le CSS pour être correct dès
-   le tout premier rendu (l'attribut data-theme est posé avant, par un script en tête de page). */
-.fin-halo {
+/* Fond D.A : grille de 120 px très légère (noir 4 %), ombres de fenêtre floues en diagonale et vignette
+   douce sur les bords. Couche fixe derrière le contenu (aucun effet de défilement, rien à recalculer).
+   .fin-halo garde son nom pour les écrans qui l'utilisaient déjà (chargement). */
+.fin-backdrop, .fin-halo {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0;
+  --grid-line: rgba(0, 0, 0, 0.04);
+  --shadow-band: rgba(43, 39, 36, 0.07);
+  --light-band: rgba(255, 255, 255, 0.35);
+  --vignette: rgba(43, 39, 36, 0.10);
   background:
-    radial-gradient(circle at 12% 6%, rgba(255,128,46,0.38), transparent 48%),
-    radial-gradient(circle at 92% 26%, rgba(229,63,26,0.34), transparent 54%),
-    radial-gradient(circle at 55% 92%, rgba(99,25,10,0.45), transparent 58%);
+    radial-gradient(ellipse at 50% 45%, transparent 55%, var(--vignette) 100%),
+    linear-gradient(118deg, transparent 8%, var(--shadow-band) 16%, transparent 26%, var(--light-band) 34%, transparent 42%, var(--shadow-band) 54%, transparent 66%, var(--light-band) 74%, transparent 84%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px) 0 0 / 120px 120px,
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px) 0 0 / 120px 120px;
 }
-[data-theme="dark"] .fin-halo { opacity: 1; }
+[data-theme="dark"] .fin-backdrop, [data-theme="dark"] .fin-halo {
+  --grid-line: rgba(255, 255, 255, 0.035);
+  --shadow-band: rgba(0, 0, 0, 0.28);
+  --light-band: rgba(242, 239, 234, 0.035);
+  --vignette: rgba(0, 0, 0, 0.35);
+}
+/* Les ombres glissent lentement, comme dans les vidéos : 40 s par cycle, imperceptible en lecture. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fin-window-drift { from { background-position: 0 0, 0 0, 0 0, 0 0; } to { background-position: 0 0, 240px 0, 0 0, 0 0; } }
+  .fin-backdrop { background-size: auto, 200% 100%, 120px 120px, 120px 120px; animation: fin-window-drift 40s ease-in-out infinite alternate; }
+}
+
+/* Mots forts de la D.A : Garamond gras italique en dégradé signature ; sous-ligne grise en Garamond
+   italique. Le dégradé passe par background-clip, avec une couleur de repli si le navigateur ne suit pas. */
+.fin-strong-word { font-family: var(--font-serif); font-style: italic; font-weight: 700; letter-spacing: 0; color: var(--accent-orange); }
+.fin-sub-serif { font-family: var(--font-serif); font-style: italic; font-weight: 400; letter-spacing: 0; color: var(--text-tertiary); }
+.fin-grad-text { color: var(--accent-orange); }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .fin-grad-text, .fin-strong-word { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+}
+/* Gros chiffres et titres : Inter Black, interlettrage serré. */
+.fin-black { font-weight: var(--weight-black); letter-spacing: -0.035em; }
 
 .fin-skel {
   background: var(--surface-1);
@@ -390,7 +427,7 @@ body {
 .fin-sheet-head { flex: none; padding: var(--space-2) var(--space-4) var(--space-3); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .fin-sheet-grabber { width: 36px; height: 5px; margin: 0 auto var(--space-2); border-radius: 3px; background: var(--border-token); }
 .fin-sheet-title { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--hit-min); }
-.fin-sheet-title h2 { margin: 0; font: var(--weight-semibold) 20px/1.2 var(--font-display); letter-spacing: var(--tracking-title); color: var(--text-primary); }
+.fin-sheet-title h2 { margin: 0; font: var(--weight-black) 21px/1.15 var(--font-display); letter-spacing: var(--tracking-title); color: var(--text-primary); }
 .fin-sheet-close { display: inline-flex; align-items: center; justify-content: center; width: var(--hit-min); height: var(--hit-min); margin-right: calc(var(--space-2) * -1); border: none; border-radius: var(--radius-round); background: transparent; color: var(--text-secondary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .fin-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-1) var(--gutter-screen) var(--space-5); -webkit-overflow-scrolling: touch; }
 .fin-sheet-foot { flex: none; padding: var(--space-3) var(--gutter-screen) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border-token); }
@@ -429,7 +466,7 @@ body {
 .fin-tx-foot { flex: none; padding: var(--space-2) var(--gutter-screen) calc(var(--space-2) + env(safe-area-inset-bottom, 0px)); }
 .fin-tx-amount { display: flex; flex-direction: column; align-items: center; width: 100%; padding: var(--space-4) 0 var(--space-3); border: none; background: none; cursor: default; -webkit-tap-highlight-color: transparent; }
 .fin-tx-amount__expr { min-height: 20px; color: var(--text-tertiary); font-size: 15px; }
-.fin-tx-amount__value { font: var(--weight-semibold) 48px/1.1 var(--font-display); letter-spacing: -0.02em; white-space: nowrap; }
+.fin-tx-amount__value { font: var(--weight-black) 52px/1.05 var(--font-display); letter-spacing: -0.04em; white-space: nowrap; }
 .fin-tx-title { margin-top: var(--space-3); }
 .fin-tx-hint { min-height: 18px; margin-top: var(--space-1); color: var(--text-tertiary); font-size: var(--size-footnote); text-align: center; }
 .fin-tx-more { padding-top: var(--space-1); }

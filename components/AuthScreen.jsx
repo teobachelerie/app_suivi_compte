@@ -64,11 +64,16 @@ export function AuthScreen({ initialError = null }) {
   }
 
   return (
-    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--gutter-screen)", fontFamily: "var(--font-core)" }}>
-      <div style={{ width: "100%", maxWidth: 380 }}>
+    <div style={{ background: "var(--surface-base)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--gutter-screen)", fontFamily: "var(--font-core)", position: "relative" }}>
+      <div className="fin-backdrop" aria-hidden="true" />
+      <div style={{ width: "100%", maxWidth: 380, position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
-          <div style={{ font: "600 28px var(--font-display)", color: "var(--text-primary)" }}>Finelio</div>
-          <div style={{ color: "var(--text-tertiary)", fontSize: 14, marginTop: 4 }}>Suivi de dépenses</div>
+          {/* D.A : titre en Inter Black, un seul mot fort en Garamond italique dégradé, sous-ligne grise. */}
+          <div className="fin-black" style={{ fontSize: 40, lineHeight: 1, color: "var(--text-primary)" }}>Finelio</div>
+          <div style={{ marginTop: 10, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)", fontWeight: 900, letterSpacing: "-0.03em" }}>
+            Tes dépenses, <span className="fin-strong-word" style={{ fontSize: 28 }}>en clair</span>
+          </div>
+          <div className="fin-sub-serif" style={{ fontSize: 17, marginTop: 6 }}>sans relevé bancaire, en trois secondes.</div>
         </div>
 
         <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>

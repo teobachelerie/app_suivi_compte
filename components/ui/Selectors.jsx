@@ -4,7 +4,7 @@ import { Amount } from "./Primitives";
 // Tuile chiffrée. Cliquable : rendue en <button> avec un chevron, pour qu'on devine qu'elle
 // ouvre le détail (avant, rien ne l'indiquait).
 export function StatTile({ label, value, direction, Icon, onClick, style }) {
-  const color = direction === "expense" ? "var(--red)" : direction === "income" ? "var(--green)" : "var(--icon-secondary)";
+  const color = direction === "expense" ? "var(--expense)" : direction === "income" ? "var(--income)" : "var(--icon-secondary)";
   const Tag = onClick ? "button" : "div";
   return (
     <Tag type={onClick ? "button" : undefined} className={onClick ? "fin-pressable" : undefined} onClick={onClick} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", padding: "var(--space-4)", border: "none", borderRadius: "var(--radius-lg)", background: "var(--surface-raised)", boxShadow: "var(--elev-raised)", color: "inherit", font: "inherit", textAlign: "left", cursor: onClick ? "pointer" : "default", WebkitTapHighlightColor: "transparent", ...style }}>

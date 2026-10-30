@@ -340,7 +340,7 @@ export function TransactionSheet({ tx, categories, accounts, transactions, categ
   }
 
   const showKeypad = !typing && keypadOpen;
-  const amountColor = type === "Gain" ? "var(--green)" : type === "Dépense" ? "var(--red)" : "var(--text-primary)";
+  const amountColor = type === "Gain" ? "var(--income)" : type === "Dépense" ? "var(--expense)" : "var(--text-primary)";
   const sign = type === "Gain" ? "+" : type === "Dépense" ? "−" : "";
   const recents = recentByType[type === "Gain" ? "Gain" : "Dépense"] || [];
   const focusProps = { onFocus: () => setTyping(true), onBlur: () => setTyping(false) };

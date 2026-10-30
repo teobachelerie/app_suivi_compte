@@ -32,7 +32,7 @@ Contexte complet : `docs/HANDOFF.md`. Benchmark UX et décisions de saisie à pr
 
 - `apple-mobile-web-app-status-bar-style = black-translucent` (flou de la barre d'état voulu par Téo) combiné à `html { height: calc(100% + env(safe-area-inset-top, 0px)) }` dans `styles/globals.css`. Ce couple corrige un bug WebKit qui laisse une bande noire en bas en mode standalone avec `black-translucent`.
 - La barre d'onglets (`TabBar` dans `components/ui/Navigation.jsx`) a un `padding-bottom` fixe de 20 px, sans `env(safe-area-inset-bottom)`. Valeur validée à l'œil par Téo après de nombreuses tentatives.
-- Script d'amorçage du thème dans `pages/_document.js` (sombre par défaut) : évite l'éclair clair au démarrage. L'effet de `pages/index.js` (`BG_COLORS`) maintient fond du `body` et `theme-color`.
+- Script d'amorçage du thème dans `pages/_document.js` (clair par défaut depuis la D.A v3) : évite l'éclair au démarrage. L'effet de `pages/index.js` (`BG_COLORS`) maintient fond du `body` et `theme-color`.
 - Viewport sans zoom, `overscroll-behavior: none`.
 - iOS met en cache les balises meta de la PWA : après un changement, Téo doit supprimer l'icône de l'écran d'accueil et la rajouter pour voir l'effet.
 - Le stockage d'une PWA installée est séparé de celui de Safari.
@@ -40,16 +40,19 @@ Contexte complet : `docs/HANDOFF.md`. Benchmark UX et décisions de saisie à pr
 
 ## Design system
 
-Références : `docs/design-reference/design-system/README.md` et les maquettes. Règles non négociables :
+Référence principale : la D.A de Téo (« Teo Bach - Direction artistique v3.pdf », dossier Brand Compte), appliquée le 30 octobre 2026. Anciennes maquettes : `docs/design-reference/`. Règles non négociables :
 
-- Thème sombre par défaut (`#000000`), thème clair fonctionnel (`:root` clair, `[data-theme="dark"]` sombre).
-- Orange = marque et appels à l'action. Rouge = dépenses. **Ambre = revenus (pas de vert).** Le token hérité `--green` vaut en réalité de l'ambre.
-- Tout texte posé sur un fond d'accent utilise `--on-accent` (`#14100c`, noir chaud fixe dans les deux thèmes), jamais `ink` ni `surface-0` (crème en thème clair). Contraste mesuré, contraignant.
+- Base claire par défaut : fond `#E9E6E2` (grille de 120 px à 4 % et ombres de fenêtre, `.fin-backdrop`), papier `#F2EFEA` pour les cartes, encre `#2B2724` pour les textes. Thème sombre en option (`[data-theme="dark"]`, même D.A en nuit). Plus de halo orange.
+- Orange = chiffres et mots forts, jamais en fond plein. Dégradé signature vertical `#EE7B26` → `#B8541F` (`--grad-signature`, `.fin-grad-text`). En texte sur papier, orange brûlé `#B8541F` (`--accent-orange`).
+- Boutons d'action, onglet actif, puces choisies, bouton « + » : pilule encre, texte blanc (`--accent-bg` / `--accent-text`).
+- Revenus en orange (`--income`, nom historique `--green`), dépenses en encre (`--expense`). Le rouge (`--red`) ne sert plus qu'aux erreurs, suppressions et plafonds dépassés.
+- Typo : Inter Black (900) serrée pour titres et gros chiffres (`.fin-black`) ; EB Garamond gras italique en dégradé pour un ou deux mots forts (`.fin-strong-word`) ; Garamond italique gris pour les sous-lignes (`.fin-sub-serif`, sous-titres de `NavBar`). Pas d'Helvetica ni de Didot.
+- `--on-accent` (`#14100c`) reste la règle pour un texte posé sur un fond orange (rare).
 - Ne jamais différencier dépense et élément cliquable par la couleur seule (rouge et orange sont proches) : doubler d'un signe, d'une icône ou d'un texte.
 - Aucun emoji dans l'interface. Les icônes de catégories sont des SVG Fluent Emoji (`public/category-icons/`, nom de fichier dans `categories.icon`) posés sur une pastille.
 - Noms de catégories : un seul nom court, jamais deux noms accolés (« Stationnement », pas « Parking / Péage »). Une icône propre à chaque catégorie (migration 018). Icône introuvable : repli sur la famille puis sur `label_color.svg` (`categoryIcon` dans `lib/format.js`).
 - Écrans secondaires : seule la flèche de `NavBar back` flotte (position fixe, `.fin-back-floating`) ; le titre défile, aucune bande derrière. Les feuilles du bas (`BottomSheet`) sont rendues dans `document.body` (portail).
-- Police Inter, chiffres tabulaires (`.ds-tabular`) pour tous les montants.
+- Chiffres tabulaires (`.ds-tabular`) pour tous les montants.
 - Élévation par bordure fine (`--border-token`). Plus d'ombres néomorphiques. Les anciens tokens (`--elev-*`, `--surface-raised/inset/highlight/base`) sont des alias de compatibilité vers ce rendu plat.
 - Cartes de comptes : couleurs de banque réelles, jamais de logo.
 - Mouvement : tokens `--duration-micro` (150 ms), `--duration-base` (200 ms), `--duration-slow` (250 ms), `--ease-standard`, `--ease-out`. La pile de cartes de comptes utilise 280 ms avec `cubic-bezier(0.2, 0.8, 0.2, 1)`. Toute animation CSS passe sous `@media (prefers-reduced-motion: no-preference)`, et les animations JS testent `matchMedia` (voir `lib/useAnimatedNumber.js`).
