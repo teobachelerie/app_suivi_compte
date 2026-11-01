@@ -23,8 +23,10 @@ async function run(prepare) {
   await settle(page, 500);
   const text = await page.evaluate(() => document.body.innerText);
   const core = text.slice(text.indexOf("COMPTES PRINCIPAUX"), text.indexOf("ÉPARGNE"));
+  // État final côté API simulée : fiable même si une écriture part avant que l'écouteur soit branché.
+  const marked = page.state.meta.accounts.filter((a) => a.is_core).map((a) => a.id).sort().join(",");
   await page.close();
-  return { patches, core };
+  return { patches, core, marked };
 }
 
 { // Migration 019 pas encore exécutée : la colonne est absente, comportement inchangé, aucune écriture.
@@ -33,9 +35,8 @@ async function run(prepare) {
   check("sans migration : aucune écriture", patches.length === 0, String(patches.length));
 }
 { // Migration exécutée, aucun compte marqué (noms renommés) : l'app enregistre le choix affiché.
-  const { patches } = await run((s) => { s.meta.accounts.forEach((a) => { a.is_core = false; }); });
-  const ids = patches.map((p) => p.url.split("/").pop()).sort().join(",");
-  check("reprise : enregistre les deux comptes affichés", ids === "acc-1,acc-2" && patches.every((p) => JSON.parse(p.body).isCore === true), ids);
+  const { marked } = await run((s) => { s.meta.accounts.forEach((a) => { a.is_core = false; }); });
+  check("reprise : enregistre les deux comptes affichés", marked === "acc-1,acc-2", marked);
 }
 { // Choix lu en base : Pro et Livret A sont principaux, même si le localStorage est vide.
   const { patches, core } = await run((s) => { s.meta.accounts.forEach((a) => { a.is_core = a.id === "acc-2" || a.id === "acc-3"; }); });
