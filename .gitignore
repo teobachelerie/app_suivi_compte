@@ -12,3 +12,6 @@ transactions-*.json
 .claude/settings.local.json
 .vercel
 tools/visual/out
+
+# Mode démo (npm run demo)
+.next-demo

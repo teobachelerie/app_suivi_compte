@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "demo": "node tools/demo/generate.mjs && NEXT_PUBLIC_DEMO=1 NEXT_DIST_DIR=.next-demo next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
