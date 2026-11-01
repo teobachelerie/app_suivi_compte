@@ -284,6 +284,23 @@ function ExpensesApp({ session }) {
   const [plan, setPlan] = useState(null); // { tier, limits, stripeStatus, currentPeriodEnd } — null tant que pas chargé
   const [showGoals, setShowGoals] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
+  // Un écran secondaire (simulateur, objectifs, abonnements, livret) s'ouvre en haut de page : sans
+  // ça il héritait du défilement de l'accueil et sa flèche de retour chevauchait le contenu. En
+  // revenant, l'accueil retrouve la position qu'on avait quittée. Changer d'onglet remonte en haut.
+  const subScreen = showSimulator ? "pea" : showGoals ? "goals" : showSubscriptions ? "subs" : savingsDetailAccount ? `livret-${savingsDetailAccount}` : null;
+  const scrollBeforeSubRef = useRef(0);
+  const prevSubScreenRef = useRef(null);
+  useEffect(() => {
+    const scroller = typeof document !== "undefined" ? document.getElementById("__next") : null;
+    const prev = prevSubScreenRef.current;
+    prevSubScreenRef.current = subScreen;
+    if (!scroller || prev === subScreen) return;
+    if (subScreen && !prev) scrollBeforeSubRef.current = scroller.scrollTop;
+    scroller.scrollTo(0, subScreen ? 0 : scrollBeforeSubRef.current);
+  }, [subScreen]);
+  useEffect(() => {
+    document.getElementById("__next")?.scrollTo(0, 0);
+  }, [activeTab]);
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
   const [budgets, setBudgets] = useState([]);

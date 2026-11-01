@@ -271,6 +271,17 @@ export function ReglagesScreen(props) {
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
+  // Une section s'ouvre en haut de page ; au retour, le menu retrouve sa position.
+  const menuScrollRef = useRef(0);
+  const prevSectionRef = useRef(null);
+  useEffect(() => {
+    const scroller = document.getElementById("__next");
+    const prev = prevSectionRef.current;
+    prevSectionRef.current = section;
+    if (!scroller || prev === section) return;
+    if (section && !prev) menuScrollRef.current = scroller.scrollTop;
+    scroller.scrollTo(0, section ? 0 : menuScrollRef.current);
+  }, [section]);
   const [hapticsOn, setHapticsOn] = useState(true);
   useEffect(() => { setHapticsOn(isHapticsEnabled()); }, []); // lu côté client uniquement (localStorage)
   const isLight = themeMode === "light";

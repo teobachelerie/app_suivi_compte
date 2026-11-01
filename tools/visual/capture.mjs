@@ -32,6 +32,7 @@ const scenarios = [
   { name: "09-objectifs", run: async (p) => { await clickText(p, "Objectifs"); } },
   { name: "09b-objectif-nouveau", run: async (p) => { await clickText(p, "Objectifs"); await clickText(p, "Ajouter un objectif"); } },
   { name: "10-pea", run: async (p) => { await clickText(p, "Simulateur PEA"); } },
+  { name: "10b-pea-annee", run: async (p) => { await clickText(p, "Simulateur PEA"); await settle(p, 600); const box = await p.locator(".recharts-wrapper").first().boundingBox(); await p.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.5); } },
   { name: "11-activite", run: async (p) => { await tab(p, 1); } },
   { name: "12-activite-filtres", run: async (p) => { await tab(p, 1); await clickText(p, "Filtrer et trier", { exact: false }); } },
   { name: "13-budgets", run: async (p) => { await tab(p, 2); } },
