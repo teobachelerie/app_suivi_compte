@@ -261,6 +261,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
   --grid-line: rgba(0, 0, 0, 0.04);
   --shadow-band: rgba(43, 39, 36, 0.07);
@@ -268,9 +269,20 @@ body {
   --vignette: rgba(43, 39, 36, 0.10);
   background:
     radial-gradient(ellipse at 50% 45%, transparent 55%, var(--vignette) 100%),
-    linear-gradient(118deg, transparent 8%, var(--shadow-band) 16%, transparent 26%, var(--light-band) 34%, transparent 42%, var(--shadow-band) 54%, transparent 66%, var(--light-band) 74%, transparent 84%),
     linear-gradient(to right, var(--grid-line) 1px, transparent 1px) 0 0 / 120px 120px,
     linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px) 0 0 / 120px 120px;
+}
+/* Ombres de fenêtre sur leur propre calque, plus large que l'écran et sans répétition : une diagonale
+   répétée en tuiles ne se raccorde pas et laissait une cassure verticale nette en glissant. Le calque
+   se déplace par transform (composité, rien n'est repeint). Ses bords restent hors écran. */
+.fin-backdrop::before, .fin-halo::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  right: -40%;
+  background: linear-gradient(118deg, transparent 6%, var(--shadow-band) 14%, transparent 24%, var(--light-band) 32%, transparent 40%, var(--shadow-band) 52%, transparent 62%, var(--light-band) 70%, transparent 80%, var(--shadow-band) 88%, transparent 96%) no-repeat;
 }
 [data-theme="dark"] .fin-backdrop, [data-theme="dark"] .fin-halo {
   --grid-line: rgba(255, 255, 255, 0.035);
@@ -278,10 +290,11 @@ body {
   --light-band: rgba(242, 239, 234, 0.035);
   --vignette: rgba(0, 0, 0, 0.35);
 }
-/* Les ombres glissent lentement, comme dans les vidéos : 40 s par cycle, imperceptible en lecture. */
+/* Les ombres glissent lentement, comme dans les vidéos : 40 s par aller, imperceptible en lecture.
+   Amplitude (15 % de l'écran) inférieure à la marge de 40 % de chaque côté : aucun bord ne rentre. */
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes fin-window-drift { from { background-position: 0 0, 0 0, 0 0, 0 0; } to { background-position: 0 0, 240px 0, 0 0, 0 0; } }
-  .fin-backdrop { background-size: auto, 200% 100%, 120px 120px, 120px 120px; animation: fin-window-drift 40s ease-in-out infinite alternate; }
+  @keyframes fin-window-drift { from { transform: translate3d(-7.5vw, 0, 0); } to { transform: translate3d(7.5vw, 0, 0); } }
+  .fin-backdrop::before { animation: fin-window-drift 40s ease-in-out infinite alternate; will-change: transform; }
 }
 
 /* Mots forts de la D.A : Garamond gras italique en dégradé signature ; sous-ligne grise en Garamond
