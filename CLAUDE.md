@@ -47,7 +47,7 @@ Référence principale : la D.A de Téo (« Teo Bach - Direction artistique v3.p
 - Orange = chiffres et mots forts, jamais en fond plein. Dégradé signature vertical `#EE7B26` → `#B8541F` (`--grad-signature`, `.fin-grad-text`). En texte sur papier, orange brûlé `#B8541F` (`--accent-orange`).
 - Boutons d'action, onglet actif, puces choisies, bouton « + » : pilule encre, texte blanc (`--accent-bg` / `--accent-text`).
 - Revenus en orange (`--income`, nom historique `--green`), dépenses en encre (`--expense`). Le rouge (`--red`) ne sert plus qu'aux erreurs, suppressions et plafonds dépassés.
-- Typo : Inter Black (900) serrée pour titres et gros chiffres (`.fin-black`) ; EB Garamond gras italique en dégradé pour un ou deux mots forts (`.fin-strong-word`) ; Garamond italique gris pour les sous-lignes (`.fin-sub-serif`, sous-titres de `NavBar`). Pas d'Helvetica ni de Didot.
+- Typo : Inter Black (900) serrée pour titres et gros chiffres (`.fin-black`) ; Source Serif 4 italique grasse en dégradé, en grand seulement, pour un ou deux mots forts (`.fin-strong-word`) ; tout le petit texte en Inter, sous-lignes grises comprises (`.fin-sub-serif`, nom historique). Le Garamond a été abandonné le 2 novembre 2026 (illisible en petit). Pas d'Helvetica ni de Didot.
 - `--on-accent` (`#14100c`) reste la règle pour un texte posé sur un fond orange (rare).
 - Ne jamais différencier dépense et élément cliquable par la couleur seule (rouge et orange sont proches) : doubler d'un signe, d'une icône ou d'un texte.
 - Aucun emoji dans l'interface. Les icônes de catégories sont des SVG Fluent Emoji (`public/category-icons/`, nom de fichier dans `categories.icon`) posés sur une pastille.

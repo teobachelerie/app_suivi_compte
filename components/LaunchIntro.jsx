@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { markIntroDone } from "../lib/intro";
 
 // Animation de lancement, dans la D.A : « Finelio » monte lettre par lettre en Inter Black, « en
-// clair » arrive en Garamond dégradé, un trait orange se dessine dessous (l'équivalent de la comète
+// clair » arrive en serif italique dégradé, un trait orange se dessine dessous (l'équivalent de la comète
 // de la vidéo de référence), puis le tout s'efface sur l'accueil. 1,3 s au total, une fois par
 // ouverture de l'app (sessionStorage : préférence cosmétique, rien de critique si Safari l'efface).
 // Animations réduites : pas d'intro du tout.

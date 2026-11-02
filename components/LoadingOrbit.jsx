@@ -20,7 +20,7 @@ export function LoadingOrbit({ label = "Connexion…" }) {
         </svg>
         <span className="fin-orbit__euro" aria-hidden="true">€</span>
       </div>
-      <span className="fin-sub-serif" style={{ fontSize: 19 }}>{label}</span>
+      <span className="fin-sub-serif" style={{ fontSize: 16, fontWeight: 500 }}>{label}</span>
     </div>
   );
 }

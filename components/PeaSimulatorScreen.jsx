@@ -81,14 +81,14 @@ export function PeaSimulatorScreen({ onBack }) {
           <span className="ds-tabular fin-grad-text" style={{ ...bigNumber, overflow: "hidden", textOverflow: "ellipsis" }}>
             {fmtEuros(shown.total)}
           </span>
-          <span className="fin-sub-serif" style={{ fontSize: 15 }}>dont {fmtEuros(shown.verse)} versés</span>
+          <span className="fin-sub-serif" style={{ fontSize: 13 }}>dont {fmtEuros(shown.verse)} versés</span>
         </Card>
         <Card depth="raised-lg" padding="md" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>GAIN</span>
           <span className="ds-tabular" style={{ ...bigNumber, fontSize: "clamp(20px, 6.4vw, 27px)", color: "var(--text-primary)" }}>
             +{gainPct.toFixed(0)} %
           </span>
-          <span className="fin-sub-serif" style={{ fontSize: 15 }}>d'intérêts</span>
+          <span className="fin-sub-serif" style={{ fontSize: 13 }}>d'intérêts</span>
         </Card>
       </div>
 

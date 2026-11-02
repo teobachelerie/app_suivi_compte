@@ -178,7 +178,7 @@ export function AccountCardStack({ accounts, active, onSelect, bankPresets, bala
                       {/* Pastille sombre derrière la variation : l'ambre et le rouge restaient illisibles sur les
                           cartes claires (Patrimoine pêche en thème clair, cartes de banque rouges). */}
                       <span style={{ padding: "1px 6px", borderRadius: "var(--radius-round)", background: "rgba(0, 0, 0, 0.5)", whiteSpace: "nowrap", color: variationDirection === "up" ? "#F6A866" : "#F2EFEA", fontSize: 13, fontWeight: 700 }}>{variationText}</span>
-                      <span style={{ color: style.textMuted, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{balanceLabel}</span>
+                      <span style={{ color: style.textMuted, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{balanceLabel}</span>
                     </div>
                   </div>
                   {style.bankLabel && (

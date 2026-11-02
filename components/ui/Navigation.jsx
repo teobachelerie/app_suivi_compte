@@ -15,8 +15,8 @@ export function NavBar({ title, subtitle, back = false, onBack, action, large = 
         </>
       ) : null}
       <div style={{ flex: 1, minWidth: 0, textAlign: large || back ? "left" : "center" }}>
-        {/* Sous-ligne grise en Garamond italique, comme dans la D.A. */}
-        {subtitle ? <div className="fin-sub-serif" style={{ fontSize: 17, lineHeight: 1.2 }}>{subtitle}</div> : null}
+        {/* Sous-ligne grise, en Inter pour rester lisible. */}
+        {subtitle ? <div className="fin-sub-serif" style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div> : null}
         <div style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: large ? "var(--size-title-1)" : "var(--size-headline)", fontWeight: large ? "var(--weight-black)" : "var(--weight-heavy)", letterSpacing: large ? "-0.035em" : "-0.02em", lineHeight: "var(--leading-snug)" }}>{title}</div>
       </div>
       {action}

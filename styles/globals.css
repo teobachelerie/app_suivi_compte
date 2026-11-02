@@ -1,7 +1,8 @@
 /* ============ Finelio Design System — tokens (D.A Téo Bach v3 : base claire, un accent) ============ */
-/* Inter jusqu'au Black (titres, chiffres) ; EB Garamond italique pour les mots forts (Apple Garamond,
-   celle de la D.A, n'est pas distribuable sur le web : EB Garamond en est l'équivalent libre). */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=EB+Garamond:ital,wght@1,400;1,700&display=swap");
+/* Inter jusqu'au Black (titres, chiffres, et tout le petit texte) ; Source Serif italique grasse
+   uniquement pour le mot fort, en grand (choix de Téo, 2 novembre 2026 : le Garamond, trop
+   calligraphique, se lisait mal). Une seule graisse chargée pour rester léger. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Source+Serif+4:ital,opsz,wght@1,8..60,700&display=swap");
 
 :root {
   /* ===== D.A v3 — thème clair (par défaut) =====
@@ -24,7 +25,7 @@
   --grad-signature: linear-gradient(180deg, var(--accent-orange-bright) 0%, var(--accent-orange-deep) 100%);
   /* texte posé sur un fond orange (rare : pastilles) : toujours sombre. */
   --on-accent: #14100c;
-  --font-serif: "EB Garamond", "Apple Garamond", Garamond, Georgia, serif;
+  --font-serif: "Source Serif 4", "Source Serif Pro", Georgia, serif;
   --weight-black: 900;
   --weight-heavy: 800;
 
@@ -297,10 +298,11 @@ body {
   .fin-backdrop::before { animation: fin-window-drift 40s ease-in-out infinite alternate; will-change: transform; }
 }
 
-/* Mots forts de la D.A : Garamond gras italique en dégradé signature ; sous-ligne grise en Garamond
-   italique. Le dégradé passe par background-clip, avec une couleur de repli si le navigateur ne suit pas. */
-.fin-strong-word { font-family: var(--font-serif); font-style: italic; font-weight: 700; letter-spacing: 0; color: var(--accent-orange); }
-.fin-sub-serif { font-family: var(--font-serif); font-style: italic; font-weight: 400; letter-spacing: 0; color: var(--text-tertiary); }
+/* Mots forts de la D.A : serif italique grasse en dégradé signature, en grand seulement. Les
+   sous-lignes grises (.fin-sub-serif, nom historique) sont en Inter : le petit texte reste lisible.
+   Le dégradé passe par background-clip, avec une couleur de repli si le navigateur ne suit pas. */
+.fin-strong-word { font-family: var(--font-serif); font-style: italic; font-weight: 700; letter-spacing: -0.01em; color: var(--accent-orange); }
+.fin-sub-serif { font-family: var(--font-core); font-style: normal; font-weight: 400; letter-spacing: 0; color: var(--text-tertiary); }
 .fin-grad-text { color: var(--accent-orange); }
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
   .fin-grad-text, .fin-strong-word { background: var(--grad-signature); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
@@ -657,7 +659,7 @@ body {
 .fin-ob-back { min-height: 40px; border: none; background: none; color: var(--text-tertiary); font: var(--weight-medium) 15px var(--font-core); cursor: pointer; }
 .fin-ob-title { margin: 0; font: var(--weight-black) 34px/1.08 var(--font-display); letter-spacing: -0.04em; }
 .fin-ob-title .fin-strong-word { font-size: 1.12em; white-space: nowrap; }
-.fin-ob-sub { margin: var(--space-3) 0 0; font-size: 19px; line-height: 1.3; }
+.fin-ob-sub { margin: var(--space-3) 0 0; font-size: 16px; line-height: 1.4; }
 .fin-ob-note { margin: var(--space-4) 0 0; color: var(--text-tertiary); font-size: var(--size-footnote); }
 
 /* Écran 1 : trois cartes qui se déploient comme la pile de l'accueil */

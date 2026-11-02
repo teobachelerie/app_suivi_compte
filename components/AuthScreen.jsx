@@ -70,12 +70,12 @@ export function AuthScreen({ initialError = null }) {
       {busy && mode === "login" ? <LoadingOrbit /> : null}
       <div style={{ width: "100%", maxWidth: 380, position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
-          {/* D.A : titre en Inter Black, un seul mot fort en Garamond italique dégradé, sous-ligne grise. */}
+          {/* D.A : titre en Inter Black, un seul mot fort en serif italique dégradé, sous-ligne grise. */}
           <div className="fin-black" style={{ fontSize: 40, lineHeight: 1, color: "var(--text-primary)" }}>Finelio</div>
           <div style={{ marginTop: 10, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)", fontWeight: 900, letterSpacing: "-0.03em" }}>
             Tes dépenses, <span className="fin-strong-word" style={{ fontSize: 28 }}>en clair</span>
           </div>
-          <div className="fin-sub-serif" style={{ fontSize: 17, marginTop: 6 }}>sans relevé bancaire, en trois secondes.</div>
+          <div className="fin-sub-serif" style={{ fontSize: 15, marginTop: 8 }}>sans relevé bancaire, en trois secondes.</div>
         </div>
 
         <Card depth="raised-lg" padding="lg" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
