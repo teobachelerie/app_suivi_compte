@@ -228,7 +228,7 @@ const shortcutLinkStyle = { display: "flex", alignItems: "center", gap: "var(--s
 function StepTitle({ n, children }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "var(--space-3)" }}>
-      <span aria-hidden="true" style={{ width: 24, height: 24, flexShrink: 0, borderRadius: "50%", background: "var(--accent-orange)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
+      <span aria-hidden="true" style={{ width: 24, height: 24, flexShrink: 0, borderRadius: 8, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
       <span style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 600 }}>{`Étape ${n} · `}{children}</span>
     </div>
   );
@@ -268,9 +268,15 @@ export function ReglagesScreen(props) {
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
     transactions, plan, openOptions, userEmail, onSignOut, onDeleteUserAccount, getMenuRef, onImportComplete,
+    initialSection, onInitialSectionShown,
   } = props;
 
-  const [section, setSection] = useState(null); // null = menu principal
+  const [section, setSection] = useState(initialSection || null); // null = menu principal
+  // Section demandée de l'extérieur (ex. « Configurer le Raccourci » depuis la présentation) : ouverte
+  // une fois, puis la demande est effacée pour ne pas la rouvrir au prochain passage sur l'onglet.
+  useEffect(() => {
+    if (initialSection) { setSection(initialSection); onInitialSectionShown?.(); }
+  }, [initialSection]); // eslint-disable-line react-hooks/exhaustive-deps
   // Transition façon iOS : une section arrive par la droite, le menu revient par la gauche. Rien au
   // premier affichage du menu (le fondu de l'onglet s'en charge déjà).
   const sectionMotionRef = useRef({ section: null, motion: "" });

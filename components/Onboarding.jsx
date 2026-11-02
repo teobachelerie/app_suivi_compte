@@ -1,141 +1,187 @@
-import { useState } from "react";
-import { TIER_LIMITS } from "../lib/constants";
+import { useRef, useState } from "react";
+import { Check, Zap, ShieldCheck, Timer } from "lucide-react";
+import { TIER_LIMITS, BANK_PRESETS } from "../lib/constants";
 import { api } from "../lib/api";
+import { haptic } from "../lib/haptics";
+import { Button } from "./ui/Button";
+import { BankBadge, styleForAccountCard } from "./AccountCardStack";
 
-const QUESTIONS = [
-  {
-    text: "Combien de comptes bancaires veux-tu suivre ?",
-    options: [
-      { label: "Un seul", points: 0 },
-      { label: "2 à 4 (courant, pro, livrets…)", points: 1 },
-      { label: "5 ou plus", points: 2 },
-    ],
-  },
-  {
-    text: "Combien d'objectifs d'épargne actifs en même temps ?",
-    options: [
-      { label: "Un seul", points: 0 },
-      { label: "2 ou 3", points: 1 },
-      { label: "4 ou plus", points: 2 },
-    ],
-  },
-  {
-    text: "À quelle fréquence exportes-tu tes données (CSV/Excel) ?",
-    options: [
-      { label: "Jamais", points: 0 },
-      { label: "De temps en temps", points: 1 },
-      { label: "Régulièrement", points: 2 },
-    ],
-  },
-  {
-    text: "Personnaliser finement tes catégories (couleurs, règles automatiques), c'est important pour toi ?",
-    options: [
-      { label: "Pas vraiment", points: 0 },
-      { label: "Utile", points: 1 },
-      { label: "Indispensable", points: 2 },
-    ],
-  },
-  {
-    text: "Comptes-tu partager le suivi avec des proches (colocation, famille) ?",
-    options: [
-      { label: "Non", points: 0 },
-      { label: "Peut-être", points: 1 },
-      { label: "Oui", points: 2 },
-    ],
-  },
-];
+// Présentation à la première connexion, dans la D.A : quatre écrans courts qu'on peut passer à
+// tout moment. On montre la valeur, on règle la seule chose utile tout de suite (la banque du compte,
+// pour la carte de l'accueil), on présente le Raccourci, puis le palier (gratuit par défaut).
+// Remplace la visite guidée sur fond grisé et le questionnaire de cinq questions.
+const STEPS = ["bienvenue", "banque", "raccourci", "palier"];
+const TIERS = ["amateur", "confirme", "investisseur"];
+const TIER_PITCH = {
+  amateur: "1 compte, 1 objectif, l'essentiel",
+  confirme: "5 comptes, couleurs et règles auto",
+  investisseur: "Tout illimité, export complet",
+};
 
-function recommendTier(score) {
-  if (score <= 3) return "amateur";
-  if (score <= 7) return "confirme";
-  return "investisseur";
+function StepWelcome() {
+  // Trois cartes qui se déploient : la pile de l'accueil, en aperçu.
+  const cards = [
+    { bankId: "boursorama", label: "pro" },
+    { bankId: "societe-generale", label: "courant" },
+    { key: "Tous", label: "Patrimoine" },
+  ];
+  return (
+    <>
+      <div className="fin-ob-cards" aria-hidden="true">
+        {cards.map((c, i) => {
+          const st = styleForAccountCard({ key: c.key || c.bankId, bankId: c.bankId }, BANK_PRESETS, "dark");
+          return (
+            <div key={c.label} className="fin-ob-card" style={{ background: st.background, color: st.text, "--i": i }}>
+              <span style={{ fontWeight: 800, letterSpacing: "-0.02em" }}>{c.label}</span>
+              {i === 2 ? <span className="ds-tabular fin-ob-card__amount">3 810 €</span> : null}
+            </div>
+          );
+        })}
+      </div>
+      <h1 className="fin-ob-title">Tes dépenses, <span className="fin-strong-word">en clair</span></h1>
+      <p className="fin-sub-serif fin-ob-sub">Ce que tu dépenses, où, et ce qu'il te reste.</p>
+      <ul className="fin-ob-points">
+        <li><Timer size={18} aria-hidden="true" /> Une dépense en trois secondes</li>
+        <li><ShieldCheck size={18} aria-hidden="true" /> Aucune connexion à ta banque</li>
+        <li><Zap size={18} aria-hidden="true" /> Un Raccourci iOS pour aller plus vite</li>
+      </ul>
+    </>
+  );
 }
 
-export function Onboarding({ onDone }) {
-  const [step, setStep] = useState(0); // 0..4 = questions, 5 = résultat + choix
-  const [answers, setAnswers] = useState([]);
-  const [choosing, setChoosing] = useState(false);
-  const [tierError, setTierError] = useState("");
+function StepBank({ account, onPick }) {
+  const current = account?.bank_id || null;
+  return (
+    <>
+      <h1 className="fin-ob-title">Ta <span className="fin-strong-word">banque</span></h1>
+      <p className="fin-sub-serif fin-ob-sub">Ta carte prend ses couleurs sur l'accueil. Jamais de logo, jamais de connexion.</p>
+      <div className="fin-ob-preview">
+        <BankBadge bankId={current} bankPresets={BANK_PRESETS} width={64} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 17 }}>{account?.name || "Compte courant"}</div>
+          <div className="fin-mrow__sub">{BANK_PRESETS.find((b) => b.id === current)?.name || "Choisis ta banque"}</div>
+        </div>
+      </div>
+      <div className="fin-ob-banks" role="listbox" aria-label="Banque">
+        {BANK_PRESETS.map((b) => (
+          <button key={b.id} type="button" role="option" aria-selected={current === b.id} className="fin-ob-bank" onClick={() => onPick(b.id)}>
+            <BankBadge bankId={b.id} bankPresets={BANK_PRESETS} width={44} />
+            <span>{b.name}</span>
+            {current === b.id ? <Check size={16} className="fin-ob-bank__check" aria-hidden="true" /> : null}
+          </button>
+        ))}
+      </div>
+      <p className="fin-ob-note">Livrets, compte pro : tu les ajouteras dans Réglages → Comptes.</p>
+    </>
+  );
+}
 
-  const isResult = step === QUESTIONS.length;
-  const score = answers.reduce((s, a) => s + a, 0);
-  const recommended = recommendTier(score);
+function StepShortcut() {
+  return (
+    <>
+      {/* Démonstration : une notification « dépense ajoutée » descend, comme quand le Raccourci tourne. */}
+      <div className="fin-ob-phone" aria-hidden="true">
+        <div className="fin-ob-clock ds-tabular">9:41</div>
+        <div className="fin-ob-notif">
+          <span className="fin-ob-notif__icon"><Zap size={16} /></span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>Finelio</div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Dépense de <span className="ds-tabular" style={{ fontWeight: 700, color: "var(--text-primary)" }}>12,50 €</span> ajoutée · Café</div>
+          </div>
+        </div>
+      </div>
+      <h1 className="fin-ob-title">Sans même <span className="fin-strong-word">ouvrir l'app</span></h1>
+      <p className="fin-sub-serif fin-ob-sub">Depuis l'écran d'accueil, Siri, ou deux tapes au dos de l'iPhone.</p>
+      <ol className="fin-ob-steps">
+        <li><span>1</span> Crée ta clé personnelle</li>
+        <li><span>2</span> Installe le Raccourci</li>
+        <li><span>3</span> Colle ta clé, c'est prêt</li>
+      </ol>
+    </>
+  );
+}
 
-  function answer(points) {
-    const next = [...answers, points];
-    setAnswers(next);
-    setStep((s) => s + 1);
+function StepTier({ tier, onPick, error }) {
+  return (
+    <>
+      <h1 className="fin-ob-title">Ton <span className="fin-strong-word">palier</span></h1>
+      <p className="fin-sub-serif fin-ob-sub">Commence gratuitement. Tu changes quand tu veux, dans Réglages.</p>
+      <div className="fin-ob-tiers" role="radiogroup" aria-label="Palier">
+        {TIERS.map((key) => {
+          const t = TIER_LIMITS[key];
+          const on = tier === key;
+          return (
+            <button key={key} type="button" role="radio" aria-checked={on} className="fin-ob-tier" onClick={() => onPick(key)}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em" }}>{t.label}</div>
+                <div className="fin-mrow__sub">{TIER_PITCH[key]}</div>
+              </div>
+              <div className="ds-tabular" style={{ fontWeight: 800, whiteSpace: "nowrap" }}>{t.price === 0 ? "Gratuit" : `${t.price.toFixed(2).replace(".", ",")} €`}<span style={{ fontWeight: 500, color: "var(--text-tertiary)", fontSize: 13 }}>{t.price === 0 ? "" : " / mois"}</span></div>
+            </button>
+          );
+        })}
+      </div>
+      {error ? <div className="fin-error" role="alert">{error}</div> : null}
+    </>
+  );
+}
+
+export function Onboarding({ account, onChangeAccountBank, onDone }) {
+  const [step, setStep] = useState(0);
+  const [tier, setTier] = useState("amateur");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const dirRef = useRef("push");
+  const name = STEPS[step];
+  const last = step === STEPS.length - 1;
+
+  function go(next) {
+    dirRef.current = next > step ? "push" : "pop";
+    haptic("light");
+    setStep(next);
   }
 
-  async function chooseTier(tier) {
-    if (tier === "amateur") { onDone(); return; }
-    setChoosing(true); setTierError("");
+  async function finish(action) {
+    if (tier === "amateur" || action === "skip") { onDone(action === "skip" ? "done" : action); return; }
+    setBusy(true); setError("");
     try {
       const { url } = await api("/api/billing/checkout", { method: "POST", body: { tier } });
-      onDone(); // La visite est déjà terminée à ce stade — le paiement Stripe n'est qu'une étape suivante, pas une raison de la refaire au retour.
+      onDone("done"); // la présentation est terminée ; le paiement Stripe n'est qu'une étape suivante
       window.location.href = url;
-    } catch (e) { setTierError(e.message); setChoosing(false); }
+    } catch (e) { setError(e.message); setBusy(false); }
   }
 
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "var(--surface-base)", zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "var(--font-core)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--gutter-screen) 0" }}>
-        <div style={{ display: "flex", gap: 6 }}>
-          {!isResult && QUESTIONS.map((_, i) => (
-            <span key={i} style={{ width: i === step ? 20 : 7, height: 7, borderRadius: "var(--radius-round)", background: i <= step ? "var(--accent-bg)" : "var(--grey-2)" }} />
-          ))}
-        </div>
-        <button onClick={onDone} style={{ background: "transparent", border: "none", color: "var(--text-tertiary)", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>Passer</button>
-      </div>
+  const primary = {
+    bienvenue: { label: "Commencer", onClick: () => go(1) },
+    banque: { label: account?.bank_id ? "Continuer" : "Plus tard", onClick: () => go(2) },
+    raccourci: { label: "Je le configurerai plus tard", onClick: () => go(3), variant: "secondary" },
+    palier: { label: tier === "amateur" ? "Commencer gratuitement" : `Choisir ${TIER_LIMITS[tier].label}`, onClick: () => finish("done") },
+  }[name];
 
-      {!isResult ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-6)" }}>
-          <div>
-            <span style={{ font: "400 13px var(--font-core)", color: "var(--text-tertiary)", display: "block", marginBottom: 8 }}>QUESTION {step + 1} SUR {QUESTIONS.length}</span>
-            <span style={{ font: "600 22px/1.35 var(--font-display)", color: "var(--text-primary)" }}>{QUESTIONS[step].text}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {QUESTIONS[step].options.map((o) => (
-              <button
-                key={o.label}
-                onClick={() => answer(o.points)}
-                style={{ textAlign: "left", background: "var(--surface-raised)", boxShadow: "var(--elev-raised-sm)", border: "none", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", cursor: "pointer", font: "500 16px var(--font-core)", color: "var(--text-primary)" }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+  return (
+    <div className="fin-ob" role="dialog" aria-modal="true" aria-label="Bienvenue dans Finelio">
+      <div className="fin-backdrop" aria-hidden="true" />
+      <header className="fin-ob-head">
+        <div className="fin-ob-progress" aria-label={`Étape ${step + 1} sur ${STEPS.length}`}>
+          {STEPS.map((s, i) => <span key={s} className={i <= step ? "is-on" : ""} />)}
         </div>
-      ) : (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 var(--gutter-screen)", gap: "var(--space-5)" }}>
-          <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
-            <span style={{ font: "600 22px var(--font-display)", color: "var(--text-primary)" }}>{TIER_LIMITS[recommended].label} te correspond</span>
-            <div style={{ font: "400 14px var(--font-core)", color: "var(--text-secondary)", marginTop: 6 }}>D'après tes réponses. Tu pourras changer ça à tout moment dans Réglages → Abonnement.</div>
-          </div>
-          {tierError && <div style={{ color: "var(--red)", fontSize: 13, textAlign: "center" }}>{tierError}</div>}
-          {["amateur", "confirme", "investisseur"].map((tierKey) => {
-            const t = TIER_LIMITS[tierKey];
-            const isRecommended = tierKey === recommended;
-            return (
-              <button
-                key={tierKey}
-                onClick={() => chooseTier(tierKey)}
-                disabled={choosing}
-                style={{
-                  textAlign: "left", background: "var(--surface-raised)", boxShadow: isRecommended ? "var(--elev-raised)" : "var(--elev-raised-sm)",
-                  border: isRecommended ? "2px solid var(--accent-bg)" : "2px solid transparent",
-                  borderRadius: "var(--radius-lg)", padding: "var(--space-4)", cursor: "pointer", opacity: choosing ? 0.6 : 1, display: "flex", flexDirection: "column", gap: 4,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                  <span style={{ font: "600 17px var(--font-core)", color: "var(--text-primary)" }}>{t.label}{isRecommended ? " · Recommandé" : ""}</span>
-                  <span style={{ font: "600 15px var(--font-core)", color: "var(--text-secondary)" }}>{t.price === 0 ? "Gratuit" : `${t.price.toFixed(2).replace(".", ",")} €/mois`}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+        {!last ? <button type="button" className="fin-ob-skip" onClick={() => finish("skip")}>Passer</button> : null}
+      </header>
+
+      <main key={name} className={`fin-ob-body fin-screen-enter fin-screen-enter--${step === 0 && dirRef.current === "push" ? "tab" : dirRef.current}`}>
+        {name === "bienvenue" && <StepWelcome />}
+        {name === "banque" && <StepBank account={account} onPick={(id) => { haptic("light"); onChangeAccountBank(account.id, id); }} />}
+        {name === "raccourci" && <StepShortcut />}
+        {name === "palier" && <StepTier tier={tier} onPick={(t) => { haptic("light"); setTier(t); }} error={error} />}
+      </main>
+
+      <footer className="fin-ob-foot">
+        {name === "raccourci" ? (
+          <Button variant="primary" block onClick={() => onDone("shortcut")}>Configurer le Raccourci</Button>
+        ) : null}
+        <Button variant={primary.variant || "primary"} block loading={busy} onClick={primary.onClick}>{primary.label}</Button>
+        {step > 0 ? <button type="button" className="fin-ob-back" onClick={() => go(step - 1)}>Retour</button> : <span className="fin-ob-back" aria-hidden="true" />}
+      </footer>
     </div>
   );
 }

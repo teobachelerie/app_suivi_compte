@@ -38,7 +38,6 @@ import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
 import { ResetPasswordScreen } from "../components/ResetPasswordScreen";
 import { Onboarding } from "../components/Onboarding";
-import { Coachmark } from "../components/Coachmark";
 import { Toast } from "../components/Toast";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { BudgetSheet } from "../components/BudgetSheet";
@@ -107,9 +106,11 @@ function ExpensesApp({ session }) {
   }
 
   const onboardingKey = `expenses-onboarding-seen-${session.user.id}`;
+  // Mode démo : ?presentation dans l'adresse rejoue la présentation (retiré du build de production).
+  const forcePresentation = process.env.NEXT_PUBLIC_DEMO === "1" && typeof window !== "undefined" && window.location.search.includes("presentation");
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window === "undefined") return false;
-    return !window.localStorage.getItem(onboardingKey);
+    return forcePresentation || !window.localStorage.getItem(onboardingKey);
   });
   function dismissOnboarding() {
     if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
@@ -117,34 +118,14 @@ function ExpensesApp({ session }) {
     api("/api/onboarding/complete", { method: "POST" }).catch(() => {}); // best-effort : le localStorage suffit pour cette session, le serveur prend le relais pour les suivantes
   }
 
-  // Visite guidée façon "spotlight" : deux phases — d'abord le circuit des vrais boutons de l'app
-  // (tour), puis le questionnaire de recommandation de palier (questionnaire), géré par Onboarding.
-  const [onboardingPhase, setOnboardingPhase] = useState("tour");
-  const [tourStep, setTourStep] = useState(0);
-  const touring = showOnboarding && onboardingPhase === "tour";
-  const tourRefsStore = useRef({});
-  function tourRef(key) {
-    return (el) => { tourRefsStore.current[key] = el; };
-  }
-  const TOUR_STEPS = [
-    { ref: "addButton", tab: "apercu", title: "Ajouter une opération", text: "Ce bouton ouvre le formulaire d'ajout. Une dépense, un revenu ou un virement entre tes comptes, où que tu sois dans l'app." },
-    { ref: "tab-reglages", tab: "apercu", title: "Réglages", text: "Tout se configure ici : Raccourci iOS, comptes, catégories, export, abonnement." },
-    { ref: "menu-Raccourci iOS", tab: "reglages", title: "Le Raccourci iOS", text: "Génère ta clé pour enregistrer une dépense sans même ouvrir l'app." },
-    { ref: "menu-Comptes", tab: "reglages", title: "Comptes et épargne", text: "Ajoute tes comptes principaux et tes livrets ici." },
-    { ref: "menu-Catégories", tab: "reglages", title: "Catégories", text: "Personnalise tes catégories, leurs couleurs, et des règles de catégorisation automatique." },
-    { ref: "tab-budgets", tab: "apercu", title: "Budgets", text: "La répartition réelle de tes dépenses, par catégorie ou par compte." },
-    { ref: "pill-Tous", tab: "apercu", filterAccount: "Tous", title: "Patrimoine", text: "Cumule tous tes comptes et livrets en une seule vue d'ensemble." },
-  ];
-  useEffect(() => {
-    if (!touring) return;
-    const step = TOUR_STEPS[tourStep];
-    if (!step) return;
-    if (activeTab !== step.tab) setActiveTab(step.tab);
-    if (step.filterAccount && filterAccount !== step.filterAccount) setFilterAccount(step.filterAccount);
-  }, [touring, tourStep]);
-  function nextTourStep() {
-    if (tourStep >= TOUR_STEPS.length - 1) setOnboardingPhase("questionnaire");
-    else setTourStep((s) => s + 1);
+  // Après la présentation : le bouton « + » pulse jusqu'au premier ajout (rien de critique, état de
+  // la session seulement). Le Raccourci peut aussi être ouvert directement depuis la présentation.
+  const [addHint, setAddHint] = useState(false);
+  const [reglagesSection, setReglagesSection] = useState(null);
+  function handleOnboardingDone(action) {
+    dismissOnboarding();
+    if (action === "shortcut") { setReglagesSection("Raccourci iOS"); setActiveTab("reglages"); }
+    else setAddHint(true);
   }
 
   async function handleSignOut() {
@@ -354,7 +335,7 @@ function ExpensesApp({ session }) {
         // Le serveur est la source de vérité : s'il confirme que l'onboarding a déjà été vu, on le
         // ferme même si le localStorage local (effacé par Safari entre deux sessions PWA, par
         // exemple) laissait croire le contraire.
-        if (p.onboardingSeen) {
+        if (p.onboardingSeen && !forcePresentation) {
           if (typeof window !== "undefined") window.localStorage.setItem(onboardingKey, "1");
           setShowOnboarding(false);
         }
@@ -975,7 +956,6 @@ function ExpensesApp({ session }) {
                 balanceLabel={`sur ${periodLabel(period, "Gain").replace("Reçu ", "")}`}
                 variationDirection={netPeriode >= 0 ? "up" : "down"}
                 variationText={`${netPeriode >= 0 ? "+" : "−"}${fmtEUR(Math.abs(netPeriode))}`}
-                getRef={(v) => tourRef(`pill-${v}`)}
                 themeMode={themeMode}
               />
 
@@ -1216,6 +1196,8 @@ function ExpensesApp({ session }) {
           )
         ) : (
           <ReglagesScreen
+            initialSection={reglagesSection}
+            onInitialSectionShown={() => setReglagesSection(null)}
             categories={categories} coreAccounts={coreAccounts} savingsAccounts={savingsAccounts} accountNames={accountNames}
             onDeleteCategory={deleteCategory} onAddCategory={addCategory} onRenameCategory={renameCategory}
             newCatName={newCatName} setNewCatName={setNewCatName}
@@ -1229,7 +1211,6 @@ function ExpensesApp({ session }) {
             categoryRules={categoryRules} onCreateCategoryRule={createCategoryRuleHandler} onDeleteCategoryRule={deleteCategoryRuleHandler}
             onChangeCategoryColor={updateCategoryColorHandler}
             transactions={transactions} plan={plan}
-            getMenuRef={(title) => tourRef(`menu-${title}`)}
             openOptions={setOptionSheet}
             userEmail={session.user.email} onSignOut={handleSignOut} onDeleteUserAccount={handleDeleteUserAccount}
             onImportComplete={loadAll}
@@ -1247,13 +1228,11 @@ function ExpensesApp({ session }) {
           { value: "budgets", label: "Budgets", Icon: PieChartIcon },
           { value: "reglages", label: "Réglages", Icon: Settings },
         ]}
-        getRef={(v) => tourRef(`tab-${v}`)}
         trailing={
           <button
-            ref={tourRef("addButton")}
-            onClick={() => { haptic("light"); setShowAdd(true); }}
+            onClick={() => { haptic("light"); setAddHint(false); setShowAdd(true); }}
             aria-label="Ajouter une opération"
-            className="fin-pressable"
+            className={`fin-pressable${addHint ? " fin-add-hint" : ""}`}
             style={{ width: 52, height: 52, borderRadius: "var(--radius-round)", border: "none", background: "var(--accent-bg)", boxShadow: "var(--elev-raised-lg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, WebkitTapHighlightColor: "transparent" }}
           >
             {/* Pilule encre de la D.A : l'action principale, jamais d'orange plein. */}
@@ -1261,19 +1240,6 @@ function ExpensesApp({ session }) {
           </button>
         }
       />
-
-      {touring && (
-        <Coachmark
-          targetRef={{ current: tourRefsStore.current[TOUR_STEPS[tourStep].ref] }}
-          measureKey={`${tourStep}-${activeTab}`}
-          stepLabel={`Étape ${tourStep + 1} sur ${TOUR_STEPS.length}`}
-          title={TOUR_STEPS[tourStep].title}
-          text={TOUR_STEPS[tourStep].text}
-          isLast={tourStep === TOUR_STEPS.length - 1}
-          onNext={nextTourStep}
-          onSkip={() => setOnboardingPhase("questionnaire")}
-        />
-      )}
 
       {(showAdd || editing) && (
         // Un seul écran pour l'ajout et l'édition. Le compte proposé par défaut est celui de la carte
@@ -1341,7 +1307,7 @@ function ExpensesApp({ session }) {
 
       <Toast toast={toast} onDismiss={(id) => setToast((cur) => (cur && cur.id === id ? null : cur))} />
 
-      {showOnboarding && onboardingPhase === "questionnaire" && <Onboarding onDone={dismissOnboarding} />}
+      {showOnboarding && <Onboarding account={coreAccounts[0] || accounts[0]} onChangeAccountBank={updateAccountBankHandler} onDone={handleOnboardingDone} />}
     </div>
   );
 }

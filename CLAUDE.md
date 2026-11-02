@@ -11,7 +11,7 @@ Contexte complet : `docs/HANDOFF.md`. Benchmark UX et décisions de saisie à pr
 - `npm run dev` et `npm run build`. `npm run lint` (ESLint, règles Next), `npm run format` (Prettier, vérification seule : ne reformate pas le dépôt entier). Pas de CI à ce jour.
 - Vérification visuelle : `npm run build` puis `npm run capture` (WebKit profil iPhone, API simulée dans le navigateur, aucune base ; sortie dans `tools/visual/out/`, ignorée par git) et `npm run test:sheet` (comportement des feuilles). Détails dans `tools/visual/README.md`.
 - Développement et prévisualisation Vercel : second projet Supabase `finelio-dev`, jamais la production (`docs/ENVIRONNEMENT-DEV.md`).
-- Aperçu en direct sans base : `npm run demo` (connexion factice, API simulée en mémoire `lib/demo/api.js`, données fictives générées par `tools/demo/generate.mjs`, compilation dans `.next-demo`). Configuration « finelio-demo » dans `.claude/launch.json` pour le panneau navigateur de Claude. Le build de production retire ce code (`NEXT_PUBLIC_DEMO` forcé à « 0 » dans `next.config.mjs`).
+- Aperçu en direct sans base : `npm run demo` (connexion factice, API simulée en mémoire `lib/demo/api.js`, données fictives générées par `tools/demo/generate.mjs`, compilation dans `.next-demo`). Configuration « finelio-demo » dans `.claude/launch.json` pour le panneau navigateur de Claude. Ajouter `?presentation` à l'adresse rejoue la présentation de première connexion. Le build de production retire ce code (`NEXT_PUBLIC_DEMO` forcé à « 0 » dans `next.config.mjs`).
 - Variables d'environnement : noms dans `.env.local.example`. Ne jamais écrire une valeur réelle dans le code, un log, un commit ou une réponse.
 - Repère de poids : le build affiche environ 82 kB de JS partagé. Toute dépendance ajoutée se justifie par son poids.
 
@@ -62,6 +62,8 @@ Référence principale : la D.A de Téo (« Teo Bach - Direction artistique v3.p
 ## Primitives d'interface (à utiliser pour tout nouvel écran)
 
 `components/ui/` : `Button`, `TextField`, `PickerField` (remplace `<select>`), `Chip`, `BottomSheet` (entrée, sortie, glissé pour fermer, clavier iOS). Leur style vit dans `styles/globals.css` (classes `.fin-*`). Champs en 16 px minimum (sinon Safari iOS zoome). Les anciens `Sheet`, `TopSheet`, `OptionSheet`, `Field` de `Sheets.jsx` sont à migrer, pas à étendre.
+
+Première connexion : `components/Onboarding.jsx`, quatre écrans qu'on peut passer (bienvenue, banque du compte courant, Raccourci iOS, palier gratuit par défaut), puis le bouton « + » pulse jusqu'au premier ajout. Vu ou non : `user_plans.onboarding_seen` côté serveur (le `localStorage` n'est qu'un cache).
 
 Saisie d'une transaction : `components/TransactionSheet.jsx`, un seul écran pour l'ajout et l'édition (décision de Téo du 28 octobre 2026, remplace le parcours en 3 étapes des maquettes `Montant` / `Details`). Catégorie préremplie avec la dernière utilisée, compte prérempli avec la carte active de l'accueil, titre facultatif (par défaut le nom de la catégorie).
 
