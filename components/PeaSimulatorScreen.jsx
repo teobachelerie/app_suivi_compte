@@ -36,6 +36,8 @@ function simulate(p) {
 // L'espace fine (U+202F) des milliers disparaît presque avec l'interlettrage serré d'Inter Black :
 // espace insécable normale à la place, pour lire « 118 461 € » et pas « 118461 € ».
 const fmtEuros = (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n).replace(/\u202f/g, "\u00a0");
+// Pourcentage du gain avec espaces des milliers (« 4 950 % »), même espace insécable que les montants.
+const fmtPct = (n) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(n).replace(/\u202f/g, "\u00a0")}\u00a0%`;
 // Gros chiffres des deux cases : taille qui suit la largeur de l'écran, pour ne jamais déborder.
 const bigNumber = { fontSize: "clamp(22px, 7.4vw, 30px)", fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.05, whiteSpace: "nowrap" };
 const anLabel = (n) => `${n} an${n > 1 ? "s" : ""}`;
@@ -85,8 +87,9 @@ export function PeaSimulatorScreen({ onBack }) {
         </Card>
         <Card depth="raised-lg" padding="md" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>GAIN</span>
-          <span className="ds-tabular" style={{ ...bigNumber, fontSize: "clamp(20px, 6.4vw, 27px)", color: "var(--text-primary)" }}>
-            +{gainPct.toFixed(0)} %
+          {/* Comme le montant : points de suspension si le pourcentage est trop long pour la case. */}
+          <span className="ds-tabular" style={{ ...bigNumber, fontSize: "clamp(20px, 6.4vw, 27px)", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis" }}>
+            +{fmtPct(gainPct)}
           </span>
           <span className="fin-sub-serif" style={{ fontSize: 13 }}>d'intérêts</span>
         </Card>
