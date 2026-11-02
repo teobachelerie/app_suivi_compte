@@ -38,6 +38,11 @@ function simulate(p) {
 const fmtEuros = (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n).replace(/\u202f/g, "\u00a0");
 // Pourcentage du gain avec espaces des milliers (« 4 950 % »), même espace insécable que les montants.
 const fmtPct = (n) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(n).replace(/\u202f/g, "\u00a0")}\u00a0%`;
+// Bandeau : texte à gauche (largeur fixe au contenu), chiffre à droite qui prend la place restante
+// et ne se coupe (points de suspension) qu'en cas de valeur vraiment démesurée.
+const stripStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", minHeight: 64 };
+const stripLabel = { display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 };
+const stripNumber = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", textAlign: "right", fontSize: "clamp(22px, 7vw, 28px)" };
 // Gros chiffres des deux cases : taille qui suit la largeur de l'écran, pour ne jamais déborder.
 const bigNumber = { fontSize: "clamp(22px, 7.4vw, 30px)", fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.05, whiteSpace: "nowrap" };
 const anLabel = (n) => `${n} an${n > 1 ? "s" : ""}`;
@@ -76,22 +81,22 @@ export function PeaSimulatorScreen({ onBack }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <NavBar back title="Simulateur PEA" onBack={onBack} />
 
-      {/* Deux cases : le montant seul, puis le gain. Rien d'autre à lire. */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)", gap: "var(--space-3)" }}>
-        <Card depth="raised-lg" padding="md" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", textTransform: "uppercase" }}>{label}</span>
-          <span className="ds-tabular fin-grad-text" style={{ ...bigNumber, overflow: "hidden", textOverflow: "ellipsis" }}>
-            {fmtEuros(shown.total)}
-          </span>
-          <span className="fin-sub-serif" style={{ fontSize: 13 }}>dont {fmtEuros(shown.verse)} versés</span>
+      {/* Deux bandeaux empilés, sur toute la largeur : étiquette et sous-ligne à gauche, chiffre à
+          droite. Côte à côte, un gain au-delà de 1 000 % ne tenait plus dans sa demi-case. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <Card depth="raised-lg" padding="var(--space-3) var(--space-4)" style={stripStyle}>
+          <div style={stripLabel}>
+            <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)", textTransform: "uppercase" }}>{label}</span>
+            <span className="fin-sub-serif" style={{ fontSize: 13 }}>dont {fmtEuros(shown.verse)} versés</span>
+          </div>
+          <span className="ds-tabular fin-grad-text" style={{ ...bigNumber, ...stripNumber }}>{fmtEuros(shown.total)}</span>
         </Card>
-        <Card depth="raised-lg" padding="md" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>GAIN</span>
-          {/* Comme le montant : points de suspension si le pourcentage est trop long pour la case. */}
-          <span className="ds-tabular" style={{ ...bigNumber, fontSize: "clamp(20px, 6.4vw, 27px)", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis" }}>
-            +{fmtPct(gainPct)}
-          </span>
-          <span className="fin-sub-serif" style={{ fontSize: 13 }}>d'intérêts</span>
+        <Card depth="raised-lg" padding="var(--space-3) var(--space-4)" style={stripStyle}>
+          <div style={stripLabel}>
+            <span style={{ color: "var(--text-tertiary)", font: "var(--text-caption-font)" }}>GAIN</span>
+            <span className="fin-sub-serif" style={{ fontSize: 13 }}>d'intérêts</span>
+          </div>
+          <span className="ds-tabular" style={{ ...bigNumber, ...stripNumber, color: "var(--text-primary)" }}>+{fmtPct(gainPct)}</span>
         </Card>
       </div>
 
