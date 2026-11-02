@@ -271,6 +271,14 @@ export function ReglagesScreen(props) {
   } = props;
 
   const [section, setSection] = useState(null); // null = menu principal
+  // Transition façon iOS : une section arrive par la droite, le menu revient par la gauche. Rien au
+  // premier affichage du menu (le fondu de l'onglet s'en charge déjà).
+  const sectionMotionRef = useRef({ section: null, motion: "" });
+  if (sectionMotionRef.current.section !== section) {
+    sectionMotionRef.current = { section, motion: section ? "push" : "pop" };
+  }
+  const sectionMotion = sectionMotionRef.current.motion;
+  const sectionClass = sectionMotion ? `fin-screen-enter fin-screen-enter--${sectionMotion}` : undefined;
   // Une section s'ouvre en haut de page ; au retour, le menu retrouve sa position.
   const menuScrollRef = useRef(0);
   const prevSectionRef = useRef(null);
@@ -382,7 +390,7 @@ export function ReglagesScreen(props) {
 
   if (section) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <div key={section} className={sectionClass} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <NavBar back title={section} onBack={() => setSection(null)} />
 
         {section === "Comptes" && (
@@ -751,7 +759,7 @@ export function ReglagesScreen(props) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+    <div key="menu" className={sectionClass} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <NavBar large title="Réglages" />
       {/* Les réglages oui/non se changent ici même : un sous-écran pour un seul interrupteur était une étape de trop. */}
       <Card padding="md" style={{ display: "flex", flexDirection: "column", gap: 0 }}>

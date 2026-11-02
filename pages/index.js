@@ -302,6 +302,19 @@ function ExpensesApp({ session }) {
   useEffect(() => {
     document.getElementById("__next")?.scrollTo(0, 0);
   }, [activeTab]);
+  // Sens de la transition d'écran, comme la navigation iOS : un écran qu'on ouvre arrive par la
+  // droite (push), le retour revient par la gauche (pop), un changement d'onglet est un fondu
+  // montant (tab). Calculé une seule fois par changement d'écran : la classe ne doit plus changer
+  // ensuite, sinon l'animation repartirait à chaque rendu.
+  const screenKey = `${activeTab}-${view}-${subScreen || ""}`;
+  const screenDepth = subScreen || view !== "dashboard" ? 1 : 0;
+  const screenMotionRef = useRef({ key: screenKey, tab: activeTab, depth: screenDepth, motion: "tab" });
+  if (screenMotionRef.current.key !== screenKey) {
+    const prev = screenMotionRef.current;
+    const motion = prev.tab !== activeTab ? "tab" : screenDepth >= prev.depth ? "push" : "pop";
+    screenMotionRef.current = { key: screenKey, tab: activeTab, depth: screenDepth, motion };
+  }
+  const screenMotion = screenMotionRef.current.motion;
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingSub, setSavingSub] = useState(false);
   const [budgets, setBudgets] = useState([]);
@@ -925,7 +938,7 @@ function ExpensesApp({ session }) {
         )}
 
         {/* Chaque écran (onglet, sous-écran) entre en fondu avec une petite montée : plus d'affichage sec. */}
-        <div key={`${activeTab}-${view}-${subScreen || ""}`} className="fin-screen-enter">
+        <div key={screenKey} className={`fin-screen-enter fin-screen-enter--${screenMotion}`}>
         {savingsDetailAccount ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <NavBar back title={savingsDetailAccount} onBack={() => setSavingsDetailAccount(null)} />
