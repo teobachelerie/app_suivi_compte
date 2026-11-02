@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Upload, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X } from "lucide-react";
+import { Sun, Moon, ChevronRight, LogOut, Key, Trash2, Copy, Check, Download, Upload, Tag, FileDown, Wallet, Zap, User, SlidersHorizontal, Award, X, GraduationCap } from "lucide-react";
 import { Card, Divider, Switch } from "./ui/Primitives";
 import { ListRow, ManagedRow, AddRow } from "./ui/ListRow";
 import { BottomSheet, useSheetClose } from "./ui/BottomSheet";
@@ -268,7 +268,7 @@ export function ReglagesScreen(props) {
     categoryRules, onCreateCategoryRule, onDeleteCategoryRule,
     onChangeCategoryColor,
     transactions, plan, openOptions, userEmail, onSignOut, onDeleteUserAccount, getMenuRef, onImportComplete,
-    initialSection, onInitialSectionShown,
+    initialSection, onInitialSectionShown, onStartTutorial,
   } = props;
 
   const [section, setSection] = useState(initialSection || null); // null = menu principal
@@ -787,6 +787,8 @@ export function ReglagesScreen(props) {
         <MenuRow Icon={FileDown} title="Export" onClick={() => setSection("Export")} />
         <Divider inset={0} />
         <MenuRow Icon={Award} title="Abonnement" subtitle={plan?.limits.label} onClick={() => setSection("Abonnement")} />
+        <Divider inset={0} />
+        <MenuRow Icon={GraduationCap} title="Revoir le tutoriel" subtitle="Les éléments importants de l'accueil" onClick={() => onStartTutorial?.()} />
       </Card>
       <Card padding="md">
         <MenuRow Icon={User} title="Compte" subtitle={userEmail} onClick={() => setSection("Compte")} />

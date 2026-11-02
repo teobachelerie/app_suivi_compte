@@ -63,7 +63,7 @@ Référence principale : la D.A de Téo (« Teo Bach - Direction artistique v3.p
 
 `components/ui/` : `Button`, `TextField`, `PickerField` (remplace `<select>`), `Chip`, `BottomSheet` (entrée, sortie, glissé pour fermer, clavier iOS). Leur style vit dans `styles/globals.css` (classes `.fin-*`). Champs en 16 px minimum (sinon Safari iOS zoome). Les anciens `Sheet`, `TopSheet`, `OptionSheet`, `Field` de `Sheets.jsx` sont à migrer, pas à étendre.
 
-Première connexion : `components/Onboarding.jsx`, quatre écrans qu'on peut passer (bienvenue, banque du compte courant, Raccourci iOS, palier gratuit par défaut), puis le bouton « + » pulse jusqu'au premier ajout. Vu ou non : `user_plans.onboarding_seen` côté serveur (le `localStorage` n'est qu'un cache).
+Première connexion : `components/Onboarding.jsx`, quatre écrans qu'on peut passer (bienvenue, banque du compte courant, Raccourci iOS, palier gratuit par défaut), puis le tutoriel (`components/Tutorial.jsx` : cinq éléments de l'accueil mis en lumière via `data-tour`, « Arrêter » à chaque étape, relançable depuis Réglages), puis le bouton « + » pulse jusqu'au premier ajout. Vu ou non : `user_plans.onboarding_seen` côté serveur (le `localStorage` n'est qu'un cache).
 
 Saisie d'une transaction : `components/TransactionSheet.jsx`, un seul écran pour l'ajout et l'édition (décision de Téo du 28 octobre 2026, remplace le parcours en 3 étapes des maquettes `Montant` / `Details`). Catégorie préremplie avec la dernière utilisée, compte prérempli avec la carte active de l'accueil, titre facultatif (par défaut le nom de la catégorie).
 

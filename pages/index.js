@@ -38,6 +38,7 @@ import { SubscriptionsScreen } from "../components/SubscriptionsScreen";
 import { AuthScreen } from "../components/AuthScreen";
 import { ResetPasswordScreen } from "../components/ResetPasswordScreen";
 import { Onboarding } from "../components/Onboarding";
+import { Tutorial } from "../components/Tutorial";
 import { Toast } from "../components/Toast";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { BudgetSheet } from "../components/BudgetSheet";
@@ -122,10 +123,21 @@ function ExpensesApp({ session }) {
   // la session seulement). Le Raccourci peut aussi être ouvert directement depuis la présentation.
   const [addHint, setAddHint] = useState(false);
   const [reglagesSection, setReglagesSection] = useState(null);
+  // Tutoriel des éléments importants, juste après la configuration (ou relancé depuis Réglages).
+  const [showTutorial, setShowTutorial] = useState(false);
+  function startTutorial() {
+    setSavingsDetailAccount(null); setShowGoals(false); setShowSubscriptions(false); setShowSimulator(false);
+    setView("dashboard"); setActiveTab("apercu");
+    setTimeout(() => setShowTutorial(true), 450); // laisse l'accueil s'afficher (et l'onboarding se fermer)
+  }
+  function closeTutorial() {
+    setShowTutorial(false);
+    setAddHint(true); // à la fin (ou à l'arrêt), le « + » pulse jusqu'au premier ajout
+  }
   function handleOnboardingDone(action) {
     dismissOnboarding();
     if (action === "shortcut") { setReglagesSection("Raccourci iOS"); setActiveTab("reglages"); }
-    else setAddHint(true);
+    else startTutorial();
   }
 
   async function handleSignOut() {
@@ -944,6 +956,7 @@ function ExpensesApp({ session }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <NavBar large title={todayHeader.dateLabel} subtitle={todayHeader.weekday} />
 
+              <div data-tour="cartes">
               <AccountCardStack
                 accounts={[
                   ...coreAccounts.map((a) => ({ key: a.name, name: a.name.replace("Compte ", ""), bankId: a.bank_id })),
@@ -958,10 +971,13 @@ function ExpensesApp({ session }) {
                 variationText={`${netPeriode >= 0 ? "+" : "−"}${fmtEUR(Math.abs(netPeriode))}`}
                 themeMode={themeMode}
               />
+              </div>
 
+              <div data-tour="periode">
               <PeriodChips value={period} onChange={changePeriod} onOpenMore={() => setOptionSheet({ title: "Période", options: PERIODS, value: period, onSelect: changePeriod })} />
+              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+              <div data-tour="tuiles" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
                 <StatTile label="REVENUS" value={fmtEUR(animRevenus)} direction="income" Icon={ArrowDownLeft} onClick={() => { setSummaryType("Gain"); setView("flow"); }} />
                 <StatTile label="DÉPENSES" value={fmtEUR(animDepenses)} direction="expense" Icon={ArrowUpRight} onClick={() => { setSummaryType("Dépense"); setView("flow"); }} />
               </div>
@@ -1196,6 +1212,7 @@ function ExpensesApp({ session }) {
           )
         ) : (
           <ReglagesScreen
+            onStartTutorial={startTutorial}
             initialSection={reglagesSection}
             onInitialSectionShown={() => setReglagesSection(null)}
             categories={categories} coreAccounts={coreAccounts} savingsAccounts={savingsAccounts} accountNames={accountNames}
@@ -1307,6 +1324,7 @@ function ExpensesApp({ session }) {
 
       <Toast toast={toast} onDismiss={(id) => setToast((cur) => (cur && cur.id === id ? null : cur))} />
 
+      {showTutorial && <Tutorial onClose={closeTutorial} />}
       {showOnboarding && <Onboarding account={coreAccounts[0] || accounts[0]} onChangeAccountBank={updateAccountBankHandler} onDone={handleOnboardingDone} />}
     </div>
   );
