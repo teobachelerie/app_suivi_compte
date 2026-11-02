@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import "../styles/globals.css";
+import { LaunchIntro } from "../components/LaunchIntro";
 
 export default function App({ Component, pageProps }) {
   // Safari iOS n'applique :active que si un écouteur touchstart existe dans la page. Sans lui,
@@ -9,5 +10,10 @@ export default function App({ Component, pageProps }) {
     document.addEventListener("touchstart", noop, { passive: true });
     return () => document.removeEventListener("touchstart", noop);
   }, []);
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Component {...pageProps} />
+      <LaunchIntro />
+    </>
+  );
 }

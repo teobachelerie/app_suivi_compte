@@ -11,6 +11,7 @@ Contexte complet : `docs/HANDOFF.md`. Benchmark UX et décisions de saisie à pr
 - `npm run dev` et `npm run build`. `npm run lint` (ESLint, règles Next), `npm run format` (Prettier, vérification seule : ne reformate pas le dépôt entier). Pas de CI à ce jour.
 - Vérification visuelle : `npm run build` puis `npm run capture` (WebKit profil iPhone, API simulée dans le navigateur, aucune base ; sortie dans `tools/visual/out/`, ignorée par git) et `npm run test:sheet` (comportement des feuilles). Détails dans `tools/visual/README.md`.
 - Développement et prévisualisation Vercel : second projet Supabase `finelio-dev`, jamais la production (`docs/ENVIRONNEMENT-DEV.md`).
+- Aperçu en direct sans base : `npm run demo` (connexion factice, API simulée en mémoire `lib/demo/api.js`, données fictives générées par `tools/demo/generate.mjs`, compilation dans `.next-demo`). Configuration « finelio-demo » dans `.claude/launch.json` pour le panneau navigateur de Claude. Le build de production retire ce code (`NEXT_PUBLIC_DEMO` forcé à « 0 » dans `next.config.mjs`).
 - Variables d'environnement : noms dans `.env.local.example`. Ne jamais écrire une valeur réelle dans le code, un log, un commit ou une réponse.
 - Repère de poids : le build affiche environ 82 kB de JS partagé. Toute dépendance ajoutée se justifie par son poids.
 
@@ -55,6 +56,7 @@ Référence principale : la D.A de Téo (« Teo Bach - Direction artistique v3.p
 - Chiffres tabulaires (`.ds-tabular`) pour tous les montants.
 - Élévation par bordure fine (`--border-token`). Plus d'ombres néomorphiques. Les anciens tokens (`--elev-*`, `--surface-raised/inset/highlight/base`) sont des alias de compatibilité vers ce rendu plat.
 - Cartes de comptes : couleurs de banque réelles, jamais de logo.
+- Animations de marque : intro de lancement (`components/LaunchIntro.jsx`, une fois par session, sautée si animations réduites ; les compteurs de l'accueil attendent sa fin via `lib/intro.js`), entrée des écrans en fondu par `top` (jamais `transform` sur un ancêtre de la flèche de retour fixe), ligne enregistrée surlignée (`.fin-row-fresh`), chargement de connexion (`LoadingOrbit`), barre d'onglets en verre (`.fin-glass`).
 - Mouvement : tokens `--duration-micro` (150 ms), `--duration-base` (200 ms), `--duration-slow` (250 ms), `--ease-standard`, `--ease-out`. La pile de cartes de comptes utilise 280 ms avec `cubic-bezier(0.2, 0.8, 0.2, 1)`. Toute animation CSS passe sous `@media (prefers-reduced-motion: no-preference)`, et les animations JS testent `matchMedia` (voir `lib/useAnimatedNumber.js`).
 
 ## Primitives d'interface (à utiliser pour tout nouvel écran)

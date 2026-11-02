@@ -3,6 +3,7 @@ import { supabaseClient } from "../lib/supabaseClient";
 import { Card } from "./ui/Primitives";
 import { fieldInputStyle } from "./ui/Sheets";
 import { describeAuthError } from "../lib/authErrors";
+import { LoadingOrbit } from "./LoadingOrbit";
 
 export function AuthScreen({ initialError = null }) {
   const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
@@ -66,6 +67,7 @@ export function AuthScreen({ initialError = null }) {
   return (
     <div style={{ background: "var(--surface-base)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--gutter-screen)", fontFamily: "var(--font-core)", position: "relative" }}>
       <div className="fin-backdrop" aria-hidden="true" />
+      {busy && mode === "login" ? <LoadingOrbit /> : null}
       <div style={{ width: "100%", maxWidth: 380, position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
           {/* D.A : titre en Inter Black, un seul mot fort en Garamond italique dégradé, sous-ligne grise. */}

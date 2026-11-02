@@ -38,6 +38,7 @@ export async function newPage(browser, { theme = "dark", size = "390x844", authe
   }, F.TODAY);
 
   await page.addInitScript(([key, theme, authed, onboardingSeen, user]) => {
+    try { sessionStorage.setItem("finelio-intro-seen", "1"); } catch {} // pas d'animation de lancement dans les captures
     try {
       localStorage.setItem("expenses-theme", theme);
       if (authed) {

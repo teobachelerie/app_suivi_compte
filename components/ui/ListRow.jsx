@@ -3,13 +3,14 @@ import { ChevronRight, Check, Pencil, Trash2, Plus } from "lucide-react";
 
 // `dense` : variante compacte des longues listes (Activité) — pastille et marges réduites,
 // sous-titre sur une seule ligne, pour voir plus d'opérations à l'écran.
-export const ListRow = forwardRef(function ListRow({ Icon, iconImage, iconColor, title, subtitle, trailing, chevron = false, onClick, style, dense = false }, ref) {
+export const ListRow = forwardRef(function ListRow({ Icon, iconImage, iconColor, title, subtitle, trailing, chevron = false, onClick, style, dense = false, className }, ref) {
   const tile = dense ? 34 : 40;
   const [pressed, setPressed] = useState(false);
   const interactive = Boolean(onClick);
   return (
     <div
       ref={ref}
+      className={className}
       onClick={onClick}
       onPointerDown={() => interactive && setPressed(true)}
       onPointerUp={() => setPressed(false)}

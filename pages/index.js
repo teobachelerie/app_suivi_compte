@@ -44,6 +44,7 @@ import { LoadingScreen } from "../components/LoadingScreen";
 import { BudgetSheet } from "../components/BudgetSheet";
 import { haptic } from "../lib/haptics";
 import { useAnimatedNumber } from "../lib/useAnimatedNumber";
+import { useIntroDone } from "../lib/intro";
 import { detectRecurring, monthSpendByFamily, budgetStatus, crossedThreshold, previousWindow, COMPARE_LABEL, percentChange } from "../lib/insights";
 
 // Variante de l'écran de chargement après connexion : "skeleton" | "shimmer" | "logo".
@@ -444,9 +445,12 @@ function ExpensesApp({ session }) {
   const depensesPeriode = useMemo(() => periodFiltered.reduce((s, t) => (t.type === "Dépense" && (filterAccount === "Tous" || t.compte === filterAccount) ? s + t.amount : s), 0), [periodFiltered, filterAccount]);
 
   // Montants qui défilent vers leur nouvelle valeur au lieu de sauter d'un coup.
-  const animBalance = useAnimatedNumber(balanceTotal);
-  const animRevenus = useAnimatedNumber(revenusPeriode);
-  const animDepenses = useAnimatedNumber(depensesPeriode);
+  // Les montants de l'accueil restent à 0 pendant l'animation de lancement, puis comptent jusqu'à
+  // leur valeur quand elle s'efface (plus lentement la première fois, comme dans la D.A).
+  const introDone = useIntroDone();
+  const animBalance = useAnimatedNumber(introDone ? balanceTotal : 0, 800);
+  const animRevenus = useAnimatedNumber(introDone ? revenusPeriode : 0, 800);
+  const animDepenses = useAnimatedNumber(introDone ? depensesPeriode : 0, 800);
   const animSummary = useAnimatedNumber(summaryAmount);
 
   // Variation par rapport à la fenêtre de même durée juste avant (mêmes filtres que summaryAmount).
@@ -602,16 +606,27 @@ function ExpensesApp({ session }) {
     ACTIVITE_SORTS.find((o) => o.value === activiteSort && o.value !== "recent")?.label || null,
   ].filter(Boolean).join(" · ");
 
+  // Opération tout juste enregistrée : sa ligne entre en fondu avec un léger surlignage orange,
+  // pour qu'on la retrouve d'un coup d'œil (le solde, lui, recompte jusqu'à sa nouvelle valeur).
+  const [freshTxId, setFreshTxId] = useState(null);
+  const freshTimerRef = useRef(null);
+  function markFresh(id) {
+    setFreshTxId(id);
+    clearTimeout(freshTimerRef.current);
+    freshTimerRef.current = setTimeout(() => setFreshTxId(null), 1800);
+  }
   async function saveTransaction(tx) {
     setSaving(true);
     try {
       if (tx.id) {
         const updated = await api(`/api/transactions/${tx.id}`, { method: "PATCH", body: tx });
         setTransactions((prev) => prev.map((t) => (t.id === tx.id ? updated : t)));
+        markFresh(tx.id);
       } else {
         const created = await api("/api/transactions", { method: "POST", body: tx });
         setTransactions((prev) => [created, ...prev]);
         checkBudgetAlert(created);
+        markFresh(created.id);
       }
       setShowAdd(false);
       setEditing(null);
@@ -863,7 +878,7 @@ function ExpensesApp({ session }) {
             return (
               <React.Fragment key={t.id}>
                 {i > 0 ? <Divider /> : null}
-                <ListRow dense Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
+                <ListRow dense className={t.id === freshTxId ? "fin-row-fresh" : undefined} Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
               </React.Fragment>
             );
           })}
@@ -882,7 +897,7 @@ function ExpensesApp({ session }) {
           return (
             <React.Fragment key={t.id}>
               {i > 0 ? <Divider /> : null}
-              <ListRow dense Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
+              <ListRow dense className={t.id === freshTxId ? "fin-row-fresh" : undefined} Icon={Icon} iconImage={categoryIconFor(t.category)} title={t.title} subtitle={txSubtitle(t)} onClick={() => setEditing(t)} trailing={<Amount value={fmtEUR(t.amount)} direction={direction} showSign={direction !== "neutral"} style={{ flexShrink: 0 }} />} />
             </React.Fragment>
           );
         })}
@@ -909,6 +924,8 @@ function ExpensesApp({ session }) {
           </div>
         )}
 
+        {/* Chaque écran (onglet, sous-écran) entre en fondu avec une petite montée : plus d'affichage sec. */}
+        <div key={`${activeTab}-${view}-${subScreen || ""}`} className="fin-screen-enter">
         {savingsDetailAccount ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <NavBar back title={savingsDetailAccount} onBack={() => setSavingsDetailAccount(null)} />
@@ -1205,6 +1222,7 @@ function ExpensesApp({ session }) {
             onImportComplete={loadAll}
           />
         )}
+        </div>
       </div>
 
       <TabBar
