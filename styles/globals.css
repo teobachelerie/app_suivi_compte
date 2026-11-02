@@ -724,7 +724,7 @@ body {
 .fin-tuto__stop, .fin-tuto__prev { min-height: 40px; padding: 0 var(--space-2); border: none; background: none; color: var(--text-tertiary); font: var(--weight-semibold) 14px var(--font-core); cursor: pointer; }
 .fin-tuto__prev { color: var(--text-secondary); }
 @media (prefers-reduced-motion: no-preference) {
-  .fin-tuto__hole { transition: top 320ms cubic-bezier(0.2, 0.8, 0.2, 1), left 320ms cubic-bezier(0.2, 0.8, 0.2, 1), width 320ms cubic-bezier(0.2, 0.8, 0.2, 1), height 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  /* Pas de transition CSS sur la découpe : elle est animée image par image en JS, collée au défilement. */
   @keyframes fin-tuto-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   .fin-tuto__card { animation: fin-tuto-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1); }
   @keyframes fin-tuto-veil { from { opacity: 0; } to { opacity: 1; } }

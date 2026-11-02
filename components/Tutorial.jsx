@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { haptic } from "../lib/haptics";
@@ -25,24 +25,70 @@ function measure(sel) {
   return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2, radius };
 }
 
+const DURATION = 420; // ms : défilement et déplacement de la découpe, ensemble
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+const lerp = (a, b, t) => a + (b - a) * t;
+
 export function Tutorial({ onClose }) {
   const [step, setStep] = useState(0);
-  const [rect, setRect] = useState(null);
+  const [cardRect, setCardRect] = useState(null); // position finale de la cible : place la carte
+  const holeRef = useRef(null);
+  const holeRectRef = useRef(null); // position affichée de la découpe, à l'image près
   const s = STEPS[step];
   const last = step === STEPS.length - 1;
 
-  // Amène la cible à l'écran (si elle n'est pas fixe), puis mesure une fois le défilement fini.
+  function paintHole(r) {
+    holeRectRef.current = r;
+    const h = holeRef.current;
+    if (!h || !r) return;
+    h.style.top = `${r.top}px`; h.style.left = `${r.left}px`;
+    h.style.width = `${r.width}px`; h.style.height = `${r.height}px`;
+    h.style.borderRadius = `${r.radius}px`;
+    h.style.opacity = "1";
+  }
+
+  // Changement d'étape : le tutoriel fait défiler la page lui-même, image par image, et recalcule la
+  // découpe sur la position réelle de la cible à chaque image. Elle reste donc collée à l'élément
+  // pendant tout le mouvement (avant : défilement du navigateur d'un côté, mesure à 380 ms de
+  // l'autre, d'où un décalage visible). La carte est placée d'emblée à la position finale.
   useLayoutEffect(() => {
     const el = document.querySelector(s.target);
-    if (!el) { setRect(null); return undefined; }
+    if (!el) { setCardRect(null); return undefined; }
+    const scroller = document.getElementById("__next");
     const fixed = getComputedStyle(el).position === "fixed" || el.closest("nav");
-    if (!fixed) el.scrollIntoView({ block: "center", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    setRect(measure(s.target));
-    const t = setTimeout(() => setRect(measure(s.target)), 380);
-    const onResize = () => setRect(measure(s.target));
+    const startScroll = scroller ? scroller.scrollTop : 0;
+    let endScroll = startScroll;
+    if (!fixed && scroller) {
+      const r = el.getBoundingClientRect();
+      const wanted = startScroll + r.top + r.height / 2 - window.innerHeight * 0.42;
+      endScroll = Math.max(0, Math.min(wanted, scroller.scrollHeight - scroller.clientHeight));
+    }
+    const now = measure(s.target);
+    const final = now && { ...now, top: now.top - (endScroll - startScroll) };
+    setCardRect(final);
+
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const from = holeRectRef.current; // null à la première étape : la découpe suit alors la cible telle quelle
+    if (reduce || !final) {
+      if (scroller) scroller.scrollTop = endScroll;
+      paintHole(measure(s.target));
+      return undefined;
+    }
+    let raf = 0;
+    let t0 = null;
+    const frame = (ts) => {
+      if (t0 === null) t0 = ts;
+      const k = ease(Math.min(1, (ts - t0) / DURATION));
+      if (scroller && endScroll !== startScroll) scroller.scrollTop = lerp(startScroll, endScroll, k);
+      const live = measure(s.target);
+      if (live) paintHole(from ? { top: lerp(from.top, live.top, k), left: lerp(from.left, live.left, k), width: lerp(from.width, live.width, k), height: lerp(from.height, live.height, k), radius: lerp(from.radius, live.radius, k) } : live);
+      if (k < 1) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    const onResize = () => { const r = measure(s.target); paintHole(r); setCardRect(r); };
     window.addEventListener("resize", onResize);
-    return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
-  }, [s.target]);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+  }, [s.target]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -57,6 +103,7 @@ export function Tutorial({ onClose }) {
 
   // La carte d'explication se place sous la cible, ou au-dessus si la cible est dans le bas de l'écran.
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const rect = cardRect;
   const below = !rect || rect.top + rect.height < vh * 0.55;
   const cardStyle = rect
     ? below ? { top: Math.min(rect.top + rect.height + 12, vh - 230) } : { bottom: Math.max(vh - rect.top + 12, 16) }
@@ -67,7 +114,8 @@ export function Tutorial({ onClose }) {
     <div className="fin-tuto" role="dialog" aria-modal="true" aria-label="Tutoriel">
       {/* Voile avec une découpe autour de la cible ; toucher le voile ne fait rien (on choisit Suivant ou Arrêter). */}
       <div className="fin-tuto__veil" />
-      {rect ? <div className="fin-tuto__hole" style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height, borderRadius: rect.radius }} /> : null}
+      {/* Positionnée image par image depuis l'effet (style direct, sans rendu React à chaque image). */}
+      <div ref={holeRef} className="fin-tuto__hole" style={{ opacity: 0 }} />
       <div key={step} className="fin-tuto__card" style={cardStyle}>
         <div className="fin-tuto__top">
           <span className="fin-tuto__count ds-tabular">{step + 1} / {STEPS.length}</span>
