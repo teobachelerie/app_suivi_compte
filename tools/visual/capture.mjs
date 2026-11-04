@@ -66,7 +66,7 @@ const scenarios = [
   { name: "22-ajout-categories", run: async (p) => { await add(p); await keys(p, "12"); await p.locator(".fin-pill").first().click(); } },
   { name: "23-ajout-categorie-recherche", run: async (p) => { await add(p); await p.locator(".fin-pill").first().click(); await settle(p, 400); await p.getByLabel("Rechercher une catégorie").fill("as"); } },
   { name: "23b-ajout-categories-bas", run: async (p) => { await add(p); await p.locator(".fin-pill").first().click(); await settle(p, 400); await p.evaluate(() => { document.querySelector(".fin-sheet-body").scrollTo(0, 99999); }); } },
-  { name: "23c-ajout-apres-categorie", run: async (p) => { await add(p); await keys(p, "9"); await p.locator(".fin-pill").first().click(); await settle(p, 400); await p.locator(".fin-sheet-panel .fin-cat-tile", { hasText: "Boulangerie" }).first().click(); } },
+  { name: "23c-ajout-apres-categorie", run: async (p) => { await add(p); await keys(p, "9"); await p.locator(".fin-pill").first().click(); await settle(p, 400); await p.locator(".fin-sheet-panel .fin-cat-chip", { hasText: "Boulangerie" }).first().click(); } },
   { name: "24-ajout-titre-clavier", run: async (p) => { await add(p); await keys(p, "12"); await p.getByLabel("Titre", { exact: true }).fill("Courses du soir"); } },
   { name: "25-ajout-plus-options", run: async (p) => { await add(p); await keys(p, "25"); await p.locator(".fin-link-more").first().click(); } },
   { name: "26-ajout-virement", run: async (p) => { await add(p); await p.locator(".fin-tx-head button", { hasText: "Virement" }).click(); await keys(p, "50"); } },

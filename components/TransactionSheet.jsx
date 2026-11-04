@@ -100,11 +100,15 @@ function useTaxonomy(categories) {
 
 const isIncomeCategory = (tax, name) => tax.familyOf(name) === "Revenus";
 
-function CategoryTile({ icon, label, selected, onClick }) {
+// Pastille « icône + nom » : plusieurs par ligne selon la longueur du nom, comme les étiquettes
+// de Lunch Money ou Toshl. Les grosses tuiles de 110 px (4 par ligne) donnaient un écran entier
+// pour une vingtaine de catégories ; ici une famille tient en une ou deux lignes, et un nom long
+// n'est jamais coupé. Choisie = pilule encre, comme toutes les puces choisies de la D.A.
+function CategoryChip({ icon, label, selected, onClick }) {
   return (
-    <button type="button" className="fin-cat-tile" aria-pressed={selected} onClick={onClick}>
-      <span className="fin-cat-tile__icon">{icon ? <img src={icon} alt="" width={24} height={24} /> : null}</span>
-      <span className="fin-cat-tile__label">{label}</span>
+    <button type="button" className="fin-cat-chip" aria-pressed={selected} onClick={onClick}>
+      {icon ? <img src={icon} alt="" width={22} height={22} /> : null}
+      <span>{label}</span>
     </button>
   );
 }
@@ -140,16 +144,16 @@ function CategoryGrid({ tax, type, value, recents, onPick }) {
       {recentItems.length ? (
         <section>
           <div className="fin-section-label">Récentes</div>
-          <div className="fin-cat-grid">
-            {recentItems.map((it) => <CategoryTile key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
+          <div className="fin-cat-flow">
+            {recentItems.map((it) => <CategoryChip key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
           </div>
         </section>
       ) : null}
       {sections.map((sec) => (
         <section key={sec.name}>
           <div className="fin-section-label">{sec.name}</div>
-          <div className="fin-cat-grid">
-            {sec.items.map((it) => <CategoryTile key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
+          <div className="fin-cat-flow">
+            {sec.items.map((it) => <CategoryChip key={it.name} icon={it.icon} label={it.name} selected={value === it.name} onClick={() => pick(it.name)} />)}
           </div>
         </section>
       ))}
